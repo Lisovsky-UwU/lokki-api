@@ -3,6 +3,7 @@ import { writable } from "svelte/store";
 export interface AppErrorNotice {
 	id: number;
 	message: string;
+	count: number;
 }
 
 let nextId = 1;
@@ -13,8 +14,19 @@ export const errorNotices = writable<AppErrorNotice[]>([]);
 
 export function reportError(context: string, error: unknown) {
 	const detail = error instanceof Error ? error.message : String(error);
+	const message = `${context}: ${detail}`;
 	console.error(context, error);
-	errorNotices.update((list) => [...list, { id: nextId++, message: `${context}: ${detail}` }].slice(-4));
+
+	errorNotices.update((list) => {
+		// Repeats are counted rather than stacked: a failure that retriggers
+		// itself (a bad render, a rejected refresh) would otherwise flood the
+		// screen and keep the UI busy re-rendering.
+		const existing = list.find((n) => n.message === message);
+		if (existing) {
+			return list.map((n) => (n === existing ? { ...n, count: n.count + 1 } : n));
+		}
+		return [...list, { id: nextId++, message, count: 1 }].slice(-4);
+	});
 }
 
 export function dismissError(id: number) {

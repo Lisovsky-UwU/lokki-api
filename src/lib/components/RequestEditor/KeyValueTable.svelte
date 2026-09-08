@@ -35,8 +35,8 @@
 				title="Включить/выключить"
 				onchange={(e) => update(i, { enabled: (e.target as HTMLInputElement).checked })}
 			/>
-			<VariableInput mono placeholder="key" value={row.key} onChange={(key) => update(i, { key })} />
-			<VariableInput mono placeholder="value" value={row.value} onChange={(value) => update(i, { value })} />
+			<VariableInput mono placeholder="имя" value={row.key} onChange={(key) => update(i, { key })} />
+			<VariableInput mono placeholder="значение" value={row.value} onChange={(value) => update(i, { value })} />
 			<button class="remove" title="Удалить" onclick={() => remove(i)}>×</button>
 		</div>
 	{/each}

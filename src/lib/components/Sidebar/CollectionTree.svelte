@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from "svelte";
 	import { api } from "../../api/client";
 	import { workspacePath, collections } from "../../stores/workspace";
 	import type { CollectionSummary, CollectionTreeNode, HttpMethod } from "../../bindings/types";
@@ -6,7 +7,7 @@
 	import NodeMenu from "../common/NodeMenu.svelte";
 	import { activeCollection, treeRefreshToken, requestTreeRefresh } from "../../stores/collectionTree";
 	import { dragging } from "../../stores/dragState";
-	import { rebaseActiveRequest } from "../../stores/activeRequest";
+	import { activeRequest, rebaseActiveRequest } from "../../stores/activeRequest";
 	import { rekeyResponses } from "../../stores/response";
 	import { promptForText } from "../../ui/dialogs";
 	import { reportError } from "../../ui/errors";
@@ -22,21 +23,32 @@
 		if (!$dragging) dropTarget = null;
 	});
 
+	// Plain Map (not reactive): only used to tell stale responses apart.
+	const refreshSeq = new Map<string, number>();
+
 	async function refreshCollection(collection: CollectionSummary) {
+		const seq = (refreshSeq.get(collection.path) ?? 0) + 1;
+		refreshSeq.set(collection.path, seq);
 		try {
-			trees = { ...trees, [collection.path]: await api.loadCollectionTree(collection.path) };
+			const tree = await api.loadCollectionTree(collection.path);
+			// A slower earlier request must not overwrite fresher data — that
+			// race is what made a just-created request blink in and out.
+			if (refreshSeq.get(collection.path) !== seq) return;
+			// `trees` is read here, after the await, deliberately: doing it
+			// before (as in `{ ...trees, [key]: await … }`) makes the spread
+			// run inside the tracked scope of the effect below, so the effect
+			// would depend on the state it writes and loop forever.
+			trees = { ...trees, [collection.path]: tree };
 		} catch (e) {
 			reportError("Не удалось загрузить коллекцию", e);
 		}
 	}
 
-	async function toggleCollection(collection: CollectionSummary) {
-		const isExpanded = !expandedCollections[collection.path];
-		expandedCollections = { ...expandedCollections, [collection.path]: isExpanded };
+	function toggleCollection(collection: CollectionSummary) {
+		expandedCollections = { ...expandedCollections, [collection.path]: !expandedCollections[collection.path] };
 		activeCollection.set(collection);
-		if (isExpanded && !trees[collection.path]) {
-			await refreshCollection(collection);
-		}
+		// Loading is left to the effect below, which already reacts to a
+		// collection becoming expanded.
 	}
 
 	// Any request/folder create/save/delete/move anywhere in the app bumps
@@ -44,35 +56,37 @@
 	// sidebar never shows stale names, methods or ordering.
 	$effect(() => {
 		$treeRefreshToken;
-		for (const collection of $collections) {
-			if (expandedCollections[collection.path]) refreshCollection(collection);
-		}
+		const pending = $collections.filter((c) => expandedCollections[c.path]);
+		// Fetching is kept out of the tracked scope so this effect never
+		// subscribes to what the fetch writes.
+		untrack(() => {
+			for (const collection of pending) refreshCollection(collection);
+		});
 	});
 
 	async function createCollection() {
 		const path = $workspacePath;
-		const name = await promptForText("Новая коллекция", "Название коллекции", "New Collection");
+		const name = await promptForText("Новая коллекция", "Название коллекции", "Новая коллекция");
 		if (!path || !name) return;
 		const summary = await api.createCollection(path, name);
 		collections.update((list) => [...list, summary].sort((a, b) => a.name.localeCompare(b.name)));
 		expandedCollections = { ...expandedCollections, [summary.path]: true };
-		await refreshCollection(summary);
 	}
 
 	async function addRequest(collection: CollectionSummary) {
-		const name = await promptForText("Новый запрос", "Название запроса", "New Request");
+		const name = await promptForText("Новый запрос", "Название запроса", "Новый запрос");
 		if (!name) return;
 		await api.createRequest(collection.path, name, "GET" as HttpMethod);
 		expandedCollections = { ...expandedCollections, [collection.path]: true };
-		await refreshCollection(collection);
+		requestTreeRefresh();
 	}
 
 	async function addFolder(collection: CollectionSummary) {
-		const name = await promptForText("Новая папка", "Название папки", "New Folder");
+		const name = await promptForText("Новая папка", "Название папки", "Новая папка");
 		if (!name) return;
 		await api.createFolder(collection.path, name);
 		expandedCollections = { ...expandedCollections, [collection.path]: true };
-		await refreshCollection(collection);
+		requestTreeRefresh();
 	}
 
 	function collectionMenu(collection: CollectionSummary) {
@@ -98,17 +112,20 @@
 			let sourcePath = payload.path;
 			if (payload.parentPath !== collection.path) {
 				sourcePath = await api.moveNode(payload.path, collection.path);
+				const wasActive = $activeRequest?.path === payload.path || $activeRequest?.path.startsWith(payload.path + "\\");
 				rebaseActiveRequest(payload.path, sourcePath);
 				rekeyResponses(payload.path, sourcePath);
+				if (wasActive) activeCollection.set(collection);
 			}
 			const order = childrenOf(collection.path)
 				.map((c) => c.path)
 				.filter((p) => p !== payload.path && p !== sourcePath);
 			order.push(sourcePath);
 			await api.reorderChildren(order);
-			requestTreeRefresh();
 		} catch (e) {
 			reportError("Не удалось переместить", e);
+		} finally {
+			requestTreeRefresh();
 		}
 	}
 </script>
@@ -149,7 +166,7 @@
 						<TreeNode node={child} {collection} parentPath={collection.path} siblings={children} />
 					{/each}
 					{#if children.length === 0}
-						<p class="empty">Пусто — добавьте запрос или папку через меню ⋯</p>
+						<p class="empty">Пусто - создайте запрос или папку</p>
 					{/if}
 				</div>
 			{/if}

@@ -2,10 +2,12 @@
 	import { activeRequest } from "../../stores/activeRequest";
 	import { activeCollection, requestTreeRefresh } from "../../stores/collectionTree";
 	import { activeResponses, markSending, recordResponse } from "../../stores/response";
+	import { availableVariables } from "../../stores/environments";
 	import { api } from "../../api/client";
 	import { newHttpRequestSpec } from "../../bindings/types";
 	import type { HttpMethod, HttpRequestSpec } from "../../bindings/types";
 	import VariableInput from "../common/VariableInput.svelte";
+	import MethodSelect from "./MethodSelect.svelte";
 	import KeyValueTable from "./KeyValueTable.svelte";
 	import AuthEditor from "./AuthEditor.svelte";
 	import BodyEditor from "./BodyEditor.svelte";
@@ -13,8 +15,7 @@
 	type Tab = "params" | "headers" | "body" | "auth";
 	let tab = $state<Tab>("params");
 	let saving = $state(false);
-
-	const methods: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
+	let copied = $state(false);
 
 	let http = $derived($activeRequest?.request.http ?? newHttpRequestSpec());
 
@@ -58,25 +59,68 @@
 		if (e.key === "Enter") {
 			e.preventDefault();
 			send();
-		} else if (e.key.toLowerCase() === "s") {
+			return;
+		}
+		// `e.key` carries the character the layout produces — on a Russian
+		// layout the S key yields "ы", so the shortcut has to match the
+		// physical key instead.
+		if (e.code === "KeyS" || e.key.toLowerCase() === "s") {
 			e.preventDefault();
 			if ($activeRequest?.dirty && !saving) save();
 		}
 	}
 
-	/// Breadcrumb of the open request: collection, any folders, then the
-	/// request itself, derived from where the file sits on disk.
+	/// Breadcrumb of the open request: collection, the folders it sits in,
+	/// then the request itself — derived from where the file lives on disk.
+	/// Paths are Windows-style here, so both separators are handled.
 	let breadcrumb = $derived.by(() => {
 		const request = $activeRequest;
 		const collection = $activeCollection;
 		if (!request) return [] as string[];
 		if (!collection) return [request.request.meta.name];
 		const relative = request.path.startsWith(collection.path)
-			? request.path.slice(collection.path.length).replace(/^[\/]+/, "")
+			? request.path.slice(collection.path.length).replace(/^[\\/]+/, "")
 			: "";
-		const folders = relative.split(/[\/]+/).slice(0, -1).filter(Boolean);
+		const folders = relative
+			.split(/[\\/]+/)
+			.slice(0, -1)
+			.filter(Boolean);
 		return [collection.name, ...folders, request.request.meta.name];
 	});
+
+	/// The URL as it will actually be sent: variables substituted and enabled
+	/// query parameters appended, mirroring what the core does at send time.
+	let urlPreview = $derived.by(() => {
+		const values = new Map($availableVariables.map((v) => [v.key, v.secret ? "••••" : v.value]));
+		const substitute = (text: string) =>
+			text.replace(/\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}/g, (whole, key) => values.get(key) ?? whole);
+
+		let url = substitute(http.url);
+		const pairs = http.query
+			.filter((q) => q.enabled && q.key.trim() !== "")
+			.map((q) => `${encodeURIComponent(substitute(q.key))}=${encodeURIComponent(substitute(q.value))}`);
+		if (pairs.length > 0) url += (url.includes("?") ? "&" : "?") + pairs.join("&");
+		return url;
+	});
+
+	async function copyUrl() {
+		try {
+			await navigator.clipboard.writeText(urlPreview);
+		} catch {
+			// Clipboard API can be unavailable; fall back to a scratch textarea.
+			const scratch = document.createElement("textarea");
+			scratch.value = urlPreview;
+			document.body.appendChild(scratch);
+			scratch.select();
+			document.execCommand("copy");
+			scratch.remove();
+		}
+		copied = true;
+		setTimeout(() => (copied = false), 1500);
+	}
+
+	let paramCount = $derived(http.query.filter((q) => q.key).length);
+	let headerCount = $derived(http.headers.filter((h) => h.key).length);
 </script>
 
 <svelte:window onkeydown={onShortcut} />
@@ -96,40 +140,45 @@
 			{/if}
 		</div>
 		<div class="url-bar">
-			<select value={http.method} onchange={(e) => mutate({ method: (e.target as HTMLSelectElement).value as HttpMethod })}>
-				{#each methods as m}
-					<option value={m}>{m}</option>
-				{/each}
-			</select>
+			<MethodSelect value={http.method} onChange={(method: HttpMethod) => mutate({ method })} />
 			<VariableInput
 				value={http.url}
 				mono
-				ariaLabel="URL запроса"
+				ariaLabel="Адрес запроса"
 				placeholder="https://api.example.com/pets или {'{{baseUrl}}'}/pets"
 				onChange={(url) => mutate({ url })}
 			/>
-			<button class="send" onclick={send} disabled={$activeResponses.loading || !$activeCollection}>
-				{$activeResponses.loading ? "..." : "Send"}
+			<button class="send" title="Ctrl+Enter" onclick={send} disabled={$activeResponses.loading || !$activeCollection}>
+				{$activeResponses.loading ? "Отправка..." : "Отправить"}
 			</button>
 			<button class="save" title="Ctrl+S" onclick={save} disabled={!$activeRequest.dirty || saving}>
-				{saving ? "Сохранение..." : "Save"}
+				{saving ? "Сохранение..." : "Сохранить"}
 			</button>
 		</div>
 
 		<div class="tabs">
 			<button class:active={tab === "params"} onclick={() => (tab = "params")}
-				>Params{#if http.query.length}&nbsp;({http.query.filter((q) => q.key).length}){/if}</button
+				>Параметры{#if paramCount}&nbsp;({paramCount}){/if}</button
 			>
 			<button class:active={tab === "headers"} onclick={() => (tab = "headers")}
-				>Headers{#if http.headers.length}&nbsp;({http.headers.filter((h) => h.key).length}){/if}</button
+				>Заголовки{#if headerCount}&nbsp;({headerCount}){/if}</button
 			>
-			<button class:active={tab === "body"} onclick={() => (tab = "body")}>Body</button>
-			<button class:active={tab === "auth"} onclick={() => (tab = "auth")}>Auth</button>
+			<button class:active={tab === "body"} onclick={() => (tab = "body")}>Тело</button>
+			<button class:active={tab === "auth"} onclick={() => (tab = "auth")}>Авторизация</button>
 		</div>
 
 		<div class="tab-content">
 			{#if tab === "params"}
-				<KeyValueTable rows={http.query} onChange={(query) => mutate({ query })} />
+				<div class="params-tab">
+					<div class="url-preview">
+						<div class="url-preview-header">
+							<span>Итоговый адрес</span>
+							<button onclick={copyUrl}>{copied ? "Скопировано" : "Копировать"}</button>
+						</div>
+						<code>{urlPreview || "—"}</code>
+					</div>
+					<KeyValueTable rows={http.query} onChange={(query) => mutate({ query })} />
+				</div>
 			{:else if tab === "headers"}
 				<KeyValueTable rows={http.headers} onChange={(headers) => mutate({ headers })} />
 			{:else if tab === "body"}
@@ -199,6 +248,7 @@
 		padding: 0.4em 1.2em;
 		cursor: pointer;
 		font-weight: 600;
+		white-space: nowrap;
 	}
 	.send:disabled {
 		opacity: 0.5;
@@ -208,6 +258,7 @@
 		border-radius: 6px;
 		padding: 0.4em 1em;
 		cursor: pointer;
+		white-space: nowrap;
 	}
 	.save:disabled {
 		opacity: 0.5;
@@ -234,6 +285,37 @@
 	.tab-content {
 		flex: 1;
 		overflow: auto;
+	}
+	.params-tab {
+		display: flex;
+		flex-direction: column;
+		gap: 0.8em;
+	}
+	.url-preview {
+		border: 1px solid rgba(127, 127, 127, 0.35);
+		border-radius: 8px;
+		padding: 0.6em 0.7em;
+		background: rgba(127, 127, 127, 0.08);
+		display: flex;
+		flex-direction: column;
+		gap: 0.4em;
+	}
+	.url-preview-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.6em;
+		font-size: 0.8em;
+		opacity: 0.7;
+	}
+	.url-preview-header button {
+		padding: 0.2em 0.7em;
+		font-size: 0.95em;
+	}
+	.url-preview code {
+		font-family: ui-monospace, monospace;
+		font-size: 0.85em;
+		word-break: break-all;
 	}
 	.empty-state {
 		display: flex;

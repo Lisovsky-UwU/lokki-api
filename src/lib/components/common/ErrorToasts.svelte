@@ -6,7 +6,7 @@
 	<div class="toasts">
 		{#each $errorNotices as notice (notice.id)}
 			<div class="toast">
-				<span>{notice.message}</span>
+				<span>{notice.message}{notice.count > 1 ? ` (×${notice.count})` : ""}</span>
 				<button title="Скрыть" onclick={() => dismissError(notice.id)}>×</button>
 			</div>
 		{/each}

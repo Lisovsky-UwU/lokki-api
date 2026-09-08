@@ -3,14 +3,39 @@
 	import { activeRequest } from "../../stores/activeRequest";
 	import CodeEditor from "../CodeEditor.svelte";
 
+	type Tab = "body" | "headers";
+	let tab = $state<Tab>("body");
+
 	function decodeBody(base64: string): string {
 		try {
 			const binary = atob(base64);
 			const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
 			return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
 		} catch {
-			return "(binary or unreadable body)";
+			return "(двоичное или нечитаемое тело)";
 		}
+	}
+
+	/// Byte length of the response, recovered from the base64 payload without
+	/// decoding it: 4 encoded chars per 3 bytes, minus the padding.
+	function byteLength(base64: string): number {
+		if (!base64) return 0;
+		const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
+		return Math.max(0, (base64.length / 4) * 3 - padding);
+	}
+
+	function formatSize(bytes: number): string {
+		if (bytes < 1024) return `${bytes} Б`;
+		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
+		return `${(bytes / (1024 * 1024)).toFixed(2)} МБ`;
+	}
+
+	function formatDuration(ms: number): string {
+		if (ms < 1000) return `${ms} мс`;
+		if (ms < 60_000) return `${(ms / 1000).toFixed(2)} с`;
+		const minutes = Math.floor(ms / 60_000);
+		const seconds = Math.round((ms % 60_000) / 1000);
+		return `${minutes} мин ${seconds} с`;
 	}
 
 	function isJson(text: string): boolean {
@@ -37,10 +62,6 @@
 		return "status-server-error";
 	}
 
-	function formatTime(at: number): string {
-		return new Date(at).toLocaleTimeString();
-	}
-
 	// Only the newest record is kept today (see HISTORY_LIMIT), but reading
 	// it as "the first of a list" keeps the viewer ready for real history.
 	let latest = $derived($activeResponses.history[0] ?? null);
@@ -60,31 +81,49 @@
 		{@const outcome = latest.outcome}
 		<div class="status-bar">
 			<span class="status {statusClass(outcome.status)}">{outcome.status} {outcome.status_text}</span>
-			<span class="timing">{outcome.duration_ms} ms</span>
-			<span class="timing">в {formatTime(latest.at)}</span>
+			<span class="meta">{formatDuration(outcome.duration_ms)}</span>
+			<span class="meta">{formatSize(byteLength(outcome.body_base64))}</span>
+			<span class="meta time">{new Date(latest.at).toLocaleTimeString()}</span>
 		</div>
+
 		{#if outcome.unresolved_variables.length > 0}
 			<p class="warning">
 				Не найдено значение для: {outcome.unresolved_variables.map((v) => `{{${v}}}`).join(", ")} — проверьте активное
 				окружение.
 			</p>
 		{/if}
-		<details class="headers">
-			<summary>Headers ({outcome.headers.length})</summary>
-			<table>
-				<tbody>
-					{#each outcome.headers as header}
-						<tr>
-							<td class="header-key">{header.key}</td>
-							<td>{header.value}</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</details>
-		<div class="body">
-			<CodeEditor value={prettyBody} language={bodyIsJson ? "json" : "text"} readOnly />
+
+		<div class="tabs">
+			<button class:active={tab === "body"} onclick={() => (tab = "body")}>Тело</button>
+			<button class:active={tab === "headers"} onclick={() => (tab = "headers")}
+				>Заголовки&nbsp;({outcome.headers.length})</button
+			>
 		</div>
+
+		{#if tab === "body"}
+			<div class="body">
+				<CodeEditor value={prettyBody} language={bodyIsJson ? "json" : "text"} readOnly />
+			</div>
+		{:else}
+			<div class="headers">
+				<table>
+					<thead>
+						<tr>
+							<th>Заголовок</th>
+							<th>Значение</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each outcome.headers as header (header.key)}
+							<tr>
+								<td class="header-key">{header.key}</td>
+								<td class="header-value">{header.value}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		{/if}
 	{:else}
 		<p class="hint">Отправьте запрос, чтобы увидеть ответ.</p>
 	{/if}
@@ -96,7 +135,7 @@
 		flex-direction: column;
 		gap: 0.6em;
 		height: 100%;
-		overflow-y: auto;
+		min-height: 0;
 	}
 	.hint {
 		opacity: 0.6;
@@ -116,7 +155,7 @@
 	.status-bar {
 		display: flex;
 		align-items: baseline;
-		gap: 0.8em;
+		gap: 0.9em;
 	}
 	.status {
 		font-weight: 700;
@@ -131,23 +170,71 @@
 	.status-server-error {
 		color: #d1443c;
 	}
-	.timing {
+	.meta {
 		opacity: 0.6;
 		font-size: 0.9em;
+	}
+	.meta.time {
+		margin-left: auto;
+	}
+	.tabs {
+		display: flex;
+		gap: 0.2em;
+		border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+	}
+	.tabs button {
+		background: none;
+		border: none;
+		padding: 0.35em 0.8em;
+		cursor: pointer;
+		color: inherit;
+		opacity: 0.6;
+		border-bottom: 2px solid transparent;
+	}
+	.tabs button.active {
+		opacity: 1;
+		border-bottom-color: #396cd8;
+	}
+	.body {
+		flex: 1;
+		min-height: 8em;
+	}
+	.headers {
+		flex: 1;
+		min-height: 0;
+		overflow: auto;
+		border: 1px solid rgba(127, 127, 127, 0.3);
+		border-radius: 6px;
 	}
 	.headers table {
 		width: 100%;
 		border-collapse: collapse;
 		font-size: 0.85em;
 	}
-	.header-key {
+	.headers th {
+		position: sticky;
+		top: 0;
+		text-align: left;
 		font-weight: 600;
-		padding-right: 1em;
-		white-space: nowrap;
+		padding: 0.45em 0.6em;
+		background: var(--modal-bg, #f6f8fa);
+		border-bottom: 1px solid rgba(127, 127, 127, 0.35);
+	}
+	.headers td {
+		padding: 0.4em 0.6em;
+		border-bottom: 1px solid rgba(127, 127, 127, 0.18);
 		vertical-align: top;
 	}
-	.body {
-		flex: 1;
-		min-height: 8em;
+	.headers tr:last-child td {
+		border-bottom: none;
+	}
+	.header-key {
+		font-weight: 600;
+		white-space: nowrap;
+		font-family: ui-monospace, monospace;
+	}
+	.header-value {
+		font-family: ui-monospace, monospace;
+		word-break: break-all;
 	}
 </style>

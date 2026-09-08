@@ -75,7 +75,7 @@
 		const rootPath = scope === "global" ? $workspacePath : $activeCollection?.path;
 		if (!rootPath) return;
 		const title = scope === "global" ? "Новое глобальное окружение" : "Новое окружение коллекции";
-		const name = await promptForText(title, "Название окружения", "New Environment");
+		const name = await promptForText(title, "Название окружения", "Новое окружение");
 		if (!name) return;
 
 		const entry = await api.createEnvironment(rootPath, name, scope);
@@ -120,7 +120,7 @@
 
 <div class="switcher">
 	<div class="group">
-		<label for="global-env">Global</label>
+		<label for="global-env">Глобальное</label>
 		<select
 			id="global-env"
 			value={$activeGlobalEnvironmentId ?? ""}

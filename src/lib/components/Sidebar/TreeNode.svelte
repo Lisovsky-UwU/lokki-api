@@ -9,6 +9,7 @@
 	import { confirmAction, promptForText } from "../../ui/dialogs";
 	import { reportError } from "../../ui/errors";
 	import { api } from "../../api/client";
+	import { methodColor } from "../../ui/methods";
 
 	// `collection` travels down the tree so opening a request always points
 	// the app at the collection that actually owns it; `parentPath` and
@@ -41,6 +42,7 @@
 		if ($activeRequest?.dirty && $activeRequest.path !== path) {
 			const proceed = await confirmAction(
 				"В текущем запросе есть несохранённые изменения. Они будут потеряны. Открыть другой запрос?",
+				{ title: "Несохранённые изменения", confirmLabel: "Открыть" },
 			);
 			if (!proceed) return;
 		}
@@ -54,7 +56,7 @@
 	}
 
 	async function addRequest() {
-		const name = await promptForText("Новый запрос", "Название запроса", "New Request");
+		const name = await promptForText("Новый запрос", "Название запроса", "Новый запрос");
 		if (!name) return;
 		await api.createRequest(node.path, name, "GET" as HttpMethod);
 		expanded = true;
@@ -62,7 +64,7 @@
 	}
 
 	async function addFolder() {
-		const name = await promptForText("Новая папка", "Название папки", "New Folder");
+		const name = await promptForText("Новая папка", "Название папки", "Новая папка");
 		if (!name) return;
 		await api.createFolder(node.path, name);
 		expanded = true;
@@ -91,17 +93,37 @@
 	}
 
 	async function removeFolder() {
-		if (!(await confirmAction(`Удалить папку «${node.name}» со всем содержимым?`))) return;
+		const confirmed = await confirmAction(`Удалить папку «${node.name}» со всем содержимым?`, {
+			title: "Удаление папки",
+			confirmLabel: "Удалить",
+			danger: true,
+		});
+		if (!confirmed) return;
 		await api.deleteFolder(node.path);
 		requestTreeRefresh();
 	}
 
 	async function removeRequest() {
-		if (!(await confirmAction(`Удалить запрос «${node.name}»?`))) return;
+		const confirmed = await confirmAction(`Удалить запрос «${node.name}»?`, {
+			title: "Удаление запроса",
+			confirmLabel: "Удалить",
+			danger: true,
+		});
+		if (!confirmed) return;
 		await api.deleteRequest(node.path);
 		forgetResponses(node.path);
 		if ($activeRequest?.path === node.path) activeRequest.set(null);
 		requestTreeRefresh();
+	}
+
+	/// Keeps everything that points at the moved entry in step with its new
+	/// location: the open request, its cached responses, and — when it lands
+	/// in a different collection — which collection is considered active.
+	function afterMove(from: string, to: string) {
+		const wasActive = $activeRequest?.path === from || $activeRequest?.path.startsWith(from + "\\");
+		rebaseActiveRequest(from, to);
+		rekeyResponses(from, to);
+		if (wasActive) activeCollection.set(collection);
 	}
 
 	function onDragStart(e: DragEvent) {
@@ -148,24 +170,25 @@
 		try {
 			if (zone === "inside") {
 				const moved = await api.moveNode(payload.path, node.path);
-				rebaseActiveRequest(payload.path, moved);
-				rekeyResponses(payload.path, moved);
+				afterMove(payload.path, moved);
 				expanded = true;
 			} else {
 				let sourcePath = payload.path;
 				if (payload.parentPath !== parentPath) {
 					sourcePath = await api.moveNode(payload.path, parentPath);
-					rebaseActiveRequest(payload.path, sourcePath);
-					rekeyResponses(payload.path, sourcePath);
+					afterMove(payload.path, sourcePath);
 				}
 				const order = siblings.map((s) => s.path).filter((p) => p !== payload.path && p !== sourcePath);
 				const anchor = order.indexOf(node.path);
 				order.splice(zone === "before" ? anchor : anchor + 1, 0, sourcePath);
 				await api.reorderChildren(order);
 			}
-			requestTreeRefresh();
 		} catch (err) {
 			reportError("Не удалось переместить", err);
+		} finally {
+			// Always resync: after a partially applied move the sidebar would
+			// otherwise keep showing the entry in its old place.
+			requestTreeRefresh();
 		}
 	}
 
@@ -231,7 +254,7 @@
 		ondrop={onDrop}
 	>
 		<button class="request-label" onclick={() => openRequest(node.path)}>
-			<span class="method method-{(node.method ?? node.protocol).toLowerCase()}">{node.method ?? node.protocol}</span>
+			<span class="method" style="color: {methodColor(node.method ?? node.protocol)}">{node.method ?? node.protocol}</span>
 			<span class="node-name">{node.name}</span>
 		</button>
 		<NodeMenu items={requestMenu} label="Действия с запросом" />
@@ -304,23 +327,9 @@
 	}
 	.method {
 		font-size: 0.7em;
+		letter-spacing: 0.03em;
 		font-weight: 700;
 		min-width: 2.8em;
 		flex-shrink: 0;
-	}
-	.method-get {
-		color: #6188db;
-	}
-	.method-post {
-		color: #269b2c;
-	}
-	.method-put {
-		color: #c26b0f
-	}
-	.method-patch {
-		color: #e2d138;
-	}
-	.method-delete {
-		color: #d1443c;
 	}
 </style>

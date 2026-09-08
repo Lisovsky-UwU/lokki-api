@@ -93,7 +93,7 @@
 					<input
 					class="mono"
 					class:invalid={v.key !== "" && !isValidVariableName(v.key)}
-					placeholder="key"
+					placeholder="имя"
 					title="Латиница, цифры, точка, дефис и подчёркивание. Пробелы недопустимы — такая переменная не подставится."
 					value={v.key}
 					oninput={(e) => {
@@ -108,12 +108,12 @@
 						<input
 							class="mono"
 							type="password"
-							placeholder="secret value"
+							placeholder="секретное значение"
 							value={secretValues[v.id] ?? ""}
 							oninput={(e) => (secretValues[v.id] = (e.target as HTMLInputElement).value)}
 						/>
 					{:else}
-						<input class="mono" placeholder="value" bind:value={v.value} />
+						<input class="mono" placeholder="значение" bind:value={v.value} />
 					{/if}
 					<label class="secret-toggle">
 						<input
@@ -126,7 +126,7 @@
 								v.secret = nowSecret;
 							}}
 						/>
-						secret
+						секрет
 					</label>
 					<button class="remove" onclick={() => removeVariable(i)}>×</button>
 				</div>

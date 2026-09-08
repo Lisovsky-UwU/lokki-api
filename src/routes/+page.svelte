@@ -8,6 +8,7 @@
 	import { installGlobalErrorReporting, reportError } from "../lib/ui/errors";
 	import { layout, updateLayout } from "../lib/stores/layout";
 	import ErrorToasts from "../lib/components/common/ErrorToasts.svelte";
+	import ConfirmDialog from "../lib/components/common/ConfirmDialog.svelte";
 	import PromptDialog from "../lib/components/common/PromptDialog.svelte";
 	import Splitter from "../lib/components/common/Splitter.svelte";
 	import WorkspacePicker from "../lib/components/WorkspacePicker/WorkspacePicker.svelte";
@@ -49,6 +50,7 @@
 </script>
 
 <PromptDialog />
+<ConfirmDialog />
 <ErrorToasts />
 
 {#if restoring}
@@ -111,8 +113,13 @@
 	}
 	:global(:root) {
 		font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+		color-scheme: light;
 		color: #24292f;
 		background-color: #ffffff;
+		/* Translucent so the bar takes on whatever panel is behind it
+		   (sidebar, editor, dialog) instead of carrying its own colour. */
+		--scrollbar-thumb: rgba(27, 31, 36, 0.2);
+		--scrollbar-thumb-hover: rgba(27, 31, 36, 0.35);
 		/* GitHub light syntax palette, consumed by the code editor. */
 		--cm-property: #0550ae;
 		--cm-string: #0a3069;
@@ -134,11 +141,37 @@
 	:global(button) {
 		cursor: pointer;
 	}
+	:global(*) {
+		scrollbar-width: thin;
+		scrollbar-color: var(--scrollbar-thumb) transparent;
+	}
+	:global(::-webkit-scrollbar) {
+		width: 10px;
+		height: 10px;
+	}
+	:global(::-webkit-scrollbar-track),
+	:global(::-webkit-scrollbar-corner) {
+		background: transparent;
+	}
+	:global(::-webkit-scrollbar-thumb) {
+		background: var(--scrollbar-thumb);
+		/* Padding-box clipping insets the thumb without painting a track. */
+		border: 2px solid transparent;
+		background-clip: padding-box;
+		border-radius: 6px;
+	}
+	:global(::-webkit-scrollbar-thumb:hover) {
+		background: var(--scrollbar-thumb-hover);
+		background-clip: padding-box;
+	}
 	@media (prefers-color-scheme: dark) {
 		:global(:root) {
+			color-scheme: dark;
 			color: #e6edf3;
 			background-color: #0d1117;
 			--modal-bg: #161b22;
+			--scrollbar-thumb: rgba(240, 246, 252, 0.16);
+			--scrollbar-thumb-hover: rgba(240, 246, 252, 0.3);
 			/* GitHub dark syntax palette. */
 			--cm-property: #79c0ff;
 			--cm-string: #a5d6ff;

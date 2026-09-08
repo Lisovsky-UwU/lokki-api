@@ -13,9 +13,9 @@
 
 <div class="auth-editor">
 	<select value={auth.type} onchange={(e) => setType((e.target as HTMLSelectElement).value as AuthSpec["type"])}>
-		<option value="none">No Auth</option>
-		<option value="bearer">Bearer Token</option>
-		<option value="basic">Basic Auth</option>
+		<option value="none">Без авторизации</option>
+		<option value="bearer">Bearer-токен</option>
+		<option value="basic">Basic-авторизация</option>
 	</select>
 
 	{#if auth.type === "bearer"}
@@ -29,13 +29,13 @@
 	{:else if auth.type === "basic"}
 		<div class="basic-row">
 			<VariableInput
-				placeholder="username"
+				placeholder="логин"
 				value={auth.username}
 				onChange={(username) => onChange({ type: "basic", username, password: auth.password })}
 			/>
 			<VariableInput
 				type="password"
-				placeholder="password"
+				placeholder="пароль"
 				value={auth.password}
 				onChange={(password) => onChange({ type: "basic", username: auth.username, password })}
 			/>

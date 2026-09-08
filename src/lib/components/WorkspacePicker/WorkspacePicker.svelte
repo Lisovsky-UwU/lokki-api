@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from "$app/paths";
 	import { api } from "../../api/client";
 	import { workspace, workspacePath, collections } from "../../stores/workspace";
 
@@ -24,7 +25,7 @@
 </script>
 
 <div class="picker">
-	<h1>LokkiAPI</h1>
+	<img class="logo" src="{base}/logo-horizontal.png" alt="LokkiAPI" />
 	<p>Локальный, файловый клиент для тестирования API.</p>
 	<button onclick={pickAndOpen} disabled={loading}>
 		{loading ? "Открываем..." : "Открыть папку workspace"}
@@ -35,6 +36,16 @@
 </div>
 
 <style>
+	.logo {
+		/* The wordmark is white on transparency, so the asset ships on a plate
+		   the colour of the dark theme's background: it disappears into the
+		   page there, and stays a readable dark banner on a light one. */
+		width: 380px;
+		max-width: 80vw;
+		height: auto;
+		border-radius: 12px;
+		margin-bottom: 0.25rem;
+	}
 	.picker {
 		display: flex;
 		flex-direction: column;
@@ -44,9 +55,6 @@
 		gap: 0.75rem;
 		text-align: center;
 		padding: 2rem;
-	}
-	h1 {
-		margin: 0;
 	}
 	button {
 		padding: 0.6em 1.4em;

@@ -183,9 +183,18 @@ pub fn move_node(source_path: &Path, target_parent: &Path) -> AppResult<PathBuf>
 /// Writes an explicit order onto a folder's children: each entry's `seq`
 /// becomes its index in `ordered_paths`. Entries not listed keep whatever
 /// position they had.
+///
+/// Paths that no longer exist are skipped rather than failing the whole
+/// call: the caller builds the order from the tree it has rendered, which
+/// can legitimately lag behind disk right after a move. Failing here used
+/// to abort the drop half-way, leaving the entry moved on disk but the
+/// sidebar still showing it in its old place.
 pub fn reorder_children(ordered_paths: &[PathBuf]) -> AppResult<()> {
     for (index, path) in ordered_paths.iter().enumerate() {
         let seq = index as u32 + 1;
+        if !path.exists() {
+            continue;
+        }
         if path.is_dir() {
             let mut meta = read_folder_meta(path);
             if meta.seq == seq {
@@ -285,6 +294,18 @@ mod tests {
         let nested = create_folder(&folder, "Inner").unwrap();
         assert!(move_node(&folder, &nested).is_err());
         assert!(folder.is_dir());
+    }
+
+    #[test]
+    fn reorder_children_skips_paths_that_no_longer_exist() {
+        let dir = tempfile::tempdir().unwrap();
+        create_request(dir.path(), "Kept", HttpMethod::Get).unwrap();
+        let kept = dir.path().join(format!("Kept{}", REQUEST_EXT));
+        let vanished = dir.path().join(format!("Moved Away{}", REQUEST_EXT));
+
+        // A stale entry (already moved elsewhere) must not abort the reorder.
+        reorder_children(&[vanished, kept.clone()]).unwrap();
+        assert_eq!(load_request(&kept).unwrap().meta.seq, 2);
     }
 
     #[test]

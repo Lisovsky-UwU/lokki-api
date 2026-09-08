@@ -14,10 +14,10 @@
 
 <div class="body-editor">
 	<select value={body.type} onchange={(e) => setType((e.target as HTMLSelectElement).value as BodySpec["type"])}>
-		<option value="none">No Body</option>
+		<option value="none">Без тела</option>
 		<option value="json">JSON</option>
-		<option value="raw">Raw</option>
-		<option value="form">Form (urlencoded)</option>
+		<option value="raw">Текст</option>
+		<option value="form">Форма (urlencoded)</option>
 	</select>
 
 	{#if body.type === "json" || body.type === "raw"}
@@ -25,7 +25,7 @@
 			<CodeEditor
 				value={body.content}
 				language={body.type === "json" ? "json" : "text"}
-				placeholder={body.type === "json" ? '{"key": "{{value}}"}' : "raw body"}
+				placeholder={body.type === "json" ? '{"key": "{{value}}"}' : "произвольный текст"}
 				onChange={(content) => onChange({ type: body.type, content })}
 			/>
 		</div>
