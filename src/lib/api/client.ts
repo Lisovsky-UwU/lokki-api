@@ -23,6 +23,7 @@ export const api = {
 		openDialog({ directory: true, multiple: false, title: "Open workspace folder" }) as Promise<string | null>,
 
 	openWorkspace: (path: string) => invoke<OpenWorkspaceResult>("open_workspace", { path }),
+	getLastWorkspace: () => invoke<string | null>("get_last_workspace"),
 	listCollections: (workspacePath: string) =>
 		invoke<CollectionSummary[]>("list_collections", { workspacePath }),
 	createCollection: (workspacePath: string, name: string) =>
@@ -38,6 +39,7 @@ export const api = {
 	deleteRequest: (requestPath: string) => invoke<void>("delete_request", { requestPath }),
 	createFolder: (parentPath: string, name: string) =>
 		invoke<string>("create_folder", { parentPath, name }),
+	deleteFolder: (folderPath: string) => invoke<void>("delete_folder", { folderPath }),
 
 	listEnvironments: (rootPath: string) => invoke<EnvironmentEntry[]>("list_environments", { rootPath }),
 	createEnvironment: (rootPath: string, name: string, scope: EnvironmentScope) =>

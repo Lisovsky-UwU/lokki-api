@@ -113,6 +113,24 @@ export function newKeyValue(): KeyValue {
 	return { key: "", value: "", enabled: true };
 }
 
+const ULID_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
+/// Client-side ULID, matching the format the Rust side generates (see
+/// domain::ids::Id) — ids must stay lexicographically time-sortable for the
+/// planned change-log sync, which a UUIDv4 would break.
+export function newId(): Id {
+	let timestamp = "";
+	let now = Date.now();
+	for (let i = 0; i < 10; i++) {
+		timestamp = ULID_ALPHABET[now % 32] + timestamp;
+		now = Math.floor(now / 32);
+	}
+	const random = crypto.getRandomValues(new Uint8Array(16));
+	let suffix = "";
+	for (let i = 0; i < 16; i++) suffix += ULID_ALPHABET[random[i] % 32];
+	return timestamp + suffix;
+}
+
 export function newHttpRequestSpec(method: HttpMethod = "GET"): HttpRequestSpec {
 	return {
 		method,

@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { untrack } from "svelte";
 	import type { EnvironmentEntry } from "../../bindings/types";
+	import { newId } from "../../bindings/types";
 	import { api } from "../../api/client";
 
 	let {
@@ -14,7 +16,9 @@
 		onSaved: (env: EnvironmentEntry) => void;
 	} = $props();
 
-	let draft = $state<EnvironmentEntry>(structuredClone(environment));
+	// Deliberately a one-time snapshot: the modal edits a draft copy and
+	// only writes back on save.
+	let draft = $state<EnvironmentEntry>(untrack(() => structuredClone(environment)));
 	let saving = $state(false);
 	// Secret variable values never travel through `draft.variables[i].value`
 	// (that gets written to the on-disk, potentially-synced .env.toml) —
@@ -31,7 +35,7 @@
 	loadSecrets();
 
 	function addVariable() {
-		const id = crypto.randomUUID();
+		const id = newId();
 		draft.variables = [...draft.variables, { id, key: "", value: "", enabled: true, secret: false }];
 		secretValues[id] = "";
 	}
@@ -59,8 +63,18 @@
 	}
 </script>
 
-<div class="backdrop" role="presentation" onclick={onClose} onkeydown={(e) => e.key === "Escape" && onClose()}>
-	<div class="modal" role="dialog" aria-modal="true" aria-label={draft.meta.name} onclick={(e) => e.stopPropagation()}>
+<svelte:window onkeydown={(e) => e.key === "Escape" && onClose()} />
+
+<div
+	class="backdrop"
+	role="presentation"
+	onclick={(e) => {
+		// Only a click on the backdrop itself closes; clicks inside the
+		// dialog bubble up here but must be ignored.
+		if (e.target === e.currentTarget) onClose();
+	}}
+>
+	<div class="modal" role="dialog" tabindex="-1" aria-modal="true" aria-label={draft.meta.name}>
 		<h2>{draft.meta.name}</h2>
 		<div class="variables">
 			{#each draft.variables as v, i (v.id)}

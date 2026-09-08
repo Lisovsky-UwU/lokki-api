@@ -27,3 +27,8 @@ pub fn delete_request(request_path: String) -> AppResult<()> {
 pub fn create_folder(parent_path: String, name: String) -> AppResult<String> {
     fs_request::create_folder(Path::new(&parent_path), &name).map(|p| p.display().to_string())
 }
+
+#[tauri::command]
+pub fn delete_folder(folder_path: String) -> AppResult<()> {
+    fs_request::delete_folder(Path::new(&folder_path))
+}

@@ -1,7 +1,64 @@
-# Tauri + SvelteKit + TypeScript
+# LokkiAPI
 
-This template should help get you started developing with Tauri, SvelteKit and TypeScript in Vite.
+Локальный, файловый клиент для тестирования API — лёгкая альтернатива Postman/Insomnia.
 
-## Recommended IDE Setup
+- **Хранение — обычные файлы.** Каждый запрос это отдельный TOML-файл в папке коллекции: их можно читать глазами, класть в git, синхронизировать через любой файловый sync.
+- **Лёгкость.** Tauri + системный WebView вместо Electron: бинарник ~7.6 MB, инсталлятор ~2.7 MB.
+- **Задел на синхронизацию.** У каждой сущности стабильный ULID и версия — будущий self-hosted sync-сервер подключается без миграции формата.
+- **Задел на другие протоколы.** Выполнение запросов скрыто за трейтом `ProtocolExecutor`; сейчас реализован HTTP, дальше WebSocket / SSE / GraphQL.
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer).
+## Стек
+
+| Слой | Технология |
+|---|---|
+| Оболочка | Tauri 2 (Rust + системный WebView) |
+| Ядро | Rust: домен, файловое хранилище, выполнение запросов, интерполяция переменных |
+| Интерфейс | Svelte 5 + TypeScript, CodeMirror 6 для тел запроса/ответа |
+
+## Структура workspace на диске
+
+```
+my-workspace/
+  .lokki/
+    workspace.toml          # id воркспейса, схема
+    secrets.local.toml      # значения secret-переменных (в .gitignore)
+  environments/
+    Global.env.toml         # глобальные окружения
+  Petstore/                 # коллекция
+    collection.toml
+    environments/
+      Dev.env.toml          # окружения коллекции
+    Pets/                   # папка
+      List Pets.lokki.toml  # запрос
+```
+
+Значения переменных, помеченных `secret`, никогда не пишутся в файлы окружений — только в локальный `secrets.local.toml`, который исключён из git.
+
+## Разработка
+
+```bash
+npm install
+npm run tauri dev        # запуск приложения в dev-режиме
+npm run check            # проверка типов фронтенда
+cd src-tauri && cargo test   # тесты ядра
+npm run tauri build      # сборка инсталляторов (MSI + NSIS)
+```
+
+Вспомогательные примеры для ручной проверки ядра без UI:
+
+```bash
+cd src-tauri
+cargo run --example smoke                    # сквозной прогон с реальным HTTP-запросом
+cargo run --example fixture -- <путь>        # сгенерировать демонстрационный workspace
+```
+
+## Архитектура ядра (`src-tauri/src`)
+
+| Модуль | Назначение |
+|---|---|
+| `domain/` | Модели: workspace, коллекция, запрос, окружение, `SyncMeta` (id/версия/время) |
+| `store/` | Чтение и запись TOML-файлов, обход дерева коллекций, локальное состояние UI |
+| `exec/` | `ProtocolExecutor` + HTTP-реализация на reqwest, подстановка переменных в запрос |
+| `interpolate/` | Резолвер `{{переменных}}`: окружение коллекции перекрывает глобальное |
+| `secrets/` | `SecretStore` — хранение секретов вне синхронизируемого дерева |
+| `commands/` | Слой Tauri-команд, единственный путь мутаций с фронтенда |

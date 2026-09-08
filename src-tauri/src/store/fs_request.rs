@@ -1,5 +1,6 @@
 use super::fs_collection::{is_request_file, REQUEST_EXT};
 use super::format::{read_toml, write_toml};
+use super::naming::unique_path;
 use crate::domain::{HttpMethod, RequestFile};
 use crate::error::{AppError, AppResult};
 use std::fs;
@@ -16,15 +17,6 @@ pub fn save_request(request_path: &Path, mut request: RequestFile) -> AppResult<
     request.meta.sync.touch();
     write_toml(request_path, &request)?;
     Ok(request)
-}
-
-fn sanitize_file_stem(name: &str) -> String {
-    name.chars()
-        .map(|c| match c {
-            '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '_',
-            other => other,
-        })
-        .collect()
 }
 
 fn next_seq(parent_path: &Path) -> AppResult<u32> {
@@ -53,8 +45,7 @@ fn next_seq(parent_path: &Path) -> AppResult<u32> {
 pub fn create_request(parent_path: &Path, name: &str, method: HttpMethod) -> AppResult<RequestFile> {
     let seq = next_seq(parent_path)?;
     let request = RequestFile::new_http(name, seq, method);
-    let file_path = parent_path.join(format!("{}{}", sanitize_file_stem(name), REQUEST_EXT));
-    write_toml(&file_path, &request)?;
+    write_toml(&unique_path(parent_path, name, REQUEST_EXT), &request)?;
     Ok(request)
 }
 
@@ -66,12 +57,21 @@ pub fn delete_request(request_path: &Path) -> AppResult<()> {
 }
 
 pub fn create_folder(parent_path: &Path, name: &str) -> AppResult<PathBuf> {
-    let dir = parent_path.join(sanitize_file_stem(name));
+    let dir = unique_path(parent_path, name, "");
     fs::create_dir_all(&dir).map_err(|source| AppError::Io {
         path: dir.display().to_string(),
         source,
     })?;
     Ok(dir)
+}
+
+/// Deletes a folder and everything inside it. Callers (the UI) are
+/// responsible for confirming with the user first.
+pub fn delete_folder(folder_path: &Path) -> AppResult<()> {
+    fs::remove_dir_all(folder_path).map_err(|source| AppError::Io {
+        path: folder_path.display().to_string(),
+        source,
+    })
 }
 
 #[cfg(test)]
@@ -103,6 +103,32 @@ mod tests {
         create_request(dir.path(), "First", HttpMethod::Get).unwrap();
         let second = create_request(dir.path(), "Second", HttpMethod::Post).unwrap();
         assert_eq!(second.meta.seq, 2);
+    }
+
+    #[test]
+    fn creating_a_request_with_a_taken_name_does_not_overwrite_it() {
+        let dir = tempfile::tempdir().unwrap();
+        let first = create_request(dir.path(), "List Pets", HttpMethod::Get).unwrap();
+        let second = create_request(dir.path(), "List Pets", HttpMethod::Post).unwrap();
+
+        assert!(dir.path().join(format!("List Pets{}", REQUEST_EXT)).is_file());
+        assert!(dir.path().join(format!("List Pets (2){}", REQUEST_EXT)).is_file());
+        assert_ne!(first.meta.sync.id, second.meta.sync.id);
+
+        // The original file must still hold the original request.
+        let reloaded = load_request(&dir.path().join(format!("List Pets{}", REQUEST_EXT))).unwrap();
+        assert_eq!(reloaded.meta.sync.id, first.meta.sync.id);
+    }
+
+    #[test]
+    fn delete_folder_removes_folder_and_contents() {
+        let dir = tempfile::tempdir().unwrap();
+        let folder = create_folder(dir.path(), "Pets").unwrap();
+        create_request(&folder, "List Pets", HttpMethod::Get).unwrap();
+        assert!(folder.is_dir());
+
+        delete_folder(&folder).unwrap();
+        assert!(!folder.exists());
     }
 
     #[test]

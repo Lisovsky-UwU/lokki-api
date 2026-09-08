@@ -24,7 +24,7 @@ fn is_excluded_dir(name: &str) -> bool {
 }
 
 pub fn create_collection(workspace_path: &Path, name: &str) -> AppResult<CollectionSummary> {
-    let dir = workspace_path.join(name);
+    let dir = super::naming::unique_path(workspace_path, name, "");
     fs::create_dir_all(&dir).map_err(|source| AppError::Io {
         path: dir.display().to_string(),
         source,

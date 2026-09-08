@@ -4,3 +4,4 @@ pub mod fs_environment;
 pub mod fs_request;
 pub mod fs_workspace;
 pub mod format;
+pub mod naming;

@@ -4,31 +4,34 @@
 
 	let { rows, onChange }: { rows: KeyValue[]; onChange: (rows: KeyValue[]) => void } = $props();
 
+	// A trailing blank row is always shown so there is something to type into
+	// — including for a brand-new request, whose list starts out empty. It is
+	// display-only: blank rows are stripped before they reach the store/disk.
+	let displayRows = $derived.by(() => {
+		const last = rows[rows.length - 1];
+		return !last || last.key !== "" || last.value !== "" ? [...rows, newKeyValue()] : rows;
+	});
+
+	function commit(next: KeyValue[]) {
+		onChange(next.filter((row) => row.key !== "" || row.value !== ""));
+	}
+
 	function update(index: number, patch: Partial<KeyValue>) {
-		const next = rows.map((row, i) => (i === index ? { ...row, ...patch } : row));
-		ensureTrailingBlankRow(next);
+		commit(displayRows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
 	}
 
 	function remove(index: number) {
-		const next = rows.filter((_, i) => i !== index);
-		onChange(next);
-	}
-
-	function ensureTrailingBlankRow(next: KeyValue[]) {
-		const last = next[next.length - 1];
-		if (!last || last.key !== "" || last.value !== "") {
-			next.push(newKeyValue());
-		}
-		onChange(next);
+		commit(displayRows.filter((_, i) => i !== index));
 	}
 </script>
 
 <div class="kv-table">
-	{#each rows as row, i (i)}
+	{#each displayRows as row, i (i)}
 		<div class="kv-row">
 			<input
 				type="checkbox"
 				checked={row.enabled}
+				title="Включить/выключить"
 				onchange={(e) => update(i, { enabled: (e.target as HTMLInputElement).checked })}
 			/>
 			<input

@@ -7,7 +7,7 @@ use crate::store::{fs_app_state, fs_environment};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, State};
 
 /// `send_request`'s result: the HTTP outcome plus any `{{variable}}` names
 /// that couldn't be resolved (sent verbatim in the request) — surfaced so
@@ -64,6 +64,10 @@ fn env_to_scope(
 #[tauri::command]
 pub async fn send_request(
     app: AppHandle,
+    // Shared across sends: building a reqwest::Client per request would
+    // rebuild the whole rustls/TLS root store every time and throw away
+    // connection pooling.
+    executor: State<'_, HttpExecutor>,
     request: RequestFile,
     collection_path: String,
 ) -> AppResult<SendResult> {
@@ -92,7 +96,6 @@ pub async fn send_request(
     let resolver = Resolver::new(global_scope, collection_scope);
     let (resolved, unresolved_variables) = resolve_http_request(&http_spec, &resolver);
 
-    let executor = HttpExecutor::new();
     let outcome = executor
         .execute(&resolved, &ExecutionContext::default())
         .await

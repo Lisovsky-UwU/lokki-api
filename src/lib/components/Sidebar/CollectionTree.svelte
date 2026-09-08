@@ -3,29 +3,39 @@
 	import { workspacePath, collections } from "../../stores/workspace";
 	import type { CollectionSummary, CollectionTreeNode } from "../../bindings/types";
 	import TreeNode from "./TreeNode.svelte";
-	import { activeCollection } from "../../stores/collectionTree";
+	import { activeCollection, treeRefreshToken, requestTreeRefresh } from "../../stores/collectionTree";
 
 	let trees = $state<Record<string, CollectionTreeNode | null>>({});
 	let expandedCollections = $state<Record<string, boolean>>({});
 	let creatingCollection = $state(false);
 	let newCollectionName = $state("");
 
+	async function refreshCollection(collection: CollectionSummary) {
+		try {
+			trees = { ...trees, [collection.path]: await api.loadCollectionTree(collection.path) };
+		} catch (e) {
+			console.error("failed to load collection tree", e);
+		}
+	}
+
 	async function toggleCollection(collection: CollectionSummary) {
 		const isExpanded = !expandedCollections[collection.path];
 		expandedCollections = { ...expandedCollections, [collection.path]: isExpanded };
 		activeCollection.set(collection);
 		if (isExpanded && !trees[collection.path]) {
-			try {
-				trees = { ...trees, [collection.path]: await api.loadCollectionTree(collection.path) };
-			} catch (e) {
-				console.error("failed to load collection tree", e);
-			}
+			await refreshCollection(collection);
 		}
 	}
 
-	async function refreshCollection(collection: CollectionSummary) {
-		trees = { ...trees, [collection.path]: await api.loadCollectionTree(collection.path) };
-	}
+	// Any request/folder create/save/delete anywhere in the app bumps this
+	// token — re-fetch every currently-expanded collection's tree so the
+	// sidebar never shows stale names/methods.
+	$effect(() => {
+		$treeRefreshToken;
+		for (const collection of $collections) {
+			if (expandedCollections[collection.path]) refreshCollection(collection);
+		}
+	});
 
 	async function createCollection() {
 		const path = $workspacePath;
@@ -41,7 +51,14 @@
 		const name = prompt("Название запроса:");
 		if (!name) return;
 		await api.createRequest(collection.path, name, "GET");
-		await refreshCollection(collection);
+		requestTreeRefresh();
+	}
+
+	async function addFolder(collection: CollectionSummary) {
+		const name = prompt("Название папки:");
+		if (!name) return;
+		await api.createFolder(collection.path, name);
+		requestTreeRefresh();
 	}
 </script>
 
@@ -72,14 +89,18 @@
 					{collection.name}
 				</button>
 				<button class="icon-btn" title="Новый запрос" onclick={() => addRequest(collection)}>+</button>
+				<button class="icon-btn" title="Новая папка" onclick={() => addFolder(collection)}>📁+</button>
 			</div>
 			{#if expandedCollections[collection.path]}
 				{@const tree = trees[collection.path]}
 				{#if tree && tree.kind === "Folder"}
 					<div class="tree">
 						{#each tree.children as child (child.path)}
-							<TreeNode node={child} />
+							<TreeNode node={child} {collection} />
 						{/each}
+						{#if tree.children.length === 0}
+							<p class="empty">Пусто — добавьте запрос или папку.</p>
+						{/if}
 					</div>
 				{/if}
 			{/if}

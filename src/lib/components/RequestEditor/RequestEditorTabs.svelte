@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { activeRequest } from "../../stores/activeRequest";
-	import { activeCollection } from "../../stores/collectionTree";
+	import { activeCollection, requestTreeRefresh } from "../../stores/collectionTree";
 	import { responseState } from "../../stores/response";
 	import { api } from "../../api/client";
 	import { newHttpRequestSpec } from "../../bindings/types";
@@ -32,6 +32,7 @@
 		try {
 			const saved = await api.saveRequest($activeRequest.path, $activeRequest.request);
 			activeRequest.set({ path: $activeRequest.path, request: saved, dirty: false });
+			requestTreeRefresh();
 		} finally {
 			saving = false;
 		}
@@ -60,6 +61,13 @@
 
 {#if $activeRequest}
 	<div class="editor">
+		<div class="request-title">
+			<span class="name">{$activeRequest.request.meta.name}</span>
+			{#if $activeRequest.dirty}<span class="dirty" title="Есть несохранённые изменения">●</span>{/if}
+			{#if !$activeCollection}
+				<span class="warn">Коллекция не определена — отправка недоступна</span>
+			{/if}
+		</div>
 		<div class="url-bar">
 			<select value={http.method} onchange={(e) => mutate({ method: (e.target as HTMLSelectElement).value as HttpMethod })}>
 				{#each methods as m}
@@ -72,7 +80,9 @@
 				value={http.url}
 				oninput={(e) => mutate({ url: (e.target as HTMLInputElement).value })}
 			/>
-			<button class="send" onclick={send}>Send</button>
+			<button class="send" onclick={send} disabled={$responseState.loading || !$activeCollection}>
+				{$responseState.loading ? "..." : "Send"}
+			</button>
 			<button class="save" onclick={save} disabled={!$activeRequest.dirty || saving}>
 				{saving ? "Сохранение..." : "Save"}
 			</button>
@@ -125,6 +135,21 @@
 	.mono {
 		font-family: ui-monospace, monospace;
 	}
+	.request-title {
+		display: flex;
+		align-items: center;
+		gap: 0.5em;
+		font-weight: 600;
+	}
+	.request-title .dirty {
+		color: #a37c00;
+		font-size: 0.8em;
+	}
+	.request-title .warn {
+		font-weight: 400;
+		font-size: 0.8em;
+		color: #d1443c;
+	}
 	.send {
 		background: #396cd8;
 		color: white;
@@ -133,6 +158,10 @@
 		padding: 0.4em 1.2em;
 		cursor: pointer;
 		font-weight: 600;
+	}
+	.send:disabled {
+		opacity: 0.5;
+		cursor: default;
 	}
 	.save {
 		border-radius: 6px;

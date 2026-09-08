@@ -88,10 +88,13 @@ pub fn resolve_http_request(spec: &HttpRequestSpec, resolver: &Resolver) -> (Res
     };
 
     let mut url = interp(&spec.url);
+    // Blank-key rows are UI scaffolding (the always-present trailing empty
+    // row), never real params/headers — sending them would make reqwest
+    // reject the whole request as an invalid header name.
     let enabled_query: Vec<(String, String)> = spec
         .query_params
         .iter()
-        .filter(|q| q.enabled)
+        .filter(|q| q.enabled && !q.key.trim().is_empty())
         .map(|q| (interp(&q.key), interp(&q.value)))
         .collect();
     if !enabled_query.is_empty() {
@@ -109,7 +112,7 @@ pub fn resolve_http_request(spec: &HttpRequestSpec, resolver: &Resolver) -> (Res
     let mut headers: Vec<KeyValue> = spec
         .headers
         .iter()
-        .filter(|h| h.enabled)
+        .filter(|h| h.enabled && !h.key.trim().is_empty())
         .map(|h| KeyValue {
             key: interp(&h.key),
             value: interp(&h.value),
@@ -162,7 +165,7 @@ pub fn resolve_http_request(spec: &HttpRequestSpec, resolver: &Resolver) -> (Res
             }
             let pairs: Vec<(String, String)> = fields
                 .iter()
-                .filter(|f| f.enabled)
+                .filter(|f| f.enabled && !f.key.trim().is_empty())
                 .map(|f| (interp(&f.key), interp(&f.value)))
                 .collect();
             Some(form_urlencode_pairs(&pairs).into_bytes())
@@ -225,6 +228,24 @@ mod tests {
         let (resolved, _) = resolve_http_request(&spec, &resolver);
         assert!(resolved.headers.iter().any(|h| h.key == "Content-Type" && h.value == "application/json"));
         assert_eq!(resolved.body.unwrap(), b"{\"name\":\"Rex\"}".to_vec());
+    }
+
+    #[test]
+    fn blank_key_rows_are_excluded() {
+        let spec = HttpRequestSpec {
+            method: HttpMethod::Get,
+            url: "https://api.example.com/pets".to_string(),
+            // The UI always keeps one trailing blank row; it must never
+            // reach the wire (reqwest rejects an empty header name).
+            query_params: vec![KV { key: "".into(), value: "".into(), enabled: true }],
+            headers: vec![KV { key: "  ".into(), value: "x".into(), enabled: true }],
+            auth: AuthSpec::None,
+            body: BodySpec::None,
+        };
+        let resolver = Resolver::new(VariableScope(HashMap::new()), None);
+        let (resolved, _) = resolve_http_request(&spec, &resolver);
+        assert_eq!(resolved.url, "https://api.example.com/pets");
+        assert!(resolved.headers.is_empty());
     }
 
     #[test]

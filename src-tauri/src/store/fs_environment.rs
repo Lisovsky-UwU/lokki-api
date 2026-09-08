@@ -13,15 +13,6 @@ fn is_env_file(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
-fn sanitize_file_stem(name: &str) -> String {
-    name.chars()
-        .map(|c| match c {
-            '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '_',
-            other => other,
-        })
-        .collect()
-}
-
 /// Lists environments directly inside `scope_path` (a workspace's
 /// top-level `environments/` dir for global scope, or a collection's
 /// `environments/` dir for collection scope), paired with each one's file
@@ -50,17 +41,13 @@ pub fn list_environments(scope_path: &Path) -> AppResult<Vec<(PathBuf, Environme
     Ok(out)
 }
 
-fn env_path(scope_path: &Path, name: &str) -> PathBuf {
-    scope_path.join(format!("{}{}", sanitize_file_stem(name), ENV_EXT))
-}
-
 pub fn create_environment(
     scope_path: &Path,
     name: &str,
     scope: EnvironmentScope,
 ) -> AppResult<(PathBuf, EnvironmentFile)> {
     let env = EnvironmentFile::new(name, scope);
-    let path = env_path(scope_path, name);
+    let path = super::naming::unique_path(scope_path, name, ENV_EXT);
     write_toml(&path, &env)?;
     Ok((path, env))
 }
