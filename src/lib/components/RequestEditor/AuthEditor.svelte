@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { AuthSpec } from "../../bindings/types";
+	import VariableInput from "../common/VariableInput.svelte";
 
 	let { auth, onChange }: { auth: AuthSpec; onChange: (auth: AuthSpec) => void } = $props();
 
@@ -18,26 +19,25 @@
 	</select>
 
 	{#if auth.type === "bearer"}
-		<input
-			class="mono"
+		<VariableInput
+			mono
+			ariaLabel="Bearer token"
 			placeholder="{'{{token}}'} или значение токена"
 			value={auth.token}
-			oninput={(e) => onChange({ type: "bearer", token: (e.target as HTMLInputElement).value })}
+			onChange={(token) => onChange({ type: "bearer", token })}
 		/>
 	{:else if auth.type === "basic"}
 		<div class="basic-row">
-			<input
+			<VariableInput
 				placeholder="username"
 				value={auth.username}
-				oninput={(e) =>
-					onChange({ type: "basic", username: (e.target as HTMLInputElement).value, password: auth.password })}
+				onChange={(username) => onChange({ type: "basic", username, password: auth.password })}
 			/>
-			<input
+			<VariableInput
 				type="password"
 				placeholder="password"
 				value={auth.password}
-				oninput={(e) =>
-					onChange({ type: "basic", username: auth.username, password: (e.target as HTMLInputElement).value })}
+				onChange={(password) => onChange({ type: "basic", username: auth.username, password })}
 			/>
 		</div>
 	{/if}
@@ -48,16 +48,13 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.6em;
-		max-width: 28em;
 	}
-	.mono {
-		font-family: ui-monospace, monospace;
+	.auth-editor select {
+		align-self: flex-start;
+		min-width: 12em;
 	}
 	.basic-row {
 		display: flex;
 		gap: 0.5em;
-	}
-	.basic-row input {
-		flex: 1;
 	}
 </style>

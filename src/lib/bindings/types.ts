@@ -64,7 +64,7 @@ export interface CollectionSummary {
 }
 
 export type CollectionTreeNode =
-	| { kind: "Folder"; name: string; path: string; children: CollectionTreeNode[] }
+	| { kind: "Folder"; name: string; path: string; seq: number; children: CollectionTreeNode[] }
 	| {
 			kind: "Request";
 			name: string;
@@ -73,6 +73,11 @@ export type CollectionTreeNode =
 			protocol: Protocol;
 			method: HttpMethod | null;
 	  };
+
+/// A request together with the path it lives at (renaming moves the file).
+export interface RequestAtPath extends RequestFile {
+	path: string;
+}
 
 export type EnvironmentScope = "global" | "collection";
 

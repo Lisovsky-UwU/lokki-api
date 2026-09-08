@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { activeRequest } from "../../stores/activeRequest";
 	import { activeCollection, requestTreeRefresh } from "../../stores/collectionTree";
-	import { responseState } from "../../stores/response";
+	import { activeResponses, markSending, recordResponse } from "../../stores/response";
 	import { api } from "../../api/client";
 	import { newHttpRequestSpec } from "../../bindings/types";
 	import type { HttpMethod, HttpRequestSpec } from "../../bindings/types";
+	import VariableInput from "../common/VariableInput.svelte";
 	import KeyValueTable from "./KeyValueTable.svelte";
 	import AuthEditor from "./AuthEditor.svelte";
 	import BodyEditor from "./BodyEditor.svelte";
@@ -40,29 +41,55 @@
 
 	async function send() {
 		if (!$activeRequest || !$activeCollection) return;
-		responseState.set({ outcome: null, error: null, loading: true });
+		// Results are stored against the request's path, so each request keeps
+		// its own last response instead of sharing one global slot.
+		const path = $activeRequest.path;
+		markSending(path);
 		try {
 			const outcome = await api.sendRequest($activeRequest.request, $activeCollection.path);
-			responseState.set({ outcome, error: null, loading: false });
+			recordResponse(path, { outcome, error: null, at: Date.now() });
 		} catch (e) {
-			responseState.set({ outcome: null, error: String(e), loading: false });
+			recordResponse(path, { outcome: null, error: String(e), at: Date.now() });
 		}
 	}
 
-	function sendOnShortcut(e: KeyboardEvent) {
-		if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+	function onShortcut(e: KeyboardEvent) {
+		if (!(e.ctrlKey || e.metaKey)) return;
+		if (e.key === "Enter") {
 			e.preventDefault();
 			send();
+		} else if (e.key.toLowerCase() === "s") {
+			e.preventDefault();
+			if ($activeRequest?.dirty && !saving) save();
 		}
 	}
+
+	/// Breadcrumb of the open request: collection, any folders, then the
+	/// request itself, derived from where the file sits on disk.
+	let breadcrumb = $derived.by(() => {
+		const request = $activeRequest;
+		const collection = $activeCollection;
+		if (!request) return [] as string[];
+		if (!collection) return [request.request.meta.name];
+		const relative = request.path.startsWith(collection.path)
+			? request.path.slice(collection.path.length).replace(/^[\/]+/, "")
+			: "";
+		const folders = relative.split(/[\/]+/).slice(0, -1).filter(Boolean);
+		return [collection.name, ...folders, request.request.meta.name];
+	});
 </script>
 
-<svelte:window onkeydown={sendOnShortcut} />
+<svelte:window onkeydown={onShortcut} />
 
 {#if $activeRequest}
 	<div class="editor">
 		<div class="request-title">
-			<span class="name">{$activeRequest.request.meta.name}</span>
+			<span class="path">
+				{#each breadcrumb as part, i (i)}
+					{#if i > 0}<span class="sep">/</span>{/if}
+					<span class:name={i === breadcrumb.length - 1}>{part}</span>
+				{/each}
+			</span>
 			{#if $activeRequest.dirty}<span class="dirty" title="Есть несохранённые изменения">●</span>{/if}
 			{#if !$activeCollection}
 				<span class="warn">Коллекция не определена — отправка недоступна</span>
@@ -74,16 +101,17 @@
 					<option value={m}>{m}</option>
 				{/each}
 			</select>
-			<input
-				class="url mono"
-				placeholder="https://api.example.com/pets или {'{{baseUrl}}'}/pets"
+			<VariableInput
 				value={http.url}
-				oninput={(e) => mutate({ url: (e.target as HTMLInputElement).value })}
+				mono
+				ariaLabel="URL запроса"
+				placeholder="https://api.example.com/pets или {'{{baseUrl}}'}/pets"
+				onChange={(url) => mutate({ url })}
 			/>
-			<button class="send" onclick={send} disabled={$responseState.loading || !$activeCollection}>
-				{$responseState.loading ? "..." : "Send"}
+			<button class="send" onclick={send} disabled={$activeResponses.loading || !$activeCollection}>
+				{$activeResponses.loading ? "..." : "Send"}
 			</button>
-			<button class="save" onclick={save} disabled={!$activeRequest.dirty || saving}>
+			<button class="save" title="Ctrl+S" onclick={save} disabled={!$activeRequest.dirty || saving}>
 				{saving ? "Сохранение..." : "Save"}
 			</button>
 		</div>
@@ -122,24 +150,37 @@
 		display: flex;
 		flex-direction: column;
 		height: 100%;
+		/* Fill the pane instead of collapsing to content width, so the
+		   request settings use the full available width. */
+		flex: 1;
+		min-width: 0;
 		gap: 0.6em;
 	}
 	.url-bar {
 		display: flex;
 		gap: 0.4em;
 	}
-	.url {
-		flex: 1;
-		min-width: 0;
-	}
-	.mono {
-		font-family: ui-monospace, monospace;
-	}
 	.request-title {
 		display: flex;
 		align-items: center;
 		gap: 0.5em;
 		font-weight: 600;
+	}
+	.request-title .path {
+		display: flex;
+		align-items: center;
+		gap: 0.35em;
+		flex-wrap: wrap;
+		font-weight: 400;
+		opacity: 0.7;
+		min-width: 0;
+	}
+	.request-title .path .name {
+		font-weight: 600;
+		opacity: 1;
+	}
+	.request-title .sep {
+		opacity: 0.4;
 	}
 	.request-title .dirty {
 		color: #a37c00;
@@ -198,6 +239,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		flex: 1;
+		min-width: 0;
 		height: 100%;
 		opacity: 0.5;
 	}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { KeyValue } from "../../bindings/types";
 	import { newKeyValue } from "../../bindings/types";
+	import VariableInput from "../common/VariableInput.svelte";
 
 	let { rows, onChange }: { rows: KeyValue[]; onChange: (rows: KeyValue[]) => void } = $props();
 
@@ -34,18 +35,8 @@
 				title="Включить/выключить"
 				onchange={(e) => update(i, { enabled: (e.target as HTMLInputElement).checked })}
 			/>
-			<input
-				class="kv-key"
-				placeholder="key"
-				value={row.key}
-				oninput={(e) => update(i, { key: (e.target as HTMLInputElement).value })}
-			/>
-			<input
-				class="kv-value"
-				placeholder="value"
-				value={row.value}
-				oninput={(e) => update(i, { value: (e.target as HTMLInputElement).value })}
-			/>
+			<VariableInput mono placeholder="key" value={row.key} onChange={(key) => update(i, { key })} />
+			<VariableInput mono placeholder="value" value={row.value} onChange={(value) => update(i, { value })} />
 			<button class="remove" title="Удалить" onclick={() => remove(i)}>×</button>
 		</div>
 	{/each}
@@ -61,13 +52,6 @@
 		display: flex;
 		align-items: center;
 		gap: 0.4em;
-	}
-	.kv-key,
-	.kv-value {
-		flex: 1;
-		min-width: 0;
-		font-family: ui-monospace, monospace;
-		font-size: 0.9em;
 	}
 	.remove {
 		background: none;

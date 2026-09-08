@@ -2,6 +2,7 @@
 	import { untrack } from "svelte";
 	import type { EnvironmentEntry } from "../../bindings/types";
 	import { newId } from "../../bindings/types";
+	import { isValidVariableName, sanitizeVariableName } from "../../stores/environments";
 	import { api } from "../../api/client";
 
 	let {
@@ -16,9 +17,11 @@
 		onSaved: (env: EnvironmentEntry) => void;
 	} = $props();
 
-	// Deliberately a one-time snapshot: the modal edits a draft copy and
-	// only writes back on save.
-	let draft = $state<EnvironmentEntry>(untrack(() => structuredClone(environment)));
+	// Deliberately a one-time snapshot: the modal edits a draft copy and only
+	// writes back on save. It must go through `$state.snapshot` — the prop is
+	// a reactive proxy, and `structuredClone` throws DataCloneError on
+	// proxies, which killed the component before it could render.
+	let draft = $state<EnvironmentEntry>(untrack(() => $state.snapshot(environment) as EnvironmentEntry));
 	let saving = $state(false);
 	// Secret variable values never travel through `draft.variables[i].value`
 	// (that gets written to the on-disk, potentially-synced .env.toml) —
@@ -47,9 +50,12 @@
 	async function save() {
 		saving = true;
 		try {
+			// Snapshot out of the reactive proxy before anything crosses the
+			// IPC boundary.
+			const plain = $state.snapshot(draft) as EnvironmentEntry;
 			const toPersist: EnvironmentEntry = {
-				...draft,
-				variables: draft.variables.map((v) => (v.secret ? { ...v, value: "" } : v)),
+				...plain,
+				variables: plain.variables.map((v) => (v.secret ? { ...v, value: "" } : v)),
 			};
 			await Promise.all(
 				draft.variables.filter((v) => v.secret).map((v) => api.setSecret(workspacePath, v.id, secretValues[v.id] ?? "")),
@@ -84,7 +90,20 @@
 						checked={v.enabled}
 						onchange={(e) => (v.enabled = (e.target as HTMLInputElement).checked)}
 					/>
-					<input class="mono" placeholder="key" bind:value={v.key} />
+					<input
+					class="mono"
+					class:invalid={v.key !== "" && !isValidVariableName(v.key)}
+					placeholder="key"
+					title="Латиница, цифры, точка, дефис и подчёркивание. Пробелы недопустимы — такая переменная не подставится."
+					value={v.key}
+					oninput={(e) => {
+						// Names outside this set never resolve at send time, so
+						// disallowed characters are dropped as they are typed.
+						const cleaned = sanitizeVariableName((e.target as HTMLInputElement).value);
+						(e.target as HTMLInputElement).value = cleaned;
+						v.key = cleaned;
+					}}
+				/>
 					{#if v.secret}
 						<input
 							class="mono"
@@ -154,6 +173,9 @@
 		display: flex;
 		align-items: center;
 		gap: 0.4em;
+	}
+	.var-row input.invalid {
+		border-color: #d1443c;
 	}
 	.var-row input.mono {
 		flex: 1;

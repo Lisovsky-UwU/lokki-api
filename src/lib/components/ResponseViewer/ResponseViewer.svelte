@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { responseState } from "../../stores/response";
+	import { activeResponses } from "../../stores/response";
+	import { activeRequest } from "../../stores/activeRequest";
 	import CodeEditor from "../CodeEditor.svelte";
 
 	function decodeBody(base64: string): string {
@@ -29,28 +30,38 @@
 		}
 	}
 
-	let bodyText = $derived($responseState.outcome ? decodeBody($responseState.outcome.body_base64) : "");
-	let prettyBody = $derived(bodyText ? prettyPrint(bodyText) : "");
-	let bodyIsJson = $derived(bodyText ? isJson(bodyText) : false);
-
 	function statusClass(status: number): string {
 		if (status < 300) return "status-ok";
 		if (status < 400) return "status-redirect";
 		if (status < 500) return "status-client-error";
 		return "status-server-error";
 	}
+
+	function formatTime(at: number): string {
+		return new Date(at).toLocaleTimeString();
+	}
+
+	// Only the newest record is kept today (see HISTORY_LIMIT), but reading
+	// it as "the first of a list" keeps the viewer ready for real history.
+	let latest = $derived($activeResponses.history[0] ?? null);
+	let bodyText = $derived(latest?.outcome ? decodeBody(latest.outcome.body_base64) : "");
+	let prettyBody = $derived(bodyText ? prettyPrint(bodyText) : "");
+	let bodyIsJson = $derived(bodyText ? isJson(bodyText) : false);
 </script>
 
 <div class="response-viewer">
-	{#if $responseState.loading}
+	{#if !$activeRequest}
+		<p class="hint">Выберите запрос.</p>
+	{:else if $activeResponses.loading}
 		<p class="hint">Отправка...</p>
-	{:else if $responseState.error}
-		<p class="error">{$responseState.error}</p>
-	{:else if $responseState.outcome}
-		{@const outcome = $responseState.outcome}
+	{:else if latest?.error}
+		<p class="error">{latest.error}</p>
+	{:else if latest?.outcome}
+		{@const outcome = latest.outcome}
 		<div class="status-bar">
 			<span class="status {statusClass(outcome.status)}">{outcome.status} {outcome.status_text}</span>
 			<span class="timing">{outcome.duration_ms} ms</span>
+			<span class="timing">в {formatTime(latest.at)}</span>
 		</div>
 		{#if outcome.unresolved_variables.length > 0}
 			<p class="warning">
@@ -58,7 +69,7 @@
 				окружение.
 			</p>
 		{/if}
-		<details class="headers" open={false}>
+		<details class="headers">
 			<summary>Headers ({outcome.headers.length})</summary>
 			<table>
 				<tbody>

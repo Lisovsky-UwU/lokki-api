@@ -1,20 +1,32 @@
 <script lang="ts">
 	import { api } from "../../api/client";
 	import { workspacePath, collections } from "../../stores/workspace";
-	import type { CollectionSummary, CollectionTreeNode } from "../../bindings/types";
+	import type { CollectionSummary, CollectionTreeNode, HttpMethod } from "../../bindings/types";
 	import TreeNode from "./TreeNode.svelte";
+	import NodeMenu from "../common/NodeMenu.svelte";
 	import { activeCollection, treeRefreshToken, requestTreeRefresh } from "../../stores/collectionTree";
+	import { dragging } from "../../stores/dragState";
+	import { rebaseActiveRequest } from "../../stores/activeRequest";
+	import { rekeyResponses } from "../../stores/response";
+	import { promptForText } from "../../ui/dialogs";
+	import { reportError } from "../../ui/errors";
 
 	let trees = $state<Record<string, CollectionTreeNode | null>>({});
 	let expandedCollections = $state<Record<string, boolean>>({});
-	let creatingCollection = $state(false);
-	let newCollectionName = $state("");
+	let dropTarget = $state<string | null>(null);
+
+	// A drop handled by a child node stops propagation, so this container's
+	// own drop/dragleave never fires and its highlight would stay on. Clear
+	// it whenever the drag itself is over, wherever it ended.
+	$effect(() => {
+		if (!$dragging) dropTarget = null;
+	});
 
 	async function refreshCollection(collection: CollectionSummary) {
 		try {
 			trees = { ...trees, [collection.path]: await api.loadCollectionTree(collection.path) };
 		} catch (e) {
-			console.error("failed to load collection tree", e);
+			reportError("Не удалось загрузить коллекцию", e);
 		}
 	}
 
@@ -27,9 +39,9 @@
 		}
 	}
 
-	// Any request/folder create/save/delete anywhere in the app bumps this
-	// token — re-fetch every currently-expanded collection's tree so the
-	// sidebar never shows stale names/methods.
+	// Any request/folder create/save/delete/move anywhere in the app bumps
+	// this token — re-fetch every currently-expanded collection's tree so the
+	// sidebar never shows stale names, methods or ordering.
 	$effect(() => {
 		$treeRefreshToken;
 		for (const collection of $collections) {
@@ -39,47 +51,73 @@
 
 	async function createCollection() {
 		const path = $workspacePath;
-		const name = newCollectionName.trim();
+		const name = await promptForText("Новая коллекция", "Название коллекции", "New Collection");
 		if (!path || !name) return;
 		const summary = await api.createCollection(path, name);
 		collections.update((list) => [...list, summary].sort((a, b) => a.name.localeCompare(b.name)));
-		newCollectionName = "";
-		creatingCollection = false;
+		expandedCollections = { ...expandedCollections, [summary.path]: true };
+		await refreshCollection(summary);
 	}
 
 	async function addRequest(collection: CollectionSummary) {
-		const name = prompt("Название запроса:");
+		const name = await promptForText("Новый запрос", "Название запроса", "New Request");
 		if (!name) return;
-		await api.createRequest(collection.path, name, "GET");
-		requestTreeRefresh();
+		await api.createRequest(collection.path, name, "GET" as HttpMethod);
+		expandedCollections = { ...expandedCollections, [collection.path]: true };
+		await refreshCollection(collection);
 	}
 
 	async function addFolder(collection: CollectionSummary) {
-		const name = prompt("Название папки:");
+		const name = await promptForText("Новая папка", "Название папки", "New Folder");
 		if (!name) return;
 		await api.createFolder(collection.path, name);
-		requestTreeRefresh();
+		expandedCollections = { ...expandedCollections, [collection.path]: true };
+		await refreshCollection(collection);
+	}
+
+	function collectionMenu(collection: CollectionSummary) {
+		return [
+			{ label: "Добавить запрос", action: () => addRequest(collection) },
+			{ label: "Добавить папку", action: () => addFolder(collection) },
+		];
+	}
+
+	function childrenOf(collectionPath: string): CollectionTreeNode[] {
+		const tree = trees[collectionPath];
+		return tree && tree.kind === "Folder" ? tree.children : [];
+	}
+
+	/// Dropping onto the collection's empty area moves the dragged entry to
+	/// the collection root and puts it last.
+	async function onRootDrop(collection: CollectionSummary) {
+		const payload = $dragging;
+		dropTarget = null;
+		dragging.set(null);
+		if (!payload) return;
+		try {
+			let sourcePath = payload.path;
+			if (payload.parentPath !== collection.path) {
+				sourcePath = await api.moveNode(payload.path, collection.path);
+				rebaseActiveRequest(payload.path, sourcePath);
+				rekeyResponses(payload.path, sourcePath);
+			}
+			const order = childrenOf(collection.path)
+				.map((c) => c.path)
+				.filter((p) => p !== payload.path && p !== sourcePath);
+			order.push(sourcePath);
+			await api.reorderChildren(order);
+			requestTreeRefresh();
+		} catch (e) {
+			reportError("Не удалось переместить", e);
+		}
 	}
 </script>
 
 <div class="sidebar">
 	<div class="sidebar-header">
 		<span>Коллекции</span>
-		<button class="icon-btn" title="Новая коллекция" onclick={() => (creatingCollection = true)}>+</button>
+		<button class="icon-btn" title="Новая коллекция" onclick={createCollection}>+</button>
 	</div>
-
-	{#if creatingCollection}
-		<form
-			class="new-collection"
-			onsubmit={(e) => {
-				e.preventDefault();
-				createCollection();
-			}}
-		>
-			<input placeholder="Имя коллекции" bind:value={newCollectionName} />
-			<button type="submit">OK</button>
-		</form>
-	{/if}
 
 	{#each $collections as collection (collection.path)}
 		<div class="collection">
@@ -88,26 +126,37 @@
 					<span class="chevron" class:collapsed={!expandedCollections[collection.path]}>▾</span>
 					{collection.name}
 				</button>
-				<button class="icon-btn" title="Новый запрос" onclick={() => addRequest(collection)}>+</button>
-				<button class="icon-btn" title="Новая папка" onclick={() => addFolder(collection)}>📁+</button>
+				<NodeMenu items={collectionMenu(collection)} label="Действия с коллекцией" />
 			</div>
 			{#if expandedCollections[collection.path]}
-				{@const tree = trees[collection.path]}
-				{#if tree && tree.kind === "Folder"}
-					<div class="tree">
-						{#each tree.children as child (child.path)}
-							<TreeNode node={child} {collection} />
-						{/each}
-						{#if tree.children.length === 0}
-							<p class="empty">Пусто — добавьте запрос или папку.</p>
-						{/if}
-					</div>
-				{/if}
+				{@const children = childrenOf(collection.path)}
+				<div
+					class="tree"
+					class:drop-root={dropTarget === collection.path}
+					role="presentation"
+					ondragover={(e) => {
+						if (!$dragging) return;
+						e.preventDefault();
+						dropTarget = collection.path;
+					}}
+					ondragleave={() => (dropTarget = null)}
+					ondrop={(e) => {
+						e.preventDefault();
+						onRootDrop(collection);
+					}}
+				>
+					{#each children as child (child.path)}
+						<TreeNode node={child} {collection} parentPath={collection.path} siblings={children} />
+					{/each}
+					{#if children.length === 0}
+						<p class="empty">Пусто — добавьте запрос или папку через меню ⋯</p>
+					{/if}
+				</div>
 			{/if}
 		</div>
 	{/each}
 
-	{#if $collections.length === 0 && !creatingCollection}
+	{#if $collections.length === 0}
 		<p class="empty">Нет коллекций. Создайте первую.</p>
 	{/if}
 </div>
@@ -148,13 +197,13 @@
 	.collection-header {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
 	}
 	.collection-label {
 		display: flex;
 		align-items: center;
 		gap: 0.4em;
 		flex: 1;
+		min-width: 0;
 		text-align: left;
 		background: none;
 		border: none;
@@ -176,19 +225,17 @@
 	}
 	.tree {
 		padding-left: 0.6em;
+		padding-bottom: 0.3em;
+		border-radius: 4px;
 	}
-	.new-collection {
-		display: flex;
-		gap: 0.3em;
-		padding: 0.3em;
-	}
-	.new-collection input {
-		flex: 1;
-		min-width: 0;
+	.tree.drop-root {
+		background: rgba(57, 108, 216, 0.12);
+		outline: 1px dashed rgba(57, 108, 216, 0.6);
 	}
 	.empty {
 		opacity: 0.6;
-		padding: 0.5em;
-		font-size: 0.85em;
+		padding: 0.4em 0.6em;
+		margin: 0;
+		font-size: 0.8em;
 	}
 </style>

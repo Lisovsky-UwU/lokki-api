@@ -1,13 +1,24 @@
 use super::format::{read_toml, write_toml};
-use crate::domain::{CollectionFile, CollectionSummary, Protocol, RequestFile};
+use crate::domain::{CollectionFile, CollectionSummary, FolderFile, Protocol, RequestFile};
 use crate::error::{AppError, AppResult};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
 pub const COLLECTION_FILE: &str = "collection.toml";
+pub const FOLDER_FILE: &str = "folder.toml";
 pub const REQUEST_EXT: &str = ".lokki.toml";
 pub const ENVIRONMENTS_DIR: &str = "environments";
+
+/// Reads a folder's `folder.toml`, falling back to the directory name and
+/// `seq = 0` for folders created before folder metadata existed.
+pub fn read_folder_meta(dir: &Path) -> FolderFile {
+    let derived_name = dir
+        .file_name()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_default();
+    read_toml::<FolderFile>(&dir.join(FOLDER_FILE)).unwrap_or_else(|_| FolderFile::new(derived_name, 0))
+}
 
 pub fn is_request_file(path: &Path) -> bool {
     path.file_name()
@@ -71,6 +82,7 @@ pub enum CollectionTreeNode {
     Folder {
         name: String,
         path: String,
+        seq: u32,
         children: Vec<CollectionTreeNode>,
     },
     Request {
@@ -82,6 +94,14 @@ pub enum CollectionTreeNode {
     },
 }
 
+impl CollectionTreeNode {
+    pub fn path(&self) -> &str {
+        match self {
+            CollectionTreeNode::Folder { path, .. } | CollectionTreeNode::Request { path, .. } => path,
+        }
+    }
+}
+
 pub fn load_collection_tree(collection_path: &Path) -> AppResult<CollectionTreeNode> {
     let name = collection_path
         .file_name()
@@ -91,6 +111,7 @@ pub fn load_collection_tree(collection_path: &Path) -> AppResult<CollectionTreeN
     Ok(CollectionTreeNode::Folder {
         name,
         path: collection_path.display().to_string(),
+        seq: 0,
         children,
     })
 }
@@ -115,10 +136,12 @@ fn load_children(dir: &Path) -> AppResult<Vec<CollectionTreeNode>> {
             if is_excluded_dir(&name) {
                 continue;
             }
+            let meta = read_folder_meta(&path);
             let children = load_children(&path)?;
             out.push(CollectionTreeNode::Folder {
-                name,
+                name: meta.name,
                 path: path.display().to_string(),
+                seq: meta.seq,
                 children,
             });
         } else if is_request_file(&path) {
@@ -136,12 +159,13 @@ fn load_children(dir: &Path) -> AppResult<Vec<CollectionTreeNode>> {
     Ok(out)
 }
 
-fn tree_sort_key(node: &CollectionTreeNode) -> (u8, u32, String) {
+/// Folders and requests share one ordering space so the user can arrange
+/// them in any order by dragging; `name` only breaks ties (notably for
+/// legacy folders that predate folder metadata and default to `seq = 0`).
+fn tree_sort_key(node: &CollectionTreeNode) -> (u32, String) {
     match node {
-        // Folders first, alphabetically.
-        CollectionTreeNode::Folder { name, .. } => (0, 0, name.to_lowercase()),
-        // Requests after, ordered by their explicit seq (drag-to-reorder friendly).
-        CollectionTreeNode::Request { name, seq, .. } => (1, *seq, name.to_lowercase()),
+        CollectionTreeNode::Folder { name, seq, .. } => (*seq, name.to_lowercase()),
+        CollectionTreeNode::Request { name, seq, .. } => (*seq, name.to_lowercase()),
     }
 }
 

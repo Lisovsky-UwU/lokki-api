@@ -1,11 +1,13 @@
 pub mod collection;
 pub mod environment;
+pub mod folder;
 pub mod ids;
 pub mod request;
 pub mod sync_meta;
 pub mod workspace;
 
 pub use collection::{CollectionFile, CollectionSummary};
+pub use folder::FolderFile;
 pub use environment::{EnvironmentFile, EnvironmentMeta, EnvironmentScope, Variable};
 pub use ids::Id;
 pub use request::{

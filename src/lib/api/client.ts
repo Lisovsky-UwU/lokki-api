@@ -9,6 +9,7 @@ import type {
 	ExecutionOutcome,
 	HttpMethod,
 	Id,
+	RequestAtPath,
 	RequestFile,
 	WorkspaceFile,
 } from "../bindings/types";
@@ -37,9 +38,16 @@ export const api = {
 	createRequest: (parentPath: string, name: string, method: HttpMethod) =>
 		invoke<RequestFile>("create_request", { parentPath, name, method }),
 	deleteRequest: (requestPath: string) => invoke<void>("delete_request", { requestPath }),
+	renameRequest: (requestPath: string, newName: string) =>
+		invoke<RequestAtPath>("rename_request", { requestPath, newName }),
 	createFolder: (parentPath: string, name: string) =>
 		invoke<string>("create_folder", { parentPath, name }),
 	deleteFolder: (folderPath: string) => invoke<void>("delete_folder", { folderPath }),
+	renameFolder: (folderPath: string, newName: string) =>
+		invoke<string>("rename_folder", { folderPath, newName }),
+	moveNode: (sourcePath: string, targetParent: string) =>
+		invoke<string>("move_node", { sourcePath, targetParent }),
+	reorderChildren: (orderedPaths: string[]) => invoke<void>("reorder_children", { orderedPaths }),
 
 	listEnvironments: (rootPath: string) => invoke<EnvironmentEntry[]>("list_environments", { rootPath }),
 	createEnvironment: (rootPath: string, name: string, scope: EnvironmentScope) =>
