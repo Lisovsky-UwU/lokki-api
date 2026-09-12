@@ -8,6 +8,7 @@
 	import { installGlobalErrorReporting, reportError } from "../lib/ui/notices";
 	import { layout, updateLayout } from "../lib/stores/layout";
 	import Toasts from "../lib/components/common/Toasts.svelte";
+	import SettingsModal from "../lib/components/Settings/SettingsModal.svelte";
 	import ConfirmDialog from "../lib/components/common/ConfirmDialog.svelte";
 	import PromptDialog from "../lib/components/common/PromptDialog.svelte";
 	import Splitter from "../lib/components/common/Splitter.svelte";
@@ -18,6 +19,7 @@
 	import EnvironmentSwitcher from "../lib/components/EnvironmentSwitcher/EnvironmentSwitcher.svelte";
 
 	let restoring = $state(true);
+	let settingsOpen = $state(false);
 	let panesHeight = $state(0);
 
 	// Reopen whatever workspace was last used instead of making the user
@@ -52,6 +54,9 @@
 <PromptDialog />
 <ConfirmDialog />
 <Toasts />
+{#if settingsOpen}
+	<SettingsModal onClose={() => (settingsOpen = false)} />
+{/if}
 
 {#if restoring}
 	<div class="restoring">Загрузка…</div>
@@ -76,7 +81,10 @@
 					{$workspace.name}
 					<span class="switch-hint">⇄</span>
 				</button>
-				<EnvironmentSwitcher />
+				<div class="topbar-right">
+					<EnvironmentSwitcher />
+					<button class="settings-btn" title="Настройки" aria-label="Настройки" onclick={() => (settingsOpen = true)}>⚙</button>
+				</div>
 			</header>
 			<div
 				class="panes"
@@ -211,6 +219,23 @@
 		gap: 1em;
 		padding: 0.5em 1em;
 		border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+	}
+	.topbar-right {
+		display: flex;
+		align-items: center;
+		gap: 0.6em;
+	}
+	.settings-btn {
+		background: none;
+		border: none;
+		padding: 0.2em 0.4em;
+		font-size: 1.1em;
+		line-height: 1;
+		cursor: pointer;
+		opacity: 0.7;
+	}
+	.settings-btn:hover {
+		opacity: 1;
 	}
 	.restoring {
 		display: flex;

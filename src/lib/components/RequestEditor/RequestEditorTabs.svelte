@@ -5,6 +5,7 @@
 	import { availableVariables } from "../../stores/environments";
 	import { api } from "../../api/client";
 	import { notifyResult, type NoticeKind } from "../../ui/notices";
+	import { copyText } from "../../ui/clipboard";
 	import { newHttpRequestSpec } from "../../bindings/types";
 	import type { HttpMethod, HttpRequestSpec } from "../../bindings/types";
 	import VariableInput from "../common/VariableInput.svelte";
@@ -117,17 +118,7 @@
 	});
 
 	async function copyUrl() {
-		try {
-			await navigator.clipboard.writeText(urlPreview);
-		} catch {
-			// Clipboard API can be unavailable; fall back to a scratch textarea.
-			const scratch = document.createElement("textarea");
-			scratch.value = urlPreview;
-			document.body.appendChild(scratch);
-			scratch.select();
-			document.execCommand("copy");
-			scratch.remove();
-		}
+		await copyText(urlPreview);
 		copied = true;
 		setTimeout(() => (copied = false), 1500);
 	}

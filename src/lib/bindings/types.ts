@@ -74,6 +74,22 @@ export type CollectionTreeNode =
 			method: HttpMethod | null;
 	  };
 
+/// Build- and run-time facts about the app itself, shown in Settings.
+/// Any field can come back empty when it couldn't be determined (no git
+/// checkout, no node on PATH at build time) — the UI words that case.
+export interface AppInfo {
+	name: string;
+	version: string;
+	build_date: string;
+	commit: string;
+	os: string;
+	arch: string;
+	rust_version: string;
+	tauri_version: string;
+	node_version: string;
+	webview_version: string;
+}
+
 /// A request together with the path it lives at (renaming moves the file).
 export interface RequestAtPath extends RequestFile {
 	path: string;

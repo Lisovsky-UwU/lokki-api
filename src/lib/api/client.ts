@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import type {
+	AppInfo,
 	CollectionSummary,
 	CollectionTreeNode,
 	EnvironmentEntry,
@@ -20,6 +21,8 @@ export interface OpenWorkspaceResult {
 }
 
 export const api = {
+	appInfo: () => invoke<AppInfo>("app_info"),
+
 	pickWorkspaceFolder: (): Promise<string | null> =>
 		openDialog({ directory: true, multiple: false, title: "Open workspace folder" }) as Promise<string | null>,
 

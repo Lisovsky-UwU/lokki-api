@@ -15,6 +15,7 @@ pub fn run() {
         // builds its TLS root store once, instead of per request.
         .manage(exec::HttpExecutor::new())
         .invoke_handler(tauri::generate_handler![
+            commands::app_commands::app_info,
             commands::workspace_commands::open_workspace,
             commands::workspace_commands::get_last_workspace,
             commands::workspace_commands::list_collections,
