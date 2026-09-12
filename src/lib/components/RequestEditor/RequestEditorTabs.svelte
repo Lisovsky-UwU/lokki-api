@@ -4,6 +4,7 @@
 	import { activeResponses, markSending, recordResponse } from "../../stores/response";
 	import { availableVariables } from "../../stores/environments";
 	import { api } from "../../api/client";
+	import { notifyResult, type NoticeKind } from "../../ui/notices";
 	import { newHttpRequestSpec } from "../../bindings/types";
 	import type { HttpMethod, HttpRequestSpec } from "../../bindings/types";
 	import VariableInput from "../common/VariableInput.svelte";
@@ -45,13 +46,25 @@
 		// Results are stored against the request's path, so each request keeps
 		// its own last response instead of sharing one global slot.
 		const path = $activeRequest.path;
+		const name = $activeRequest.request.meta.name;
 		markSending(path);
+		let summary: string;
+		let kind: NoticeKind;
+		let inBackground: boolean;
 		try {
 			const outcome = await api.sendRequest($activeRequest.request, $activeCollection.path);
-			recordResponse(path, { outcome, error: null, at: Date.now() });
+			summary = `${outcome.status} ${outcome.status_text}`;
+			kind = outcome.status >= 400 ? "error" : "success";
+			inBackground = recordResponse(path, { outcome, error: null, at: Date.now() });
 		} catch (e) {
-			recordResponse(path, { outcome: null, error: String(e), at: Date.now() });
+			summary = "ошибка отправки";
+			kind = "error";
+			inBackground = recordResponse(path, { outcome: null, error: String(e), at: Date.now() });
 		}
+		// The user moved on to another request while this one was in flight,
+		// so the response panel they are looking at won't show the result —
+		// the toast and the sidebar marker are the only way they learn of it.
+		if (inBackground) notifyResult(`Запрос «${name}» завершён: ${summary}`, kind);
 	}
 
 	function onShortcut(e: KeyboardEvent) {

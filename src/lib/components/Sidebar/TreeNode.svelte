@@ -2,12 +2,13 @@
 	import type { CollectionSummary, CollectionTreeNode, HttpMethod } from "../../bindings/types";
 	import TreeNode from "./TreeNode.svelte";
 	import NodeMenu from "../common/NodeMenu.svelte";
+	import ActivityIndicator from "../common/ActivityIndicator.svelte";
 	import { activeRequest, rebaseActiveRequest } from "../../stores/activeRequest";
 	import { activeCollection, requestTreeRefresh } from "../../stores/collectionTree";
 	import { dragging } from "../../stores/dragState";
-	import { forgetResponses, rekeyResponses } from "../../stores/response";
+	import { forgetResponses, markSeen, rekeyResponses, responsesByRequest, subtreeActivity } from "../../stores/response";
 	import { confirmAction, promptForText } from "../../ui/dialogs";
-	import { reportError } from "../../ui/errors";
+	import { reportError } from "../../ui/notices";
 	import { api } from "../../api/client";
 	import { methodColor } from "../../ui/methods";
 
@@ -32,6 +33,14 @@
 	let currentPath = $derived($activeRequest?.path);
 	let isDragged = $derived($dragging?.path === node.path);
 
+	// A folder stands in for its subtree only while collapsed — expanded, the
+	// rows carry their own indicators and repeating them just adds noise.
+	let activity = $derived(
+		node.kind === "Folder" && expanded
+			? { running: false, unseen: null }
+			: subtreeActivity($responsesByRequest, node.path),
+	);
+
 	// Same reason as in CollectionTree: a drop elsewhere must not leave this
 	// row's insertion marker behind.
 	$effect(() => {
@@ -50,6 +59,9 @@
 			const request = await api.loadRequest(path);
 			activeCollection.set(collection);
 			activeRequest.set({ path, request, dirty: false });
+			// The response panel now shows whatever came back while the user was
+			// elsewhere, so the sidebar marker has done its job.
+			markSeen(path);
 		} catch (e) {
 			reportError("Не удалось открыть запрос", e);
 		}
@@ -224,6 +236,7 @@
 			<button class="folder-label" onclick={() => (expanded = !expanded)}>
 				<span class="chevron" class:collapsed={!expanded}>▾</span>
 				<span class="node-name">{node.name}</span>
+				<ActivityIndicator {activity} group />
 			</button>
 			<NodeMenu items={folderMenu} label="Действия с папкой" />
 		</div>
@@ -256,6 +269,7 @@
 		<button class="request-label" onclick={() => openRequest(node.path)}>
 			<span class="method" style="color: {methodColor(node.method ?? node.protocol)}">{node.method ?? node.protocol}</span>
 			<span class="node-name">{node.name}</span>
+			<ActivityIndicator {activity} />
 		</button>
 		<NodeMenu items={requestMenu} label="Действия с запросом" />
 	</div>

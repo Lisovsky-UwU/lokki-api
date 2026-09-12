@@ -10,7 +10,7 @@
 	} from "../../stores/environments";
 	import type { EnvironmentEntry, EnvironmentScope } from "../../bindings/types";
 	import { promptForText } from "../../ui/dialogs";
-	import { reportError } from "../../ui/errors";
+	import { reportError } from "../../ui/notices";
 	import EnvironmentEditorModal from "./EnvironmentEditorModal.svelte";
 
 	let editing = $state<EnvironmentEntry | null>(null);

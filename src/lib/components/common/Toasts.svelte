@@ -1,13 +1,13 @@
 <script lang="ts">
-	import { dismissError, errorNotices } from "../../ui/errors";
+	import { dismissNotice, notices } from "../../ui/notices";
 </script>
 
-{#if $errorNotices.length > 0}
+{#if $notices.length > 0}
 	<div class="toasts">
-		{#each $errorNotices as notice (notice.id)}
-			<div class="toast">
+		{#each $notices as notice (notice.id)}
+			<div class="toast {notice.kind}">
 				<span>{notice.message}{notice.count > 1 ? ` (×${notice.count})` : ""}</span>
-				<button title="Скрыть" onclick={() => dismissError(notice.id)}>×</button>
+				<button title="Скрыть" onclick={() => dismissNotice(notice.id)}>×</button>
 			</div>
 		{/each}
 	</div>
@@ -30,10 +30,15 @@
 		gap: 0.6em;
 		padding: 0.6em 0.8em;
 		border-radius: 8px;
-		background: #d1443c;
 		color: white;
 		font-size: 0.85em;
 		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+	}
+	.toast.error {
+		background: #d1443c;
+	}
+	.toast.success {
+		background: #2e7d4f;
 	}
 	.toast span {
 		flex: 1;

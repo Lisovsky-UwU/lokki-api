@@ -5,9 +5,9 @@
 	import { activeRequest } from "../lib/stores/activeRequest";
 	import { responsesByRequest } from "../lib/stores/response";
 	import { api } from "../lib/api/client";
-	import { installGlobalErrorReporting, reportError } from "../lib/ui/errors";
+	import { installGlobalErrorReporting, reportError } from "../lib/ui/notices";
 	import { layout, updateLayout } from "../lib/stores/layout";
-	import ErrorToasts from "../lib/components/common/ErrorToasts.svelte";
+	import Toasts from "../lib/components/common/Toasts.svelte";
 	import ConfirmDialog from "../lib/components/common/ConfirmDialog.svelte";
 	import PromptDialog from "../lib/components/common/PromptDialog.svelte";
 	import Splitter from "../lib/components/common/Splitter.svelte";
@@ -51,7 +51,7 @@
 
 <PromptDialog />
 <ConfirmDialog />
-<ErrorToasts />
+<Toasts />
 
 {#if restoring}
 	<div class="restoring">Загрузка…</div>

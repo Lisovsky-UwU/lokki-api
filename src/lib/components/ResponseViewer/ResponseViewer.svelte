@@ -38,6 +38,15 @@
 		return `${minutes} мин ${seconds} с`;
 	}
 
+	/// Live counter while the request is in flight. Kept at one decimal: at a
+	/// 100 ms tick, millisecond precision would just flicker.
+	function formatElapsed(ms: number): string {
+		if (ms < 60_000) return `${(ms / 1000).toFixed(1)} с`;
+		const minutes = Math.floor(ms / 60_000);
+		const seconds = Math.floor((ms % 60_000) / 1000);
+		return `${minutes} мин ${String(seconds).padStart(2, "0")} с`;
+	}
+
 	function isJson(text: string): boolean {
 		try {
 			JSON.parse(text);
@@ -62,6 +71,20 @@
 		return "status-server-error";
 	}
 
+	// Ticks only while a request is in flight, so an idle app isn't running a
+	// timer; the interval is torn down as soon as the response lands or the
+	// user switches to another request.
+	let now = $state(Date.now());
+	$effect(() => {
+		if (!$activeResponses.loading) return;
+		now = Date.now();
+		const ticker = setInterval(() => (now = Date.now()), 100);
+		return () => clearInterval(ticker);
+	});
+	let elapsed = $derived(
+		$activeResponses.startedAt != null ? Math.max(0, now - $activeResponses.startedAt) : 0,
+	);
+
 	// Only the newest record is kept today (see HISTORY_LIMIT), but reading
 	// it as "the first of a list" keeps the viewer ready for real history.
 	let latest = $derived($activeResponses.history[0] ?? null);
@@ -74,8 +97,17 @@
 	{#if !$activeRequest}
 		<p class="hint">Выберите запрос.</p>
 	{:else if $activeResponses.loading}
-		<p class="hint">Отправка...</p>
+		<div class="status-bar">
+			<span class="spinner" aria-hidden="true"></span>
+			<span class="hint">Отправка...</span>
+			<span class="elapsed" aria-live="off">{formatElapsed(elapsed)}</span>
+		</div>
 	{:else if latest?.error}
+		<div class="status-bar">
+			<span class="status status-server-error">Ошибка</span>
+			{#if latest.elapsedMs != null}<span class="meta">{formatDuration(latest.elapsedMs)}</span>{/if}
+			<span class="meta time">{new Date(latest.at).toLocaleTimeString()}</span>
+		</div>
 		<p class="error">{latest.error}</p>
 	{:else if latest?.outcome}
 		{@const outcome = latest.outcome}
@@ -173,6 +205,31 @@
 	.meta {
 		opacity: 0.6;
 		font-size: 0.9em;
+	}
+	.elapsed {
+		font-family: ui-monospace, monospace;
+		/* Fixed-width digits so the counter doesn't jiggle as it ticks. */
+		font-variant-numeric: tabular-nums;
+		opacity: 0.75;
+	}
+	.spinner {
+		width: 0.85em;
+		height: 0.85em;
+		border: 2px solid rgba(127, 127, 127, 0.35);
+		border-top-color: #396cd8;
+		border-radius: 50%;
+		align-self: center;
+		animation: spin 0.7s linear infinite;
+	}
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.spinner {
+			animation-duration: 2.5s;
+		}
 	}
 	.meta.time {
 		margin-left: auto;

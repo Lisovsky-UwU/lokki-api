@@ -5,12 +5,13 @@
 	import type { CollectionSummary, CollectionTreeNode, HttpMethod } from "../../bindings/types";
 	import TreeNode from "./TreeNode.svelte";
 	import NodeMenu from "../common/NodeMenu.svelte";
+	import ActivityIndicator from "../common/ActivityIndicator.svelte";
 	import { activeCollection, treeRefreshToken, requestTreeRefresh } from "../../stores/collectionTree";
 	import { dragging } from "../../stores/dragState";
 	import { activeRequest, rebaseActiveRequest } from "../../stores/activeRequest";
-	import { rekeyResponses } from "../../stores/response";
+	import { rekeyResponses, responsesByRequest, subtreeActivity } from "../../stores/response";
 	import { promptForText } from "../../ui/dialogs";
-	import { reportError } from "../../ui/errors";
+	import { reportError } from "../../ui/notices";
 
 	let trees = $state<Record<string, CollectionTreeNode | null>>({});
 	let expandedCollections = $state<Record<string, boolean>>({});
@@ -141,7 +142,10 @@
 			<div class="collection-header">
 				<button class="collection-label" onclick={() => toggleCollection(collection)}>
 					<span class="chevron" class:collapsed={!expandedCollections[collection.path]}>▾</span>
-					{collection.name}
+					<span class="collection-name">{collection.name}</span>
+					{#if !expandedCollections[collection.path]}
+						<ActivityIndicator activity={subtreeActivity($responsesByRequest, collection.path)} group />
+					{/if}
 				</button>
 				<NodeMenu items={collectionMenu(collection)} label="Действия с коллекцией" />
 			</div>
@@ -229,6 +233,11 @@
 		cursor: pointer;
 		font-weight: 600;
 		color: inherit;
+	}
+	.collection-name {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.collection-label:hover {
 		background: rgba(127, 127, 127, 0.15);
