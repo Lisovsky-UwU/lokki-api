@@ -119,6 +119,7 @@
 </script>
 
 <div class="switcher">
+	<label for="global-env">Окружение:</label>
 	<div class="group">
 		<label for="global-env">Глобальное</label>
 		<select
@@ -139,7 +140,7 @@
 
 	{#if $activeCollection}
 		<div class="group">
-			<label for="collection-env">{$activeCollection.name}</label>
+			<label for="collection-env">Коллекция: {$activeCollection.name}</label>
 			<select
 				id="collection-env"
 				value={$activeCollectionEnvironmentId ?? ""}
@@ -182,7 +183,7 @@
 	.group label {
 		opacity: 0.6;
 		font-size: 0.85em;
-		max-width: 12em;
+		max-width: 16em;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;

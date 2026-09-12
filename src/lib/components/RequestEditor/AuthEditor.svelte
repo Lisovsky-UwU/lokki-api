@@ -19,27 +19,38 @@
 	</select>
 
 	{#if auth.type === "bearer"}
-		<VariableInput
-			mono
-			ariaLabel="Bearer token"
-			placeholder="{'{{token}}'} или значение токена"
-			value={auth.token}
-			onChange={(token) => onChange({ type: "bearer", token })}
-		/>
+		<dl class="auth-params">
+			<dt>Токен</dt>
+			<dd>
+				<VariableInput
+					mono
+					ariaLabel="Bearer token"
+					placeholder="{'{{token}}'} или значение токена"
+					value={auth.token}
+					onChange={(token) => onChange({ type: "bearer", token })}
+				/>
+			</dd>
+		</dl>
 	{:else if auth.type === "basic"}
-		<div class="basic-row">
-			<VariableInput
-				placeholder="логин"
-				value={auth.username}
-				onChange={(username) => onChange({ type: "basic", username, password: auth.password })}
-			/>
-			<VariableInput
-				type="password"
-				placeholder="пароль"
-				value={auth.password}
-				onChange={(password) => onChange({ type: "basic", username: auth.username, password })}
-			/>
-		</div>
+		<dl class="auth-params">
+			<dt>Логин</dt>
+			<dd>
+				<VariableInput
+					placeholder="admin"
+					value={auth.username}
+					onChange={(username) => onChange({ type: "basic", username, password: auth.password })}
+				/>
+			</dd>
+			<dt>Пароль</dt>
+			<dd>
+				<VariableInput
+					type="password"
+					placeholder="********"
+					value={auth.password}
+					onChange={(password) => onChange({ type: "basic", username: auth.username, password })}
+				/>
+			</dd>
+		</dl>
 	{/if}
 </div>
 
@@ -53,8 +64,13 @@
 		align-self: flex-start;
 		min-width: 12em;
 	}
-	.basic-row {
-		display: flex;
-		gap: 0.5em;
+	.auth-params {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 0.35em 0.9em;
+		margin: 0;
+		font-size: 0.85em;
+		margin-bottom: 1.2em;
+		align-items: center;
 	}
 </style>

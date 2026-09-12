@@ -66,11 +66,8 @@
 		/>
 		<div class="main">
 			<header class="topbar">
-				<div></div>
-				<div class="topbar-right">
-					<EnvironmentSwitcher />
-					<button class="settings-btn" title="Настройки" aria-label="Настройки" onclick={() => (settingsOpen = true)}>⚙</button>
-				</div>
+				<EnvironmentSwitcher />
+				<button class="settings-btn" title="Настройки" aria-label="Настройки" onclick={() => (settingsOpen = true)}>⚙</button>
 			</header>
 			{#if !$activeRequest}
 				<div class="empty-state-outer">
@@ -214,11 +211,6 @@
 		padding: 0.5em 1em;
 		border-bottom: 1px solid rgba(127, 127, 127, 0.25);
 	}
-	.topbar-right {
-		display: flex;
-		align-items: center;
-		gap: 0.6em;
-	}
 	.settings-btn {
 		background: none;
 		border: none;
@@ -237,22 +229,6 @@
 		justify-content: center;
 		height: 100vh;
 		opacity: 0.6;
-	}
-	.workspace-name {
-		display: flex;
-		align-items: center;
-		gap: 0.4em;
-		font-weight: 600;
-		background: none;
-		border: none;
-		padding: 0.2em 0.4em;
-		border-radius: 6px;
-		cursor: pointer;
-		color: inherit;
-		white-space: nowrap;
-	}
-	.workspace-name:hover {
-		background: rgba(127, 127, 127, 0.15);
 	}
 	.panes {
 		flex: 1;
