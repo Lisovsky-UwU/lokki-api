@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from "svelte";
 	import { api } from "../../api/client";
-	import { workspacePath, collections } from "../../stores/workspace";
+	import { workspacePath, collections, workspace } from "../../stores/workspace";
 	import type { CollectionSummary, CollectionTreeNode, HttpMethod } from "../../bindings/types";
 	import TreeNode from "./TreeNode.svelte";
 	import NodeMenu from "../common/NodeMenu.svelte";
@@ -129,9 +129,31 @@
 			requestTreeRefresh();
 		}
 	}
+
+	function closeWorkspace() {
+		workspace.set(null);
+		workspacePath.set(null);
+		collections.set([]);
+		activeCollection.set(null);
+		activeRequest.set(null);
+		responsesByRequest.set({});
+	}
 </script>
 
 <div class="sidebar">
+	<div class="sidebar-header">
+		<span>Пространство</span>
+	</div>
+	{#if $workspace === null}
+		<div class="empty">Нет открытого пространства. Создайте или откройте существующий</div>
+	{:else}
+		<div class="workspace-name-outer">
+			<button class="workspace-name" title="Сменить пространство" onclick={closeWorkspace}>
+				{$workspace.name}
+				<span class="switch-hint">⇄</span>
+			</button>
+		</div>
+	{/if}
 	<div class="sidebar-header">
 		<span>Коллекции</span>
 		<button class="icon-btn" title="Новая коллекция" onclick={createCollection}>+</button>
@@ -263,5 +285,30 @@
 		padding: 0.4em 0.6em;
 		margin: 0;
 		font-size: 0.8em;
+	}
+	.workspace-name-outer {
+		padding: 0.5em 0.2em;
+	}
+	.workspace-name {
+		display: flex;
+		align-items: center;
+		gap: 0.4em;
+		font-weight: 600;
+		background: none;
+		border: none;
+		padding: 0.6em 0.8em;
+		border-radius: 6px;
+		cursor: pointer;
+		color: inherit;
+		white-space: nowrap;
+		width: 100%;
+		text-align: left;
+	}
+	.workspace-name:hover {
+		background: rgba(127, 127, 127, 0.15);
+	}
+	.switch-hint {
+		opacity: 0.5;
+		font-size: 0.85em;
 	}
 </style>

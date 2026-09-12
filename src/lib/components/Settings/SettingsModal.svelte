@@ -81,7 +81,7 @@
 			</div>
 		</div>
 
-		<hr/>
+		<hr class="splitter"/>
 
 		<div class="section-head">
 			<h3>О программе</h3>
@@ -100,7 +100,7 @@
 		{:else}
 			<p class="hint">Загрузка…</p>
 		{/if}
-		<hr/>
+		<hr class="splitter"/>
 		<div class="section-head">
 			<h3>GitHub</h3>
 		</div>
@@ -153,6 +153,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.9em;
+		margin-bottom: 1.2em;
 	}
 	.logo {
 		width: 56px;
@@ -187,6 +188,7 @@
 		gap: 0.35em 0.9em;
 		margin: 0;
 		font-size: 0.85em;
+		margin-bottom: 1.2em;
 	}
 	dt {
 		opacity: 0.6;
@@ -216,5 +218,10 @@
 	.copied {
 		font-size: 0.8em;
 		background-color: var(--success-color, green);
+	}
+	.splitter {
+		border: none;
+		background: rgba(127, 127, 127, 0.25);
+		height: 1px;
 	}
 </style>

@@ -97,25 +97,27 @@
 	{#if !$activeRequest}
 		<p class="hint">Выберите запрос.</p>
 	{:else if $activeResponses.loading}
-		<div class="status-bar">
-			<span class="spinner" aria-hidden="true"></span>
-			<span class="hint">Отправка...</span>
+		<div class="loading-state">
+			<div class="loading-row">
+				<span class="spinner" aria-hidden="true"></span>
+				<span class="hint">Отправка...</span>
+			</div>
 			<span class="elapsed" aria-live="off">{formatElapsed(elapsed)}</span>
 		</div>
 	{:else if latest?.error}
 		<div class="status-bar">
 			<span class="status status-server-error">Ошибка</span>
-			{#if latest.elapsedMs != null}<span class="meta">{formatDuration(latest.elapsedMs)}</span>{/if}
-			<span class="meta time">{new Date(latest.at).toLocaleTimeString()}</span>
+			{#if latest.elapsedMs != null}<span class="meta" title="Продолжительность запроса">{formatDuration(latest.elapsedMs)}</span>{/if}
+			<span class="meta time" title="Когда был отправлен запрос">{new Date(latest.at).toLocaleTimeString()}</span>
 		</div>
 		<p class="error">{latest.error}</p>
 	{:else if latest?.outcome}
 		{@const outcome = latest.outcome}
 		<div class="status-bar">
 			<span class="status {statusClass(outcome.status)}">{outcome.status} {outcome.status_text}</span>
-			<span class="meta">{formatDuration(outcome.duration_ms)}</span>
-			<span class="meta">{formatSize(byteLength(outcome.body_base64))}</span>
-			<span class="meta time">{new Date(latest.at).toLocaleTimeString()}</span>
+			<span class="meta" title="Продолжительность запроса">{formatDuration(outcome.duration_ms)}</span>
+			<span class="meta" title="Размер тела ответа">{formatSize(byteLength(outcome.body_base64))}</span>
+			<span class="meta time" title="Когда был отправлен запрос">{new Date(latest.at).toLocaleTimeString()}</span>
 		</div>
 
 		{#if outcome.unresolved_variables.length > 0}
@@ -157,7 +159,9 @@
 			</div>
 		{/if}
 	{:else}
-		<p class="hint">Отправьте запрос, чтобы увидеть ответ.</p>
+		<div class="hint-outer">
+			<p class="hint">Запрос еще не был отправлен</p>
+		</div>
 	{/if}
 </div>
 
@@ -168,6 +172,12 @@
 		gap: 0.6em;
 		height: 100%;
 		min-height: 0;
+	}
+	.hint-outer {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 	.hint {
 		opacity: 0.6;
@@ -188,6 +198,19 @@
 		display: flex;
 		align-items: baseline;
 		gap: 0.9em;
+	}
+	.loading-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.6em;
+		height: 100%;
+	}
+	.loading-row {
+		display: flex;
+		align-items: baseline;
+		gap: 0.6em;
 	}
 	.status {
 		font-weight: 700;

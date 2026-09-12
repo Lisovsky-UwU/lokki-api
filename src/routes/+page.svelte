@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { workspace, workspacePath, collections } from "../lib/stores/workspace";
-	import { activeCollection } from "../lib/stores/collectionTree";
 	import { activeRequest } from "../lib/stores/activeRequest";
-	import { responsesByRequest } from "../lib/stores/response";
 	import { api } from "../lib/api/client";
 	import { installGlobalErrorReporting, reportError } from "../lib/ui/notices";
 	import { layout, updateLayout } from "../lib/stores/layout";
@@ -40,15 +38,6 @@
 			restoring = false;
 		}
 	});
-
-	function closeWorkspace() {
-		workspace.set(null);
-		workspacePath.set(null);
-		collections.set([]);
-		activeCollection.set(null);
-		activeRequest.set(null);
-		responsesByRequest.set({});
-	}
 </script>
 
 <PromptDialog />
@@ -77,35 +66,40 @@
 		/>
 		<div class="main">
 			<header class="topbar">
-				<button class="workspace-name" title="Сменить workspace" onclick={closeWorkspace}>
-					{$workspace.name}
-					<span class="switch-hint">⇄</span>
-				</button>
+				<div></div>
 				<div class="topbar-right">
 					<EnvironmentSwitcher />
 					<button class="settings-btn" title="Настройки" aria-label="Настройки" onclick={() => (settingsOpen = true)}>⚙</button>
 				</div>
 			</header>
-			<div
-				class="panes"
-				bind:clientHeight={panesHeight}
-				style="grid-template-rows: {$layout.editorHeight}px auto 1fr"
-			>
-				<section class="pane editor-pane">
-					<RequestEditorTabs />
-				</section>
-				<Splitter
-					direction="horizontal"
-					value={$layout.editorHeight}
-					min={140}
-					max={Math.max(200, panesHeight - 160)}
-					ariaLabel="Высота панели запроса"
-					onResize={(v) => updateLayout({ editorHeight: v })}
-				/>
-				<section class="pane response-pane">
-					<ResponseViewer />
-				</section>
-			</div>
+			{#if !$activeRequest}
+				<div class="empty-state-outer">
+					<div class="empty-state">
+						<p>Выберите запрос слева или создайте новый</p>
+					</div>
+				</div>
+			{:else}
+				<div
+					class="panes"
+					bind:clientHeight={panesHeight}
+					style="grid-template-rows: {$layout.editorHeight}px auto 1fr"
+				>
+					<section class="pane editor-pane">
+						<RequestEditorTabs />
+					</section>
+					<Splitter
+						direction="horizontal"
+						value={$layout.editorHeight}
+						min={140}
+						max={Math.max(200, panesHeight - 160)}
+						ariaLabel="Высота панели запроса"
+						onResize={(v) => updateLayout({ editorHeight: v })}
+					/>
+					<section class="pane response-pane">
+						<ResponseViewer />
+					</section>
+				</div>
+			{/if}
 		</div>
 	</div>
 {/if}
@@ -260,10 +254,6 @@
 	.workspace-name:hover {
 		background: rgba(127, 127, 127, 0.15);
 	}
-	.switch-hint {
-		opacity: 0.5;
-		font-size: 0.85em;
-	}
 	.panes {
 		flex: 1;
 		display: grid;
@@ -280,5 +270,21 @@
 	.response-pane {
 		border-top: 1px solid rgba(127, 127, 127, 0.2);
 		padding-top: 0.6em;
+	}
+	.empty-state-outer {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.empty-state {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex: 1;
+		min-width: 0;
+		height: 100%;
+		opacity: 0.5;
+		flex-direction: column;
 	}
 </style>

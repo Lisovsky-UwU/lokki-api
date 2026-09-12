@@ -193,8 +193,10 @@
 		</div>
 	</div>
 {:else}
-	<div class="empty-state">
-		<p>Выберите запрос слева или создайте новый.</p>
+	<div class="empty-state-outer">
+		<div class="empty-state">
+			<p>Выберите запрос слева или создайте новый.</p>
+		</div>
 	</div>
 {/if}
 
@@ -320,6 +322,12 @@
 		font-family: ui-monospace, monospace;
 		font-size: 0.85em;
 		word-break: break-all;
+	}
+	.empty-state-outer {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 	.empty-state {
 		display: flex;
