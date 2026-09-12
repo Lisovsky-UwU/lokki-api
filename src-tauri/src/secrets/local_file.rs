@@ -42,6 +42,18 @@ impl SecretStore for LocalFileSecretStore {
         file.values.insert(variable_id.as_ref().to_string(), value.to_string());
         write_toml(&secrets_path(workspace_path), &file)
     }
+
+    fn remove_many(&self, workspace_path: &Path, variable_ids: &[Id]) -> AppResult<()> {
+        let mut file = load(workspace_path);
+        let before = file.values.len();
+        file.values.retain(|key, _| !variable_ids.iter().any(|id| id.as_ref() == key));
+        // Nothing matched: don't create a secrets file just to write an empty
+        // one for a workspace that never had any.
+        if file.values.len() == before {
+            return Ok(());
+        }
+        write_toml(&secrets_path(workspace_path), &file)
+    }
 }
 
 #[cfg(test)]
@@ -58,5 +70,27 @@ mod tests {
 
         store.set(dir.path(), &id, "s3cr3t").unwrap();
         assert_eq!(store.get(dir.path(), &id).unwrap(), Some("s3cr3t".to_string()));
+    }
+
+    #[test]
+    fn remove_many_drops_only_the_listed_ids() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = LocalFileSecretStore;
+        let doomed = Id::new();
+        let kept = Id::new();
+        store.set(dir.path(), &doomed, "token").unwrap();
+        store.set(dir.path(), &kept, "keep").unwrap();
+
+        store.remove_many(dir.path(), &[doomed.clone()]).unwrap();
+
+        assert_eq!(store.get(dir.path(), &doomed).unwrap(), None);
+        assert_eq!(store.get(dir.path(), &kept).unwrap(), Some("keep".to_string()));
+    }
+
+    #[test]
+    fn remove_many_on_a_workspace_without_secrets_writes_nothing() {
+        let dir = tempfile::tempdir().unwrap();
+        LocalFileSecretStore.remove_many(dir.path(), &[Id::new()]).unwrap();
+        assert!(!dir.path().join(".lokki").join(SECRETS_FILE).exists());
     }
 }

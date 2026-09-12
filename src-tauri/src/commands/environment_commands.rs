@@ -1,5 +1,6 @@
 use crate::domain::{EnvironmentFile, EnvironmentScope, Id};
 use crate::error::{AppError, AppResult};
+use crate::secrets::{local_file::LocalFileSecretStore, SecretStore};
 use crate::store::{fs_app_state, fs_environment};
 use serde::Serialize;
 use std::path::{Path, PathBuf};
@@ -52,9 +53,48 @@ pub fn create_environment(
     })
 }
 
+/// Saving can move the file (renaming an environment renames it), so the
+/// entry comes back with the path the caller should use from now on.
 #[tauri::command]
-pub fn save_environment(env_path: String, environment: EnvironmentFile) -> AppResult<EnvironmentFile> {
-    fs_environment::save_environment(Path::new(&env_path), environment)
+pub fn save_environment(env_path: String, environment: EnvironmentFile) -> AppResult<EnvironmentEntry> {
+    let (path, file) = fs_environment::save_environment(Path::new(&env_path), environment)?;
+    Ok(EnvironmentEntry {
+        path: path.display().to_string(),
+        file,
+    })
+}
+
+/// Deletes an environment along with everything that only it referenced:
+/// the secret values of its variables (nothing else can reach them
+/// afterwards) and the "active environment" setting of any root that
+/// pointed at it.
+#[tauri::command]
+pub fn delete_environment(app: AppHandle, workspace_path: String, env_path: String) -> AppResult<()> {
+    let path = Path::new(&env_path);
+    // Read before deleting: the file is the only place these ids live. An
+    // unreadable file is still deleted — leaving a corrupt environment
+    // undeletable would be worse than leaking its secret values.
+    let file = crate::store::format::read_toml::<EnvironmentFile>(path).ok();
+    let secret_ids: Vec<Id> = file
+        .as_ref()
+        .map(|f| f.variables.iter().filter(|v| v.secret).map(|v| v.id.clone()).collect())
+        .unwrap_or_default();
+
+    fs_environment::delete_environment(path)?;
+
+    if !secret_ids.is_empty() {
+        LocalFileSecretStore.remove_many(Path::new(&workspace_path), &secret_ids)?;
+    }
+    if let Some(id) = file.map(|f| f.meta.sync.id) {
+        let dir = app_local_data_dir(&app)?;
+        let mut state = fs_app_state::load(&dir);
+        let before = state.active_environments.len();
+        state.active_environments.retain(|_, active| active != &id);
+        if state.active_environments.len() != before {
+            fs_app_state::save(&dir, &state)?;
+        }
+    }
+    Ok(())
 }
 
 #[tauri::command]

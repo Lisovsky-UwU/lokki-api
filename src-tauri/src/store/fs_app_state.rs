@@ -18,6 +18,17 @@ pub struct AppState {
     pub last_workspace: Option<String>,
 }
 
+impl AppState {
+    /// Moves per-root settings from `old_root` to `new_root`. Roots are
+    /// keyed by path, so a renamed collection would otherwise silently lose
+    /// its active environment.
+    pub fn rebase_root(&mut self, old_root: &str, new_root: &str) {
+        if let Some(id) = self.active_environments.remove(old_root) {
+            self.active_environments.insert(new_root.to_string(), id);
+        }
+    }
+}
+
 fn state_path(app_local_data_dir: &Path) -> PathBuf {
     app_local_data_dir.join(STATE_FILE)
 }

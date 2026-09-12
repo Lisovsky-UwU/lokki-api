@@ -8,9 +8,10 @@
 	import ActivityIndicator from "../common/ActivityIndicator.svelte";
 	import { activeCollection, treeRefreshToken, requestTreeRefresh } from "../../stores/collectionTree";
 	import { dragging } from "../../stores/dragState";
-	import { activeRequest, rebaseActiveRequest } from "../../stores/activeRequest";
+	import { activeRequest, rebaseActiveRequest, rebasePath } from "../../stores/activeRequest";
 	import { rekeyResponses, responsesByRequest, subtreeActivity } from "../../stores/response";
 	import { promptForText } from "../../ui/dialogs";
+	import { openEnvironmentsDialog } from "../../ui/environmentsDialog";
 	import { reportError } from "../../ui/notices";
 
 	let trees = $state<Record<string, CollectionTreeNode | null>>({});
@@ -45,11 +46,40 @@
 		}
 	}
 
+	// Expanding is not selecting: the active collection follows the open
+	// request, since it decides which collection environment resolves that
+	// request's variables. Browsing another collection's tree must not pull
+	// the environment out from under the request on screen.
 	function toggleCollection(collection: CollectionSummary) {
 		expandedCollections = { ...expandedCollections, [collection.path]: !expandedCollections[collection.path] };
-		activeCollection.set(collection);
 		// Loading is left to the effect below, which already reacts to a
 		// collection becoming expanded.
+	}
+
+	/// Renaming a collection renames its directory, so every path below it
+	/// moves with it — including the ones this component keys its own caches
+	/// by.
+	async function renameCollection(collection: CollectionSummary) {
+		const name = await promptForText("Переименовать коллекцию", "Название коллекции", collection.name);
+		if (!name || name === collection.name) return;
+		try {
+			const renamed = await api.renameCollection(collection.path, name);
+			rebaseActiveRequest(collection.path, renamed.path);
+			rekeyResponses(collection.path, renamed.path);
+			if ($activeCollection?.path === collection.path) activeCollection.set(renamed);
+			collections.update((list) =>
+				list.map((c) => (c.path === collection.path ? renamed : c)).sort((a, b) => a.name.localeCompare(b.name)),
+			);
+			expandedCollections = rekeyByPath(expandedCollections, collection.path, renamed.path);
+			trees = rekeyByPath(trees, collection.path, renamed.path);
+			requestTreeRefresh();
+		} catch (e) {
+			reportError("Не удалось переименовать коллекцию", e);
+		}
+	}
+
+	function rekeyByPath<T>(map: Record<string, T>, from: string, to: string): Record<string, T> {
+		return Object.fromEntries(Object.entries(map).map(([key, value]) => [rebasePath(key, from, to), value]));
 	}
 
 	// Any request/folder create/save/delete/move anywhere in the app bumps
@@ -94,6 +124,13 @@
 		return [
 			{ label: "Добавить запрос", action: () => addRequest(collection) },
 			{ label: "Добавить папку", action: () => addFolder(collection) },
+			// Reachable without opening a request first — the switcher in the
+			// top bar only ever shows the active collection's environments.
+			{
+				label: "Окружения коллекции",
+				action: () => openEnvironmentsDialog({ rootPath: collection.path, scope: "collection", title: collection.name }),
+			},
+			{ label: "Переименовать коллекцию", action: () => renameCollection(collection) },
 		];
 	}
 
@@ -130,6 +167,32 @@
 		}
 	}
 
+	/// The workspace name is metadata in `.lokki/workspace.toml`, so renaming
+	/// it touches neither the folder nor any cached path.
+	async function renameWorkspace() {
+		const path = $workspacePath;
+		const current = $workspace;
+		if (!path || !current) return;
+		const name = await promptForText("Переименовать пространство", "Название пространства", current.name);
+		if (!name || name === current.name) return;
+		try {
+			workspace.set(await api.renameWorkspace(path, name));
+		} catch (e) {
+			reportError("Не удалось переименовать пространство", e);
+		}
+	}
+
+	let workspaceMenu = $derived([
+		{ label: "Переименовать пространство", action: renameWorkspace },
+		{
+			label: "Окружения пространства",
+			action: () =>
+				$workspacePath &&
+				openEnvironmentsDialog({ rootPath: $workspacePath, scope: "global", title: $workspace?.name ?? "" }),
+		},
+		{ label: "Сменить пространство", action: closeWorkspace },
+	]);
+
 	function closeWorkspace() {
 		workspace.set(null);
 		workspacePath.set(null);
@@ -152,6 +215,7 @@
 				{$workspace.name}
 				<span class="switch-hint">⇄</span>
 			</button>
+			<NodeMenu items={workspaceMenu} label="Действия с пространством" />
 		</div>
 	{/if}
 	<div class="sidebar-header">
@@ -161,7 +225,7 @@
 
 	{#each $collections as collection (collection.path)}
 		<div class="collection">
-			<div class="collection-header">
+			<div class="collection-header" class:active={$activeCollection?.path === collection.path}>
 				<button class="collection-label" onclick={() => toggleCollection(collection)}>
 					<span class="chevron" class:collapsed={!expandedCollections[collection.path]}>▾</span>
 					<span class="collection-name">{collection.name}</span>
@@ -264,6 +328,12 @@
 	.collection-label:hover {
 		background: rgba(127, 127, 127, 0.15);
 	}
+	/* The collection whose environment is in effect — it follows the open
+	   request, so this also says where that request lives. */
+	.collection-header.active {
+		background: rgba(57, 108, 216, 0.14);
+		border-radius: 4px;
+	}
 	.chevron {
 		display: inline-block;
 		transition: transform 0.15s;
@@ -287,6 +357,8 @@
 		font-size: 0.8em;
 	}
 	.workspace-name-outer {
+		display: flex;
+		align-items: center;
 		padding: 0.5em 0.2em;
 	}
 	.workspace-name {
@@ -301,7 +373,10 @@
 		cursor: pointer;
 		color: inherit;
 		white-space: nowrap;
-		width: 100%;
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
 		text-align: left;
 	}
 	.workspace-name:hover {

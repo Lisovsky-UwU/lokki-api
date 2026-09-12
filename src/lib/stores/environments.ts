@@ -6,6 +6,14 @@ export const collectionEnvironments = writable<EnvironmentEntry[]>([]);
 export const activeGlobalEnvironmentId = writable<string | null>(null);
 export const activeCollectionEnvironmentId = writable<string | null>(null);
 
+/// Bumped whenever environments are created, renamed or edited, so the
+/// top-bar switcher re-reads them — the dialog that changes them is rendered
+/// elsewhere and has no other way to say "the lists are stale".
+export const environmentsRefreshToken = writable(0);
+export function requestEnvironmentsRefresh() {
+	environmentsRefreshToken.update((n) => n + 1);
+}
+
 /// Characters a variable name may contain. Must stay in step with the
 /// interpolation regex in the Rust core (`interpolate::var_regex`) —
 /// anything outside this set, a space in particular, silently fails to

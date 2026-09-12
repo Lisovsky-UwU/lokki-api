@@ -2,24 +2,51 @@
 	import { base } from "$app/paths";
 	import { api } from "../../api/client";
 	import { workspace, workspacePath, collections } from "../../stores/workspace";
+	import type { OpenWorkspaceResult } from "../../api/client";
+	import { promptForText } from "../../ui/dialogs";
 
 	let error = $state<string | null>(null);
-	let loading = $state(false);
+	let busy = $state<"create" | "open" | null>(null);
 
-	async function pickAndOpen() {
+	function enter(path: string, result: OpenWorkspaceResult) {
+		workspacePath.set(path);
+		workspace.set(result.workspace);
+		collections.set(result.collections);
+	}
+
+	/// Picks a folder and initializes it. The name is asked for separately
+	/// because it is metadata, not the folder name — it can be changed later
+	/// without moving anything on disk.
+	async function createWorkspace() {
 		error = null;
 		try {
 			const folder = await api.pickWorkspaceFolder();
 			if (!folder) return;
-			loading = true;
-			const result = await api.openWorkspace(folder);
-			workspacePath.set(folder);
-			workspace.set(result.workspace);
-			collections.set(result.collections);
+			const suggested = folder.split(/[\\/]+/).filter(Boolean).pop() ?? "Новое пространство";
+			const name = await promptForText("Новое пространство", "Название пространства", suggested);
+			if (!name) return;
+			busy = "create";
+			enter(folder, await api.createWorkspace(folder, name));
 		} catch (e) {
 			error = String(e);
 		} finally {
-			loading = false;
+			busy = null;
+		}
+	}
+
+	/// Opening only ever opens: a folder that isn't a workspace is reported
+	/// as such instead of quietly becoming a new empty one.
+	async function openWorkspace() {
+		error = null;
+		try {
+			const folder = await api.pickWorkspaceFolder();
+			if (!folder) return;
+			busy = "open";
+			enter(folder, await api.openWorkspace(folder));
+		} catch (e) {
+			error = String(e);
+		} finally {
+			busy = null;
 		}
 	}
 </script>
@@ -27,9 +54,15 @@
 <div class="picker">
 	<img class="logo" src="{base}/logo-horizontal.png" alt="LokkiAPI" />
 	<p>Локальный, файловый клиент для тестирования API.</p>
-	<button onclick={pickAndOpen} disabled={loading}>
-		{loading ? "Открываем..." : "Открыть папку workspace"}
-	</button>
+	<div class="actions">
+		<button class="primary" onclick={createWorkspace} disabled={busy !== null}>
+			{busy === "create" ? "Создаём..." : "Создать пространство"}
+		</button>
+		<button onclick={openWorkspace} disabled={busy !== null}>
+			{busy === "open" ? "Открываем..." : "Открыть существующее"}
+		</button>
+	</div>
+	<p class="hint">Пространство — это обычная папка на диске с коллекциями и окружениями.</p>
 	{#if error}
 		<p class="error">{error}</p>
 	{/if}
@@ -56,18 +89,34 @@
 		text-align: center;
 		padding: 2rem;
 	}
+	.actions {
+		display: flex;
+		gap: 0.6rem;
+		flex-wrap: wrap;
+		justify-content: center;
+	}
 	button {
 		padding: 0.6em 1.4em;
 		border-radius: 8px;
-		border: 1px solid #396cd8;
-		background: #396cd8;
-		color: white;
+		border: 1px solid rgba(127, 127, 127, 0.45);
+		background: transparent;
+		color: inherit;
 		cursor: pointer;
 		font-size: 1em;
+	}
+	.primary {
+		border-color: #396cd8;
+		background: #396cd8;
+		color: white;
 	}
 	button:disabled {
 		opacity: 0.6;
 		cursor: default;
+	}
+	.hint {
+		margin: 0;
+		font-size: 0.85em;
+		opacity: 0.6;
 	}
 	.error {
 		color: #d33;

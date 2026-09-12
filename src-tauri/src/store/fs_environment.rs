@@ -52,11 +52,46 @@ pub fn create_environment(
     Ok((path, env))
 }
 
+fn env_stem(path: &Path) -> String {
+    let file_name = path
+        .file_name()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_default();
+    file_name.strip_suffix(ENV_EXT).map(str::to_string).unwrap_or(file_name)
+}
+
 /// Saves `environment` to `env_path`, bumping its sync version/timestamp.
-pub fn save_environment(env_path: &Path, mut environment: EnvironmentFile) -> AppResult<EnvironmentFile> {
+/// A changed `meta.name` also renames the file, the same way requests and
+/// folders work — the folder has to stay readable outside the app, so the
+/// display name and the file name must not drift apart. Returns the path it
+/// ended up at, which callers hold on to for the next save.
+pub fn save_environment(env_path: &Path, mut environment: EnvironmentFile) -> AppResult<(PathBuf, EnvironmentFile)> {
     environment.meta.sync.touch();
-    write_toml(env_path, &environment)?;
-    Ok(environment)
+
+    if env_stem(env_path) == super::naming::sanitize_file_stem(&environment.meta.name) {
+        write_toml(env_path, &environment)?;
+        return Ok((env_path.to_path_buf(), environment));
+    }
+
+    let parent = env_path
+        .parent()
+        .ok_or_else(|| AppError::NotFound(format!("no parent directory for {}", env_path.display())))?;
+    let new_path = super::naming::unique_path(parent, &environment.meta.name, ENV_EXT);
+    write_toml(&new_path, &environment)?;
+    if env_path.exists() {
+        fs::remove_file(env_path).map_err(|source| AppError::Io {
+            path: env_path.display().to_string(),
+            source,
+        })?;
+    }
+    Ok((new_path, environment))
+}
+
+pub fn delete_environment(env_path: &Path) -> AppResult<()> {
+    fs::remove_file(env_path).map_err(|source| AppError::Io {
+        path: env_path.display().to_string(),
+        source,
+    })
 }
 
 #[cfg(test)]
@@ -79,8 +114,55 @@ mod tests {
             enabled: true,
             secret: false,
         });
-        let saved = save_environment(&path, env).unwrap();
+        let (saved_path, saved) = save_environment(&path, env).unwrap();
+        assert_eq!(saved_path, path);
         assert_eq!(saved.meta.sync.version, 2);
         assert_eq!(saved.variables.len(), 1);
+    }
+
+    #[test]
+    fn saving_under_a_new_name_renames_the_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let (path, mut env) = create_environment(dir.path(), "Dev", EnvironmentScope::Global).unwrap();
+        let id = env.meta.sync.id.clone();
+
+        env.meta.name = "Staging".to_string();
+        let (new_path, saved) = save_environment(&path, env).unwrap();
+
+        assert_eq!(new_path.file_name().unwrap(), "Staging.env.toml");
+        assert!(!path.exists());
+        // The id is what the active-environment setting points at, so a
+        // rename must not disturb it.
+        assert_eq!(saved.meta.sync.id, id);
+        let listed = list_environments(dir.path()).unwrap();
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].1.meta.name, "Staging");
+    }
+
+    #[test]
+    fn delete_environment_removes_the_file_and_leaves_the_others() {
+        let dir = tempfile::tempdir().unwrap();
+        let (doomed, _) = create_environment(dir.path(), "Dev", EnvironmentScope::Global).unwrap();
+        create_environment(dir.path(), "Prod", EnvironmentScope::Global).unwrap();
+
+        delete_environment(&doomed).unwrap();
+
+        assert!(!doomed.exists());
+        let left = list_environments(dir.path()).unwrap();
+        assert_eq!(left.len(), 1);
+        assert_eq!(left[0].1.meta.name, "Prod");
+    }
+
+    #[test]
+    fn renaming_onto_a_taken_name_does_not_overwrite_it() {
+        let dir = tempfile::tempdir().unwrap();
+        create_environment(dir.path(), "Prod", EnvironmentScope::Global).unwrap();
+        let (path, mut env) = create_environment(dir.path(), "Dev", EnvironmentScope::Global).unwrap();
+
+        env.meta.name = "Prod".to_string();
+        let (new_path, _) = save_environment(&path, env).unwrap();
+
+        assert_eq!(new_path.file_name().unwrap(), "Prod (2).env.toml");
+        assert_eq!(list_environments(dir.path()).unwrap().len(), 2);
     }
 }

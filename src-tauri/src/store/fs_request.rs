@@ -158,8 +158,8 @@ pub fn move_node(source_path: &Path, target_parent: &Path) -> AppResult<PathBuf>
     // Moving a folder inside itself (or its own descendant) would detach the
     // whole subtree from the workspace.
     if source_path.is_dir() && target_parent.starts_with(source_path) {
-        return Err(AppError::Execution(
-            "нельзя переместить папку внутрь самой себя".to_string(),
+        return Err(AppError::Message(
+            "Нельзя переместить папку внутрь самой себя.".to_string(),
         ));
     }
     if parent_of(source_path)? == target_parent {

@@ -13,6 +13,7 @@ async fn main() {
     let dir = tempfile::tempdir().unwrap();
     println!("workspace dir: {}", dir.path().display());
 
+    fs_workspace::create_workspace(dir.path(), "Smoke").unwrap();
     let (workspace, collections) = fs_workspace::open_workspace(dir.path()).unwrap();
     println!("opened workspace '{}', {} collections", workspace.name, collections.len());
 

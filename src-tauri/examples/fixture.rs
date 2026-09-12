@@ -9,7 +9,10 @@ fn main() {
     let dir: PathBuf = std::env::args().nth(1).map(PathBuf::from).expect("pass a target dir");
     std::fs::create_dir_all(&dir).unwrap();
 
-    fs_workspace::open_workspace(&dir).unwrap();
+    // Re-runnable against the same directory: only initialize it once.
+    if !fs_workspace::is_workspace(&dir) {
+        fs_workspace::create_workspace(&dir, "Fixture").unwrap();
+    }
     let collection = fs_collection::create_collection(&dir, "Petstore").unwrap();
     let collection_path = std::path::Path::new(&collection.path);
 

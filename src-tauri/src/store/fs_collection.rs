@@ -48,6 +48,42 @@ pub fn create_collection(workspace_path: &Path, name: &str) -> AppResult<Collect
     })
 }
 
+/// Renames a collection: the display name in `collection.toml` and the
+/// directory itself (kept in sync so the workspace stays readable outside
+/// the app, same as for requests and folders). Returns the summary with the
+/// new path — callers hold collections by path and must rebase.
+pub fn rename_collection(collection_path: &Path, new_name: &str) -> AppResult<CollectionSummary> {
+    let marker = collection_path.join(COLLECTION_FILE);
+    let mut file: CollectionFile = read_toml(&marker)?;
+    file.name = new_name.to_string();
+    file.sync.touch();
+    write_toml(&marker, &file)?;
+
+    let parent = collection_path
+        .parent()
+        .ok_or_else(|| AppError::NotFound(format!("no parent directory for {}", collection_path.display())))?;
+    let current_stem = collection_path
+        .file_name()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_default();
+    if current_stem == super::naming::sanitize_file_stem(new_name) {
+        return Ok(CollectionSummary {
+            name: new_name.to_string(),
+            path: collection_path.display().to_string(),
+        });
+    }
+
+    let destination = super::naming::unique_path(parent, new_name, "");
+    fs::rename(collection_path, &destination).map_err(|source| AppError::Io {
+        path: collection_path.display().to_string(),
+        source,
+    })?;
+    Ok(CollectionSummary {
+        name: new_name.to_string(),
+        path: destination.display().to_string(),
+    })
+}
+
 pub fn list_collections(workspace_path: &Path) -> AppResult<Vec<CollectionSummary>> {
     let mut out = Vec::new();
     if !workspace_path.is_dir() {
@@ -181,6 +217,23 @@ mod tests {
         let collections = list_collections(dir.path()).unwrap();
         assert_eq!(collections.len(), 1);
         assert_eq!(collections[0].name, "Petstore");
+    }
+
+    #[test]
+    fn rename_collection_renames_directory_and_metadata() {
+        let dir = tempfile::tempdir().unwrap();
+        let created = create_collection(dir.path(), "Petstore").unwrap();
+        let old_path = std::path::PathBuf::from(&created.path);
+        std::fs::write(old_path.join("keep.txt"), "x").unwrap();
+
+        let renamed = rename_collection(&old_path, "Zoo API").unwrap();
+        assert_eq!(renamed.name, "Zoo API");
+        assert!(!old_path.exists());
+        let new_path = std::path::Path::new(&renamed.path);
+        assert_eq!(new_path.file_name().unwrap(), "Zoo API");
+        // Contents travel with the directory.
+        assert!(new_path.join("keep.txt").is_file());
+        assert_eq!(list_collections(dir.path()).unwrap()[0].name, "Zoo API");
     }
 
     #[test]

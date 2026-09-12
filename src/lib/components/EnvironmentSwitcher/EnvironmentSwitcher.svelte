@@ -1,19 +1,17 @@
 <script lang="ts">
 	import { api } from "../../api/client";
-	import { workspacePath } from "../../stores/workspace";
+	import { workspace, workspacePath } from "../../stores/workspace";
 	import { activeCollection } from "../../stores/collectionTree";
 	import {
 		globalEnvironments,
 		collectionEnvironments,
 		activeGlobalEnvironmentId,
 		activeCollectionEnvironmentId,
+		environmentsRefreshToken,
 	} from "../../stores/environments";
-	import type { EnvironmentEntry, EnvironmentScope } from "../../bindings/types";
-	import { promptForText } from "../../ui/dialogs";
+	import type { EnvironmentEntry } from "../../bindings/types";
+	import { openEnvironmentsDialog } from "../../ui/environmentsDialog";
 	import { reportError } from "../../ui/notices";
-	import EnvironmentEditorModal from "./EnvironmentEditorModal.svelte";
-
-	let editing = $state<EnvironmentEntry | null>(null);
 
 	/// Loads a scope's environments and which one is active. Both go through
 	/// one call site with error handling — previously a failed list left the
@@ -50,10 +48,14 @@
 		activeCollectionEnvironmentId.set(activeId);
 	}
 
+	// The refresh token is what the environments dialog signals with: it is
+	// rendered at the app root, not here, so it can't call these directly.
 	$effect(() => {
+		$environmentsRefreshToken;
 		if ($workspacePath) refreshGlobal();
 	});
 	$effect(() => {
+		$environmentsRefreshToken;
 		refreshCollection();
 	});
 
@@ -69,52 +71,6 @@
 		if (!collection) return;
 		await api.setActiveEnvironment(collection.path, id || null);
 		activeCollectionEnvironmentId.set(id || null);
-	}
-
-	async function createEnvironment(scope: EnvironmentScope) {
-		const rootPath = scope === "global" ? $workspacePath : $activeCollection?.path;
-		if (!rootPath) return;
-		const title = scope === "global" ? "Новое глобальное окружение" : "Новое окружение коллекции";
-		const name = await promptForText(title, "Название окружения", "Новое окружение");
-		if (!name) return;
-
-		const entry = await api.createEnvironment(rootPath, name, scope);
-		// A freshly created environment becomes the active one, otherwise it
-		// would sit unused and unreachable from the edit button.
-		await api.setActiveEnvironment(rootPath, entry.meta.id);
-		if (scope === "global") await refreshGlobal();
-		else await refreshCollection();
-		editing = entry;
-	}
-
-	/// Opens the editor for whichever environment the scope currently has
-	/// selected, re-fetching first if the cached list doesn't contain it.
-	async function openEditor(scope: EnvironmentScope) {
-		const rootPath = scope === "global" ? $workspacePath : $activeCollection?.path;
-		const activeId = scope === "global" ? $activeGlobalEnvironmentId : $activeCollectionEnvironmentId;
-		if (!rootPath) return;
-
-		const cached = scope === "global" ? $globalEnvironments : $collectionEnvironments;
-		let entry = cached.find((e) => e.meta.id === activeId) ?? null;
-
-		if (!entry) {
-			if (scope === "global") await refreshGlobal();
-			else await refreshCollection();
-			const refreshed = scope === "global" ? $globalEnvironments : $collectionEnvironments;
-			const refreshedId = scope === "global" ? $activeGlobalEnvironmentId : $activeCollectionEnvironmentId;
-			entry = refreshed.find((e) => e.meta.id === refreshedId) ?? refreshed[0] ?? null;
-		}
-
-		if (!entry) {
-			reportError("Нет окружения для редактирования", new Error(`scope: ${scope}`));
-			return;
-		}
-		editing = entry;
-	}
-
-	function onSaved(saved: EnvironmentEntry) {
-		const store = saved.meta.scope === "global" ? globalEnvironments : collectionEnvironments;
-		store.update((list) => list.map((e) => (e.path === saved.path ? saved : e)));
 	}
 </script>
 
@@ -132,10 +88,21 @@
 				<option value={env.meta.id}>{env.meta.name}</option>
 			{/each}
 		</select>
-		{#if $globalEnvironments.length > 0}
-			<button class="icon" title="Редактировать окружение" onclick={() => openEditor("global")}>✎</button>
-		{/if}
-		<button class="icon" title="Новое глобальное окружение" onclick={() => createEnvironment("global")}>+</button>
+		<button
+			class="icon"
+			title="Окружения пространства"
+			aria-label="Окружения пространства"
+			disabled={!$workspacePath}
+			onclick={() =>
+				$workspacePath &&
+				openEnvironmentsDialog({
+					rootPath: $workspacePath,
+					scope: "global",
+					title: $workspace?.name ?? "",
+				})}
+		>
+			✎
+		</button>
 	</div>
 
 	{#if $activeCollection}
@@ -151,22 +118,23 @@
 					<option value={env.meta.id}>{env.meta.name}</option>
 				{/each}
 			</select>
-			{#if $collectionEnvironments.length > 0}
-				<button class="icon" title="Редактировать окружение" onclick={() => openEditor("collection")}>✎</button>
-			{/if}
-			<button class="icon" title="Новое окружение коллекции" onclick={() => createEnvironment("collection")}>+</button>
+			<button
+				class="icon"
+				title="Окружения коллекции"
+				aria-label="Окружения коллекции"
+				onclick={() =>
+					$activeCollection &&
+					openEnvironmentsDialog({
+						rootPath: $activeCollection.path,
+						scope: "collection",
+						title: $activeCollection.name,
+					})}
+			>
+				✎
+			</button>
 		</div>
 	{/if}
 </div>
-
-{#if editing && $workspacePath}
-	<EnvironmentEditorModal
-		environment={editing}
-		workspacePath={$workspacePath}
-		onClose={() => (editing = null)}
-		{onSaved}
-	/>
-{/if}
 
 <style>
 	.switcher {

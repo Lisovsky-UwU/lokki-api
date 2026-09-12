@@ -4,9 +4,11 @@
 	import { activeRequest } from "../lib/stores/activeRequest";
 	import { api } from "../lib/api/client";
 	import { installGlobalErrorReporting, reportError } from "../lib/ui/notices";
+	import { closeEnvironmentsDialog, environmentsDialog } from "../lib/ui/environmentsDialog";
 	import { layout, updateLayout } from "../lib/stores/layout";
 	import Toasts from "../lib/components/common/Toasts.svelte";
 	import SettingsModal from "../lib/components/Settings/SettingsModal.svelte";
+	import EnvironmentsModal from "../lib/components/EnvironmentSwitcher/EnvironmentsModal.svelte";
 	import ConfirmDialog from "../lib/components/common/ConfirmDialog.svelte";
 	import PromptDialog from "../lib/components/common/PromptDialog.svelte";
 	import Splitter from "../lib/components/common/Splitter.svelte";
@@ -45,6 +47,17 @@
 <Toasts />
 {#if settingsOpen}
 	<SettingsModal onClose={() => (settingsOpen = false)} />
+{/if}
+<!-- Rendered here rather than in the switcher: the collection menu in the
+     sidebar opens the same dialog for a collection that isn't the active one. -->
+{#if $environmentsDialog && $workspacePath}
+	<EnvironmentsModal
+		rootPath={$environmentsDialog.rootPath}
+		scope={$environmentsDialog.scope}
+		title={$environmentsDialog.title}
+		workspacePath={$workspacePath}
+		onClose={closeEnvironmentsDialog}
+	/>
 {/if}
 
 {#if restoring}
