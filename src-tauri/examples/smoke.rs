@@ -42,7 +42,7 @@ async fn main() {
     println!("tree: {:?}", tree);
 
     let resolver = Resolver::new(VariableScope(HashMap::new()), None);
-    let (resolved, unresolved) = resolve_http_request(saved.http.as_ref().unwrap(), &resolver);
+    let (resolved, unresolved) = resolve_http_request(saved.http.as_ref().unwrap(), &resolver).unwrap();
     println!("unresolved vars: {:?}", unresolved);
 
     let executor = HttpExecutor::new();

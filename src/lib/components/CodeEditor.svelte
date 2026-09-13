@@ -19,10 +19,17 @@
 		type CompletionResult,
 	} from "@codemirror/autocomplete";
 	import { json } from "@codemirror/lang-json";
-	import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
+	import { xml } from "@codemirror/lang-xml";
+	import { yaml } from "@codemirror/lang-yaml";
+	import { html } from "@codemirror/lang-html";
+	import { css } from "@codemirror/lang-css";
+	import { javascript } from "@codemirror/lang-javascript";
+	import { clojure } from "@codemirror/legacy-modes/mode/clojure";
+	import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
 	import { tags } from "@lezer/highlight";
 	import { get } from "svelte/store";
 	import { availableVariables } from "../stores/environments";
+	import type { EditorLanguage } from "../bindings/types";
 
 	let {
 		value = "",
@@ -33,7 +40,7 @@
 	}: {
 		value: string;
 		onChange?: (v: string) => void;
-		language?: "json" | "text";
+		language?: EditorLanguage;
 		readOnly?: boolean;
 		placeholder?: string;
 	} = $props();
@@ -54,14 +61,69 @@
 
 	// Colors come from CSS custom properties (GitHub's palette, defined per
 	// theme in +page.svelte) so the editor follows light/dark automatically.
+	// GitHub's palette, mapped tag by tag. The list has to be this explicit:
+	// every language marks its tokens with its own tags, and a tag that isn't
+	// listed simply renders as plain text — which is why XML (tagName,
+	// attributeName, angleBracket) looked unhighlighted before.
 	const highlightStyle = HighlightStyle.define([
 		{ tag: [tags.propertyName, tags.definition(tags.propertyName)], color: "var(--cm-property)" },
-		{ tag: [tags.string, tags.special(tags.string)], color: "var(--cm-string)" },
-		{ tag: [tags.number, tags.bool, tags.null, tags.atom], color: "var(--cm-number)" },
-		{ tag: [tags.keyword, tags.operator], color: "var(--cm-keyword)" },
-		{ tag: [tags.comment, tags.lineComment, tags.blockComment], color: "var(--cm-comment)", fontStyle: "italic" },
-		{ tag: [tags.punctuation, tags.separator, tags.bracket], color: "var(--cm-punctuation)" },
-		{ tag: tags.invalid, color: "#cf222e" },
+		{
+			tag: [tags.string, tags.special(tags.string), tags.attributeValue, tags.character, tags.regexp, tags.escape],
+			color: "var(--cm-string)",
+		},
+		{
+			tag: [tags.number, tags.integer, tags.float, tags.bool, tags.null, tags.atom, tags.constant(tags.name), tags.unit],
+			color: "var(--cm-number)",
+		},
+		{
+			tag: [
+				tags.keyword,
+				tags.controlKeyword,
+				tags.definitionKeyword,
+				tags.moduleKeyword,
+				tags.operatorKeyword,
+				tags.modifier,
+				tags.self,
+				tags.operator,
+				tags.derefOperator,
+				tags.definitionOperator,
+			],
+			color: "var(--cm-keyword)",
+		},
+		// Markup: tags green, attribute names blue, as on GitHub.
+		{ tag: [tags.tagName, tags.standard(tags.tagName), tags.namespace], color: "var(--cm-tag)" },
+		{ tag: tags.attributeName, color: "var(--cm-attribute)" },
+		{
+			tag: [tags.function(tags.variableName), tags.function(tags.propertyName), tags.labelName],
+			color: "var(--cm-function)",
+		},
+		{ tag: [tags.variableName, tags.definition(tags.variableName)], color: "var(--cm-variable)" },
+		{ tag: [tags.typeName, tags.className], color: "var(--cm-type)" },
+		{
+			tag: [tags.comment, tags.lineComment, tags.blockComment, tags.docComment],
+			color: "var(--cm-comment)",
+			fontStyle: "italic",
+		},
+		// Document-level markers (an XML declaration, a YAML `---`) read as
+		// scaffolding rather than content.
+		{ tag: [tags.meta, tags.documentMeta, tags.processingInstruction], color: "var(--cm-meta)" },
+		{
+			tag: [
+				tags.punctuation,
+				tags.separator,
+				tags.bracket,
+				tags.angleBracket,
+				tags.squareBracket,
+				tags.paren,
+				tags.brace,
+			],
+			color: "var(--cm-punctuation)",
+		},
+		{ tag: tags.link, color: "var(--cm-string)", textDecoration: "underline" },
+		{ tag: tags.heading, color: "var(--cm-property)", fontWeight: "bold" },
+		{ tag: tags.emphasis, fontStyle: "italic" },
+		{ tag: tags.strong, fontWeight: "bold" },
+		{ tag: tags.invalid, color: "var(--cm-invalid)" },
 	]);
 
 	// The caret and selection are drawn by CodeMirror, so they need explicit
@@ -89,7 +151,28 @@
 		".cm-tooltip-autocomplete ul li[aria-selected]": { background: "rgba(57, 108, 216, 0.35)", color: "inherit" },
 	});
 
-	const languageExtension = (lang: "json" | "text") => (lang === "json" ? [json()] : []);
+	/// EDN has no CodeMirror package of its own; it is a subset of Clojure's
+	/// reader syntax, so the legacy Clojure mode highlights it correctly.
+	const languageExtension = (lang: EditorLanguage) => {
+		switch (lang) {
+			case "json":
+				return [json()];
+			case "xml":
+				return [xml()];
+			case "yaml":
+				return [yaml()];
+			case "html":
+				return [html()];
+			case "css":
+				return [css()];
+			case "javascript":
+				return [javascript()];
+			case "edn":
+				return [StreamLanguage.define(clojure)];
+			default:
+				return [];
+		}
+	};
 
 	/// Completes environment variable names right after a `{{`.
 	function variableCompletions(context: CompletionContext): CompletionResult | null {

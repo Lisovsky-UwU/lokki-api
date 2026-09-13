@@ -179,6 +179,13 @@
 		--cm-keyword: #cf222e;
 		--cm-comment: #6e7781;
 		--cm-punctuation: #24292f;
+		--cm-tag: #116329;
+		--cm-attribute: #0550ae;
+		--cm-function: #8250df;
+		--cm-variable: #953800;
+		--cm-type: #953800;
+		--cm-meta: #6e7781;
+		--cm-invalid: #82071e;
 		--cm-selection: rgba(84, 174, 255, 0.4);
 		--cm-active-line: rgba(234, 238, 242, 0.7);
 	}
@@ -231,6 +238,13 @@
 			--cm-keyword: #ff7b72;
 			--cm-comment: #8b949e;
 			--cm-punctuation: #c9d1d9;
+			--cm-tag: #7ee787;
+			--cm-attribute: #79c0ff;
+			--cm-function: #d2a8ff;
+			--cm-variable: #ffa657;
+			--cm-type: #ffa657;
+			--cm-meta: #8b949e;
+			--cm-invalid: #ffa198;
 			--cm-selection: rgba(56, 139, 253, 0.4);
 			--cm-active-line: rgba(110, 118, 129, 0.1);
 		}

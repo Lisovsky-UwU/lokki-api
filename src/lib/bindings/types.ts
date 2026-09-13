@@ -33,11 +33,19 @@ export type AuthSpec =
 	| { type: "basic"; username: string; password: string }
 	| { type: "bearer"; token: string };
 
+/// Text body formats. Each only picks the default Content-Type and the
+/// editor highlighting; the payload is the text as typed.
+export type TextFormat = "plain" | "json" | "xml" | "yaml" | "edn" | "html" | "css" | "javascript";
+
+/// `raw` and `json` predate `text` and stay readable for requests written
+/// before formats existed; new bodies are written as `text`.
 export type BodySpec =
 	| { type: "none" }
 	| { type: "raw"; content: string }
 	| { type: "json"; content: string }
-	| { type: "form"; fields: KeyValue[] };
+	| { type: "text"; content: string; format: TextFormat }
+	| { type: "form"; fields: KeyValue[] }
+	| { type: "file"; path: string };
 
 export interface HttpRequestSpec {
 	method: HttpMethod;
@@ -171,6 +179,10 @@ export interface ExecutionOutcome {
 	trace: ExecutionTrace;
 	unresolved_variables: string[];
 }
+
+/// Languages the code editor can highlight. Kept next to the domain types
+/// because both the body format and the response viewer map onto it.
+export type EditorLanguage = "json" | "xml" | "yaml" | "edn" | "html" | "css" | "javascript" | "text";
 
 export function newKeyValue(): KeyValue {
 	return { key: "", value: "", enabled: true };

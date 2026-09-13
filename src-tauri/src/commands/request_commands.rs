@@ -28,6 +28,15 @@ pub fn create_request(parent_path: String, name: String, method: HttpMethod) -> 
     fs_request::create_request(Path::new(&parent_path), &name, method)
 }
 
+#[tauri::command]
+pub fn clone_request(request_path: String) -> AppResult<RequestAtPath> {
+    let (path, request) = fs_request::clone_request(Path::new(&request_path))?;
+    Ok(RequestAtPath {
+        path: path.display().to_string(),
+        request,
+    })
+}
+
 /// Saves an incognito request into a workspace folder, where it becomes an
 /// ordinary request.
 #[tauri::command]

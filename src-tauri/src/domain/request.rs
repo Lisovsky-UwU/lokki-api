@@ -70,13 +70,64 @@ impl Default for AuthSpec {
     }
 }
 
+/// Text body formats. Each one only decides the default `Content-Type` and
+/// which highlighting the editor uses — the payload is always the text the
+/// user typed, sent as-is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TextFormat {
+    Plain,
+    Json,
+    Xml,
+    Yaml,
+    Edn,
+    Html,
+    Css,
+    Javascript,
+}
+
+impl TextFormat {
+    pub fn content_type(self) -> &'static str {
+        match self {
+            TextFormat::Plain => "text/plain",
+            TextFormat::Json => "application/json",
+            TextFormat::Xml => "application/xml",
+            TextFormat::Yaml => "application/yaml",
+            TextFormat::Edn => "application/edn",
+            TextFormat::Html => "text/html",
+            TextFormat::Css => "text/css",
+            TextFormat::Javascript => "application/javascript",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum BodySpec {
     None,
-    Raw { content: String },
-    Json { content: String },
-    Form { fields: Vec<KeyValue> },
+    /// Kept for files written before formats existed: a raw body is plain
+    /// text with no `Content-Type` of its own.
+    Raw {
+        content: String,
+    },
+    /// Also predates `Text`; same thing with `format = "json"`.
+    Json {
+        content: String,
+    },
+    Text {
+        content: String,
+        format: TextFormat,
+    },
+    Form {
+        fields: Vec<KeyValue>,
+    },
+    /// Sends a file from disk verbatim. The path is absolute and local, so a
+    /// request shared through a synced workspace will point at nothing on
+    /// someone else's machine — deliberately, since copying the file into
+    /// the workspace is the user's decision to make.
+    File {
+        path: String,
+    },
 }
 
 impl Default for BodySpec {

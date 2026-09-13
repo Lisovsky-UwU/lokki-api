@@ -85,6 +85,15 @@ pub fn adopt_request(parent_path: &Path, name: &str, mut request: RequestFile) -
     Ok((path, request))
 }
 
+/// Copies a request next to itself. The copy is a new entity, not a second
+/// name for the old one: `adopt_request` gives it its own id and position,
+/// and the name gets a suffix so both are distinguishable in the tree.
+pub fn clone_request(request_path: &Path) -> AppResult<(PathBuf, RequestFile)> {
+    let request = load_request(request_path)?;
+    let name = format!("{} (копия)", request.meta.name);
+    adopt_request(parent_of(request_path)?, &name, request)
+}
+
 /// Writes a request to an arbitrary path the user picked in a save dialog.
 /// The file keeps the same TOML shape as one inside a workspace, so it can
 /// simply be dropped into a collection folder later.
@@ -397,6 +406,30 @@ mod tests {
         assert_eq!(saved.meta.seq, 2);
         assert_ne!(saved.meta.sync.id, original_id);
         assert_eq!(load_request(&path).unwrap().meta.name, "Создать питомца");
+    }
+
+    #[test]
+    fn clone_request_leaves_the_original_alone_and_makes_a_separate_entity() {
+        let dir = tempfile::tempdir().unwrap();
+        let created = create_request(dir.path(), "Список питомцев", HttpMethod::Get).unwrap();
+        let original_path = dir.path().join("Список питомцев.lokki.toml");
+        let mut original = load_request(&original_path).unwrap();
+        original.http.as_mut().unwrap().url = "https://example.com/pets".to_string();
+        save_request(&original_path, original).unwrap();
+
+        let (clone_path, clone) = clone_request(&original_path).unwrap();
+
+        assert_eq!(clone.meta.name, "Список питомцев (копия)");
+        assert_eq!(clone_path.file_name().unwrap(), "Список питомцев (копия).lokki.toml");
+        assert_eq!(clone.http.as_ref().unwrap().url, "https://example.com/pets");
+        assert_ne!(clone.meta.sync.id, created.meta.sync.id);
+        // The original stays exactly as it was, copy included in the folder.
+        assert!(original_path.is_file());
+        assert_eq!(load_request(&original_path).unwrap().meta.sync.id, created.meta.sync.id);
+
+        // Cloning twice must not overwrite the first copy.
+        let (second_path, _) = clone_request(&original_path).unwrap();
+        assert_eq!(second_path.file_name().unwrap(), "Список питомцев (копия) (2).lokki.toml");
     }
 
     #[test]

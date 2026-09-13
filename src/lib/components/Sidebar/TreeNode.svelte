@@ -104,6 +104,19 @@
 		requestTreeRefresh();
 	}
 
+	/// Clones the request and opens the copy — that is what the next click
+	/// would be anyway. Opening goes through `openRequest`, so an unsaved
+	/// request on screen still gets its confirmation.
+	async function cloneRequest() {
+		try {
+			const clone = await api.cloneRequest(node.path);
+			requestTreeRefresh();
+			await openRequest(clone.path);
+		} catch (e) {
+			reportError("Не удалось клонировать запрос", e);
+		}
+	}
+
 	async function removeFolder() {
 		const confirmed = await confirmAction(`Удалить папку «${node.name}» со всем содержимым?`, {
 			title: "Удаление папки",
@@ -212,6 +225,7 @@
 	]);
 
 	let requestMenu = $derived([
+		{ label: "Клонировать запрос", action: cloneRequest },
 		{ label: "Переименовать запрос", action: renameRequest },
 		{ label: "Удалить запрос", action: removeRequest, danger: true },
 	]);

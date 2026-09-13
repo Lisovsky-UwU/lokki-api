@@ -4,7 +4,7 @@ pub mod trace;
 pub use http::HttpExecutor;
 pub use trace::{ExecutionTrace, Phase, TraceEvent, TraceLevel, TraceRecorder};
 
-use crate::domain::{AuthSpec, BodySpec, HttpMethod, HttpRequestSpec, KeyValue, RequestSettings};
+use crate::domain::{AuthSpec, BodySpec, HttpMethod, HttpRequestSpec, KeyValue, RequestSettings, TextFormat};
 use crate::interpolate::Resolver;
 use async_trait::async_trait;
 use base64::Engine;
@@ -85,7 +85,53 @@ fn form_urlencode_pairs(pairs: &[(String, String)]) -> String {
 /// header and body-type-appropriate `Content-Type`. Returns the resolved
 /// request plus any variable names that couldn't be found (left verbatim in
 /// the output rather than failing the whole request).
-pub fn resolve_http_request(spec: &HttpRequestSpec, resolver: &Resolver) -> (ResolvedHttpRequest, Vec<String>) {
+/// Sets `Content-Type` unless the request already carries one — an explicit
+/// header the user wrote always wins over the body format's default.
+fn default_content_type(headers: &mut Vec<KeyValue>, value: &str) {
+    if headers.iter().any(|h| h.key.eq_ignore_ascii_case("content-type")) {
+        return;
+    }
+    headers.push(KeyValue {
+        key: "Content-Type".to_string(),
+        value: value.to_string(),
+        enabled: true,
+    });
+}
+
+/// Best-effort type for a file body, by extension. Anything unrecognised
+/// goes out as octet-stream, which is what a server expects for "some
+/// bytes".
+fn content_type_for_file(path: &str) -> &'static str {
+    let extension = std::path::Path::new(path)
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    match extension.as_str() {
+        "json" => "application/json",
+        "xml" => "application/xml",
+        "yaml" | "yml" => "application/yaml",
+        "edn" => "application/edn",
+        "html" | "htm" => "text/html",
+        "css" => "text/css",
+        "js" => "application/javascript",
+        "csv" => "text/csv",
+        "txt" | "log" | "md" => "text/plain",
+        "pdf" => "application/pdf",
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "gif" => "image/gif",
+        "webp" => "image/webp",
+        "svg" => "image/svg+xml",
+        "zip" => "application/zip",
+        _ => "application/octet-stream",
+    }
+}
+
+pub fn resolve_http_request(
+    spec: &HttpRequestSpec,
+    resolver: &Resolver,
+) -> Result<(ResolvedHttpRequest, Vec<String>), ExecutorError> {
     let mut unresolved = Vec::new();
     let mut interp = |s: &str| -> String {
         let (out, missing) = resolver.interpolate(s);
@@ -146,29 +192,32 @@ pub fn resolve_http_request(spec: &HttpRequestSpec, resolver: &Resolver) -> (Res
         }
     }
 
-    let has_content_type = |headers: &[KeyValue]| headers.iter().any(|h| h.key.eq_ignore_ascii_case("content-type"));
 
     let body = match &spec.body {
         BodySpec::None => None,
         BodySpec::Raw { content } => Some(interp(content).into_bytes()),
         BodySpec::Json { content } => {
-            if !has_content_type(&headers) {
-                headers.push(KeyValue {
-                    key: "Content-Type".to_string(),
-                    value: "application/json".to_string(),
-                    enabled: true,
-                });
+            default_content_type(&mut headers, TextFormat::Json.content_type());
+            Some(interp(content).into_bytes())
+        }
+        BodySpec::Text { content, format } => {
+            // Plain text carries no type of its own: it is the "just send
+            // these bytes" case, and inventing a Content-Type for it would
+            // change what the request means.
+            if *format != TextFormat::Plain {
+                default_content_type(&mut headers, format.content_type());
             }
             Some(interp(content).into_bytes())
         }
+        BodySpec::File { path } => {
+            let path = interp(path);
+            let bytes = std::fs::read(&path)
+                .map_err(|e| ExecutorError::Failed(format!("Не удалось прочитать файл {path}: {e}")))?;
+            default_content_type(&mut headers, content_type_for_file(&path));
+            Some(bytes)
+        }
         BodySpec::Form { fields } => {
-            if !has_content_type(&headers) {
-                headers.push(KeyValue {
-                    key: "Content-Type".to_string(),
-                    value: "application/x-www-form-urlencoded".to_string(),
-                    enabled: true,
-                });
-            }
+            default_content_type(&mut headers, "application/x-www-form-urlencoded");
             let pairs: Vec<(String, String)> = fields
                 .iter()
                 .filter(|f| f.enabled && !f.key.trim().is_empty())
@@ -178,7 +227,7 @@ pub fn resolve_http_request(spec: &HttpRequestSpec, resolver: &Resolver) -> (Res
         }
     };
 
-    (
+    Ok((
         ResolvedHttpRequest {
             method: spec.method,
             url,
@@ -186,11 +235,19 @@ pub fn resolve_http_request(spec: &HttpRequestSpec, resolver: &Resolver) -> (Res
             body,
         },
         unresolved,
-    )
+    ))
 }
 
 #[cfg(test)]
 mod tests {
+    fn content_type(request: &super::ResolvedHttpRequest) -> Option<&str> {
+        request
+            .headers
+            .iter()
+            .find(|h| h.key.eq_ignore_ascii_case("content-type"))
+            .map(|h| h.value.as_str())
+    }
+
     use super::*;
     use crate::domain::KeyValue as KV;
     use crate::interpolate::VariableScope;
@@ -214,10 +271,100 @@ mod tests {
             scope(&[("baseUrl", "https://api.example.com"), ("limit", "20"), ("token", "abc123")]),
             None,
         );
-        let (resolved, unresolved) = resolve_http_request(&spec, &resolver);
+        let (resolved, unresolved) = resolve_http_request(&spec, &resolver).unwrap();
         assert!(unresolved.is_empty());
         assert_eq!(resolved.url, "https://api.example.com/pets?limit=20");
         assert!(resolved.headers.iter().any(|h| h.key == "Authorization" && h.value == "Bearer abc123"));
+    }
+
+    #[test]
+    fn a_text_body_sets_the_content_type_of_its_format() {
+        let mut spec = HttpRequestSpec {
+            method: HttpMethod::Post,
+            url: "https://example.com".to_string(),
+            query_params: vec![],
+            headers: vec![],
+            auth: AuthSpec::None,
+            body: BodySpec::Text {
+                content: "root:\n  key: {{value}}".to_string(),
+                format: TextFormat::Yaml,
+            },
+        };
+        let resolver = Resolver::new(scope(&[("value", "42")]), None);
+        let (resolved, _) = resolve_http_request(&spec, &resolver).unwrap();
+        assert_eq!(content_type(&resolved), Some("application/yaml"));
+        assert_eq!(String::from_utf8(resolved.body.unwrap()).unwrap(), "root:\n  key: 42");
+
+        // Plain text is the "send exactly these characters" case and must not
+        // acquire a type of its own.
+        spec.body = BodySpec::Text {
+            content: "hello".to_string(),
+            format: TextFormat::Plain,
+        };
+        let (resolved, _) = resolve_http_request(&spec, &resolver).unwrap();
+        assert_eq!(content_type(&resolved), None);
+    }
+
+    #[test]
+    fn an_explicit_content_type_header_wins_over_the_body_format() {
+        let spec = HttpRequestSpec {
+            method: HttpMethod::Post,
+            url: "https://example.com".to_string(),
+            query_params: vec![],
+            headers: vec![KeyValue {
+                key: "content-type".to_string(),
+                value: "application/vnd.api+json".to_string(),
+                enabled: true,
+            }],
+            auth: AuthSpec::None,
+            body: BodySpec::Text {
+                content: "{}".to_string(),
+                format: TextFormat::Json,
+            },
+        };
+        let resolver = Resolver::new(VariableScope::default(), None);
+        let (resolved, _) = resolve_http_request(&spec, &resolver).unwrap();
+        assert_eq!(content_type(&resolved), Some("application/vnd.api+json"));
+    }
+
+    #[test]
+    fn a_file_body_is_sent_verbatim_with_a_guessed_type() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("payload.xml");
+        std::fs::write(&file, b"<root/>").unwrap();
+
+        let spec = HttpRequestSpec {
+            method: HttpMethod::Post,
+            url: "https://example.com".to_string(),
+            query_params: vec![],
+            headers: vec![],
+            auth: AuthSpec::None,
+            body: BodySpec::File {
+                path: file.display().to_string(),
+            },
+        };
+        let resolver = Resolver::new(VariableScope::default(), None);
+        let (resolved, _) = resolve_http_request(&spec, &resolver).unwrap();
+
+        assert_eq!(content_type(&resolved), Some("application/xml"));
+        assert_eq!(resolved.body.unwrap(), b"<root/>");
+    }
+
+    #[test]
+    fn a_missing_file_body_fails_before_anything_is_sent() {
+        let spec = HttpRequestSpec {
+            method: HttpMethod::Post,
+            url: "https://example.com".to_string(),
+            query_params: vec![],
+            headers: vec![],
+            auth: AuthSpec::None,
+            body: BodySpec::File {
+                path: "C:/nope/missing.bin".to_string(),
+            },
+        };
+        let resolver = Resolver::new(VariableScope::default(), None);
+        let error = resolve_http_request(&spec, &resolver).unwrap_err();
+        assert!(error.to_string().contains("Не удалось прочитать файл"), "{error}");
     }
 
     #[test]
@@ -231,7 +378,7 @@ mod tests {
             body: BodySpec::Json { content: "{\"name\":\"Rex\"}".to_string() },
         };
         let resolver = Resolver::new(VariableScope(HashMap::new()), None);
-        let (resolved, _) = resolve_http_request(&spec, &resolver);
+        let (resolved, _) = resolve_http_request(&spec, &resolver).unwrap();
         assert!(resolved.headers.iter().any(|h| h.key == "Content-Type" && h.value == "application/json"));
         assert_eq!(resolved.body.unwrap(), b"{\"name\":\"Rex\"}".to_vec());
     }
@@ -249,7 +396,7 @@ mod tests {
             body: BodySpec::None,
         };
         let resolver = Resolver::new(VariableScope(HashMap::new()), None);
-        let (resolved, _) = resolve_http_request(&spec, &resolver);
+        let (resolved, _) = resolve_http_request(&spec, &resolver).unwrap();
         assert_eq!(resolved.url, "https://api.example.com/pets");
         assert!(resolved.headers.is_empty());
     }
@@ -265,7 +412,7 @@ mod tests {
             body: BodySpec::None,
         };
         let resolver = Resolver::new(VariableScope(HashMap::new()), None);
-        let (resolved, _) = resolve_http_request(&spec, &resolver);
+        let (resolved, _) = resolve_http_request(&spec, &resolver).unwrap();
         assert_eq!(resolved.url, "https://api.example.com/pets");
         assert!(resolved.headers.is_empty());
     }

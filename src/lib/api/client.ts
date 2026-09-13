@@ -50,6 +50,7 @@ export const api = {
 		invoke<RequestFile>("save_request", { requestPath, request }),
 	createRequest: (parentPath: string, name: string, method: HttpMethod) =>
 		invoke<RequestFile>("create_request", { parentPath, name, method }),
+	cloneRequest: (requestPath: string) => invoke<RequestAtPath>("clone_request", { requestPath }),
 	deleteRequest: (requestPath: string) => invoke<void>("delete_request", { requestPath }),
 	/// Files an in-memory request into a workspace folder, where it becomes
 	/// an ordinary request with an identity of its own.
@@ -58,6 +59,14 @@ export const api = {
 	/// Writes an in-memory request to a file outside any workspace.
 	exportRequest: (filePath: string, name: string, request: RequestFile) =>
 		invoke<RequestFile>("export_request", { filePath, name, request }),
+	/// Picks any file from disk to send as a request body.
+	pickBodyFile: (): Promise<string | null> =>
+		openDialog({ multiple: false, title: "Файл для тела запроса" }) as Promise<string | null>,
+	/// Picks where to write a response body the user wants to keep.
+	pickDownloadTarget: (defaultName: string): Promise<string | null> =>
+		saveDialog({ title: "Сохранить ответ", defaultPath: defaultName }) as Promise<string | null>,
+	saveResponseBody: (filePath: string, bodyBase64: string) =>
+		invoke<void>("save_response_body", { filePath, bodyBase64 }),
 	pickRequestFile: (defaultName: string): Promise<string | null> =>
 		saveDialog({
 			title: "Сохранить запрос",

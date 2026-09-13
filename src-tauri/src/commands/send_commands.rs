@@ -166,7 +166,10 @@ pub async fn send_request(
         )));
     }
 
-    let (resolved, unresolved_variables) = resolve_http_request(&http_spec, &resolver);
+    // Can fail before anything is sent: a file body that isn't readable is
+    // the user's mistake to fix, not a transport failure.
+    let (resolved, unresolved_variables) =
+        resolve_http_request(&http_spec, &resolver).map_err(|e| AppError::Message(e.to_string()))?;
 
     let settings = state.request_settings.clone();
     // The recorder is owned here, not by the executor, so a failed attempt
@@ -197,6 +200,22 @@ pub async fn send_request(
         outcome,
         trace,
         unresolved_variables,
+    })
+}
+
+/// Writes a response body to a file the user picked. The body crosses IPC
+/// base64-encoded (see ExecutionOutcome), so it is decoded here: doing it in
+/// the webview would hold the whole file in memory twice and can't write to
+/// disk anyway.
+#[tauri::command]
+pub fn save_response_body(file_path: String, body_base64: String) -> AppResult<()> {
+    use base64::Engine;
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(body_base64.as_bytes())
+        .map_err(|e| AppError::Message(format!("Не удалось раскодировать тело ответа: {e}")))?;
+    std::fs::write(&file_path, bytes).map_err(|source| AppError::Io {
+        path: file_path,
+        source,
     })
 }
 
