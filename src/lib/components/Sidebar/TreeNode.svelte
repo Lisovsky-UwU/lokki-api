@@ -4,6 +4,15 @@
 	import NodeMenu from "../common/NodeMenu.svelte";
 	import ActivityIndicator from "../common/ActivityIndicator.svelte";
 	import { activeRequest, rebaseActiveRequest } from "../../stores/activeRequest";
+	import {
+		FOLDER_DEFAULT_EXPANDED,
+		expandedPaths,
+		forgetExpandedUnder,
+		isExpanded,
+		rebaseExpanded,
+		setExpanded,
+		toggleExpanded,
+	} from "../../stores/expansion";
 	import { activeCollection, requestTreeRefresh } from "../../stores/collectionTree";
 	import { dragging } from "../../stores/dragState";
 	import { forgetResponses, markSeen, rekeyResponses, responsesByRequest, subtreeActivity } from "../../stores/response";
@@ -29,13 +38,16 @@
 		siblings: CollectionTreeNode[];
 	} = $props();
 
-	let expanded = $state(true);
+	// Not component state: it has to survive both this component unmounting
+	// (the tree is re-fetched and rebuilt on every refresh token) and the
+	// app restarting.
+	let expanded = $derived(isExpanded($expandedPaths, node.path, FOLDER_DEFAULT_EXPANDED));
 	let dropZone = $state<"before" | "after" | "inside" | null>(null);
 
 	let currentPath = $derived($activeRequest?.path);
 	let isDragged = $derived($dragging?.path === node.path);
 
-	// A folder stands in for its subtree only while collapsed — expanded, the
+	// A folder stands in for its subtree only while collapsed - expanded, the
 	// rows carry their own indicators and repeating them just adds noise.
 	let activity = $derived(
 		node.kind === "Folder" && expanded
@@ -73,7 +85,7 @@
 		const name = await promptForText($t("prompt.newRequest"), $t("prompt.requestName"), $t("prompt.newRequest"));
 		if (!name) return;
 		await api.createRequest(node.path, name, "GET" as HttpMethod);
-		expanded = true;
+		setExpanded(node.path, true);
 		requestTreeRefresh();
 	}
 
@@ -81,7 +93,7 @@
 		const name = await promptForText($t("prompt.newFolder"), $t("prompt.folderName"), $t("prompt.newFolder"));
 		if (!name) return;
 		await api.createFolder(node.path, name);
-		expanded = true;
+		setExpanded(node.path, true);
 		requestTreeRefresh();
 	}
 
@@ -91,6 +103,7 @@
 		const newPath = await api.renameFolder(node.path, name);
 		rebaseActiveRequest(node.path, newPath);
 		rekeyResponses(node.path, newPath);
+		rebaseExpanded(node.path, newPath);
 		requestTreeRefresh();
 	}
 
@@ -106,7 +119,7 @@
 		requestTreeRefresh();
 	}
 
-	/// Clones the request and opens the copy — that is what the next click
+	/// Clones the request and opens the copy - that is what the next click
 	/// would be anyway. Opening goes through `openRequest`, so an unsaved
 	/// request on screen still gets its confirmation.
 	async function cloneRequest() {
@@ -133,6 +146,7 @@
 		});
 		if (!confirmed) return;
 		await api.deleteFolder(node.path);
+		forgetExpandedUnder(node.path);
 		requestTreeRefresh();
 	}
 
@@ -150,12 +164,13 @@
 	}
 
 	/// Keeps everything that points at the moved entry in step with its new
-	/// location: the open request, its cached responses, and — when it lands
-	/// in a different collection — which collection is considered active.
+	/// location: the open request, its cached responses, and - when it lands
+	/// in a different collection - which collection is considered active.
 	function afterMove(from: string, to: string) {
 		const wasActive = $activeRequest?.path === from || $activeRequest?.path.startsWith(from + "\\");
 		rebaseActiveRequest(from, to);
 		rekeyResponses(from, to);
+		rebaseExpanded(from, to);
 		if (wasActive) activeCollection.set(collection);
 	}
 
@@ -204,7 +219,7 @@
 			if (zone === "inside") {
 				const moved = await api.moveNode(payload.path, node.path);
 				afterMove(payload.path, moved);
-				expanded = true;
+				setExpanded(node.path, true);
 			} else {
 				let sourcePath = payload.path;
 				if (payload.parentPath !== parentPath) {
@@ -256,7 +271,7 @@
 			ondragleave={() => (dropZone = null)}
 			ondrop={onDrop}
 		>
-			<button class="folder-label" onclick={() => (expanded = !expanded)}>
+			<button class="folder-label" onclick={() => toggleExpanded(node.path, FOLDER_DEFAULT_EXPANDED)}>
 				<span class="chevron" class:collapsed={!expanded}>▾</span>
 				<span class="node-name">{node.name}</span>
 				<ActivityIndicator {activity} group />

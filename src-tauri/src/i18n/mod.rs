@@ -2,7 +2,7 @@
 //!
 //! Error text from `store`, `exec` and the commands reaches the user verbatim
 //! (see `AppError::Message`), so the core has to know the UI language rather
-//! than hand back keys for the frontend to render — that would mean reshaping
+//! than hand back keys for the frontend to render - that would mean reshaping
 //! every error into a code plus arguments, and the trace log along with it.
 //!
 //! The language is process-wide because it is a property of the person using
@@ -74,9 +74,6 @@ pub fn with_language<T>(language: Language, f: impl FnOnce() -> T) -> T {
 mod tests {
     use super::*;
 
-    /// English is the fallback the whole feature rests on: the language
-    /// before the frontend has said anything, and the one an unreadable
-    /// preference falls back to.
     #[test]
     fn default_language_is_english() {
         assert_eq!(Language::default(), Language::En);

@@ -13,7 +13,7 @@ export interface AppNotice {
 let nextId = 1;
 
 /// Surfaced errors and background results. Failures used to go only to the
-/// webview console, which the user can't see — every such failure looked
+/// webview console, which the user can't see - every such failure looked
 /// like "nothing happened".
 export const notices = writable<AppNotice[]>([]);
 
@@ -44,7 +44,7 @@ export function reportError(context: string, error: unknown) {
 
 const RESULT_DISMISS_MS = 8000;
 
-/// A result the user should know about but doesn't have to act on — it
+/// A result the user should know about but doesn't have to act on - it
 /// clears itself, since the matching sidebar marker keeps the information
 /// available after the toast is gone. `kind` only picks the colour: a 500
 /// is a real answer, not a failure of the app.

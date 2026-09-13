@@ -34,14 +34,13 @@
 		if (!canUseWorkspace) target = "file";
 	});
 
-	// Default to the collection the user was last in, else the first one.
 	$effect(() => {
 		if (collection || $collections.length === 0) return;
 		collection = $activeCollection ?? $collections[0];
 	});
 
 	/// Flattens the collection into the folders a request can be filed into,
-	/// the collection root included — folder depth is kept only to indent the
+	/// the collection root included - folder depth is kept only to indent the
 	/// list.
 	function flatten(node: CollectionTreeNode, depth: number, into: FolderChoice[]) {
 		if (node.kind !== "Folder") return;

@@ -52,7 +52,7 @@ pub fn create_collection(workspace_path: &Path, name: &str) -> AppResult<Collect
 /// Renames a collection: the display name in `collection.toml` and the
 /// directory itself (kept in sync so the workspace stays readable outside
 /// the app, same as for requests and folders). Returns the summary with the
-/// new path — callers hold collections by path and must rebase.
+/// new path - callers hold collections by path and must rebase.
 pub fn rename_collection(collection_path: &Path, new_name: &str) -> AppResult<CollectionSummary> {
     let marker = collection_path.join(COLLECTION_FILE);
     let mut file: CollectionFile = read_toml(&marker)?;

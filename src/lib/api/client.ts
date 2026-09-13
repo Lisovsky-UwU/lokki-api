@@ -29,7 +29,7 @@ export const api = {
 	saveRequestSettings: (settings: RequestSettings) =>
 		invoke<RequestSettings>("save_request_settings", { settings }),
 
-	/// What the user picked, or null for "follow the OS" — only the webview
+	/// What the user picked, or null for "follow the OS" - only the webview
 	/// can resolve that, so the core hands the preference over unresolved.
 	getLanguagePreference: () => invoke<Language | null>("get_language_preference"),
 	/// Stores the preference and tells the core which language to word its
@@ -74,10 +74,8 @@ export const api = {
 	/// Writes an in-memory request to a file outside any workspace.
 	exportRequest: (filePath: string, name: string, request: RequestFile) =>
 		invoke<RequestFile>("export_request", { filePath, name, request }),
-	/// Picks any file from disk to send as a request body.
 	pickBodyFile: (): Promise<string | null> =>
 		openDialog({ multiple: false, title: translate("dialog.pickBodyFile") }) as Promise<string | null>,
-	/// Picks where to write a response body the user wants to keep.
 	pickDownloadTarget: (defaultName: string): Promise<string | null> =>
 		saveDialog({ title: translate("dialog.saveResponse"), defaultPath: defaultName }) as Promise<string | null>,
 	saveResponseBody: (filePath: string, bodyBase64: string) =>
@@ -116,7 +114,7 @@ export const api = {
 
 	// `sendId` is minted per send by the caller so it can be cancelled. Both
 	// paths are optional: an incognito request belongs to no collection, and
-	// one started from the welcome screen has no workspace either — it then
+	// one started from the welcome screen has no workspace either - it then
 	// resolves no variables at all.
 	sendRequest: (
 		request: RequestFile,
@@ -124,7 +122,7 @@ export const api = {
 		collectionPath: string | null,
 		sendId: string,
 	) => invoke<ExecutionOutcome>("send_request", { request, workspacePath, collectionPath, sendId }),
-	// Resolves to false when the send had already finished — a click and a
+	// Resolves to false when the send had already finished - a click and a
 	// response can always cross paths, and that isn't an error.
 	cancelSend: (sendId: string) => invoke<boolean>("cancel_send", { sendId }),
 

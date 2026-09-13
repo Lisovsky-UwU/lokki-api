@@ -5,7 +5,7 @@ export interface EnvironmentsDialogTarget {
 	/// Workspace root for global scope, collection root for collection scope.
 	rootPath: string;
 	scope: EnvironmentScope;
-	/// What the dialog is about — the workspace or the collection name.
+	/// What the dialog is about - the workspace or the collection name.
 	title: string;
 }
 

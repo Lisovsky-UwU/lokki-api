@@ -37,7 +37,7 @@ LokkiAPI does three things differently from the clients already out there.
 **Collections**
 - Nested folders, any depth
 - Drag and drop to reorder and to move between folders and collections
-- Rename and delete from the ⋯ menu
+- Rename and delete from the ⋯ menu, and expand or collapse a whole collection from it
 - The order of folders and requests is set by hand and stored in the files
 
 **Environments and variables**
@@ -56,7 +56,9 @@ LokkiAPI does three things differently from the clients already out there.
 **Interface**
 - English and Russian: picked from the OS language on first launch, falling back to English; switchable under Settings → Interface
 - Light and dark theme: follows the system by default, or pin either one under Settings → Interface
-- Resizable panes: collection tree width, request and response heights
+- Request and response either one above the other or side by side, chosen under Settings → Interface
+- Resizable panes: collection tree width, and the split between request and response
+- The tree remembers which collections and folders were open
 - The last workspace reopens on launch
 
 ## Installing

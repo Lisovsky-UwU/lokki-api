@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// A UI language the app ships. Serialized as `"en"` / `"ru"` — it crosses
+/// A UI language the app ships. Serialized as `"en"` / `"ru"` - it crosses
 /// IPC and is stored in `app_state.json`, so the spelling is part of the
 /// on-disk format.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]

@@ -6,7 +6,7 @@ use serde::Serialize;
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager};
 
-/// An environment paired with its on-disk path — the frontend needs the
+/// An environment paired with its on-disk path - the frontend needs the
 /// path to later call `save_environment`, but the path itself isn't part
 /// of the persisted entity (see domain::environment).
 #[derive(Debug, Clone, Serialize)]
@@ -72,7 +72,7 @@ pub fn save_environment(env_path: String, environment: EnvironmentFile) -> AppRe
 pub fn delete_environment(app: AppHandle, workspace_path: String, env_path: String) -> AppResult<()> {
     let path = Path::new(&env_path);
     // Read before deleting: the file is the only place these ids live. An
-    // unreadable file is still deleted — leaving a corrupt environment
+    // unreadable file is still deleted - leaving a corrupt environment
     // undeletable would be worse than leaking its secret values.
     let file = crate::store::format::read_toml::<EnvironmentFile>(path).ok();
     let secret_ids: Vec<Id> = file

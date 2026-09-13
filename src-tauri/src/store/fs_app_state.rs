@@ -9,7 +9,7 @@ const STATE_FILE: &str = "app_state.json";
 
 /// Local, per-device UI state (active environment per workspace/collection
 /// root, last-opened workspace). Deliberately stored outside the workspace
-/// folder — it is not shareable/syncable data, see domain::sync_meta docs.
+/// folder - it is not shareable/syncable data, see domain::sync_meta docs.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AppState {
     #[serde(default)]
@@ -18,7 +18,7 @@ pub struct AppState {
     pub last_workspace: Option<String>,
     #[serde(default)]
     pub request_settings: RequestSettings,
-    /// The UI language the user picked, or `None` for "follow the OS" —
+    /// The UI language the user picked, or `None` for "follow the OS" -
     /// which is the default, and what an app that has never been to the
     /// settings dialog stays on.
     #[serde(default)]
@@ -26,9 +26,6 @@ pub struct AppState {
 }
 
 impl AppState {
-    /// Moves per-root settings from `old_root` to `new_root`. Roots are
-    /// keyed by path, so a renamed collection would otherwise silently lose
-    /// its active environment.
     /// Forgets per-root settings for a root and anything under it. Used when
     /// a collection is deleted: its entry would otherwise linger in
     /// app_state.json pointing at a path that no longer exists.
@@ -37,6 +34,8 @@ impl AppState {
             .retain(|path, _| path != root && !path.starts_with(&format!("{root}\\")) && !path.starts_with(&format!("{root}/")));
     }
 
+    /// Roots are keyed by path, so a renamed collection would otherwise
+    /// silently lose its active environment.
     pub fn rebase_root(&mut self, old_root: &str, new_root: &str) {
         if let Some(id) = self.active_environments.remove(old_root) {
             self.active_environments.insert(new_root.to_string(), id);

@@ -85,7 +85,7 @@
 			inBackground = recordResponse(path, { outcome: null, error: String(e), at: Date.now() });
 		}
 		// The user moved on to another request while this one was in flight,
-		// so the response panel they are looking at won't show the result —
+		// so the response panel they are looking at won't show the result -
 		// the toast and the sidebar marker are the only way they learn of it.
 		if (inBackground) notifyResult($t("request.backgroundDone", { name, summary }), kind);
 	}
@@ -97,10 +97,9 @@
 			send();
 			return;
 		}
-		// `e.key` carries the character the layout produces — on a Russian
+		// `e.key` carries the character the layout produces - on a Russian
 		// layout the S key yields "ы", so the shortcut has to match the
-		// physical key instead. Unrelated to the UI language: it is the
-		// keyboard layout that decides this, not the setting.
+		// physical key instead.
 		if (e.code === "KeyS" || e.key.toLowerCase() === "s") {
 			e.preventDefault();
 			// In incognito there is nothing to compare against, so Ctrl+S
@@ -110,7 +109,7 @@
 	}
 
 	/// Breadcrumb of the open request: collection, the folders it sits in,
-	/// then the request itself — derived from where the file lives on disk.
+	/// then the request itself - derived from where the file lives on disk.
 	/// Paths are Windows-style here, so both separators are handled.
 	let breadcrumb = $derived.by(() => {
 		const request = $activeRequest;
@@ -214,7 +213,7 @@
 							<span>{$t("request.finalUrl")}</span>
 							<button onclick={copyUrl}>{copied ? $t("common.copied") : $t("common.copy")}</button>
 						</div>
-						<code>{urlPreview || "—"}</code>
+						<code>{urlPreview || "-"}</code>
 					</div>
 					<KeyValueTable rows={http.query} onChange={(query) => mutate({ query })} />
 				</div>

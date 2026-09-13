@@ -14,7 +14,7 @@ use crate::tr;
 
 /// The URL itself still has `{{variables}}` in it. Refused before sending,
 /// because reqwest would otherwise report it as "relative URL without a
-/// base" — true, and useless.
+/// base" - true, and useless.
 pub fn unresolved_url_variables(names: &str) -> String {
     tr!(
         "The request URL has unresolved variables: {names}. Check the active environment.",
@@ -165,7 +165,7 @@ pub fn body_received(bytes: usize) -> String {
 pub fn not_a_collection(path: &str) -> String {
     tr!(
         "{path} is not a LokkiAPI collection, deletion cancelled.",
-        "{path} — не коллекция LokkiAPI, удаление отменено.",
+        "{path} - не коллекция LokkiAPI, удаление отменено.",
     )
 }
 
@@ -185,8 +185,8 @@ pub fn no_workspace_in_folder(path: &str) -> String {
 
 pub fn workspace_already_exists(path: &str) -> String {
     tr!(
-        "Folder {path} already holds a workspace — open it instead.",
-        "В папке {path} уже есть пространство — откройте его.",
+        "Folder {path} already holds a workspace - open it instead.",
+        "В папке {path} уже есть пространство - откройте его.",
     )
 }
 
@@ -203,7 +203,7 @@ mod tests {
     }
 
     /// The variable name is wrapped in the app's own `{{…}}` syntax, which
-    /// is four escaped braces inside a format string — easy to get wrong in
+    /// is four escaped braces inside a format string - easy to get wrong in
     /// one language and not the other.
     #[test]
     fn unresolved_variable_keeps_the_placeholder_syntax() {

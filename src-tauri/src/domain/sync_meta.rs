@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 /// Common metadata every mutable entity carries. This is the entire cost
 /// paid today toward a future sync engine: a stable id independent of file
 /// path/name, plus enough version/timestamp info for later conflict
-/// resolution. No outbox/changelog is implemented yet — see the "sync
+/// resolution. No outbox/changelog is implemented yet - see the "sync
 /// seam" note in store::fs_request for where that would attach.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncMeta {

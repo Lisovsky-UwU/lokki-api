@@ -32,7 +32,6 @@
 		item.action();
 	}
 
-	// Any click outside (or Escape) dismisses the menu.
 	$effect(() => {
 		if (!open) return;
 		const onPointerDown = (e: PointerEvent) => {

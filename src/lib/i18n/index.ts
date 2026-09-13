@@ -18,9 +18,6 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 	ru: "Русский",
 };
 
-/// `en` is the reference catalogue — `ru` is typed against it, so a key added
-/// to one and forgotten in the other is a type error rather than a blank
-/// label at runtime.
 export type TranslationKey = keyof typeof en;
 
 const CATALOGUES: Record<Locale, Record<TranslationKey, string>> = { en, ru };
@@ -31,8 +28,7 @@ export type TranslationParams = Record<string, string | number>;
 /// whenever the user changes it in settings.
 export const locale = writable<Locale>(FALLBACK_LOCALE);
 
-/// Whether a string names one of the languages we ship, used to sift both
-/// the stored preference and whatever the OS reports.
+/// Sifts both the stored preference and whatever the OS reports.
 export function isLocale(value: unknown): value is Locale {
 	return typeof value === "string" && (LOCALES as string[]).includes(value);
 }

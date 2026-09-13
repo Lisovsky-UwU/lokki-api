@@ -18,7 +18,7 @@
 	}
 
 	/// Picks a folder and initializes it. The name is asked for separately
-	/// because it is metadata, not the folder name — it can be changed later
+	/// because it is metadata, not the folder name - it can be changed later
 	/// without moving anything on disk.
 	async function createWorkspace() {
 		error = null;

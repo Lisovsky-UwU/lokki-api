@@ -92,7 +92,7 @@
 	);
 
 	/// Stops the in-flight send. The request stays "loading" until the
-	/// backend comes back with the cancellation — the connection is torn down
+	/// backend comes back with the cancellation - the connection is torn down
 	/// there, and reporting it as finished any earlier would let a second
 	/// send start while the first is still unwinding.
 	async function cancel() {
@@ -109,7 +109,7 @@
 	// Only the newest record is kept today (see HISTORY_LIMIT), but reading
 	// it as "the first of a list" keeps the viewer ready for real history.
 	let latest = $derived($activeResponses.history[0] ?? null);
-	// Decoding is skipped for bodies that were never text — see
+	// Decoding is skipped for bodies that were never text - see
 	// isTextualMediaType; the file view only needs the size and the type.
 	let bodyText = $derived(
 		latest?.outcome && isTextualMediaType(mediaTypeOf(latest.outcome.headers))
@@ -146,7 +146,7 @@
 		if (ids.length > 0 && !ids.includes(tab)) tab = ids[0];
 	});
 
-	/// Writes the body to disk as it arrived — decoding happens in the core,
+	/// Writes the body to disk as it arrived - decoding happens in the core,
 	/// which is the only side that can write files anyway.
 	async function saveBody() {
 		const outcome = latest?.outcome;

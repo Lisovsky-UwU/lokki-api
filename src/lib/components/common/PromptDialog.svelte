@@ -6,7 +6,7 @@
 	let input = $state<HTMLInputElement>();
 
 	// Seed the field each time a new request arrives, and focus it so the
-	// user can just type — same immediacy the native prompt had.
+	// user can just type - same immediacy the native prompt had.
 	$effect(() => {
 		const request = $promptRequest;
 		if (!request) return;

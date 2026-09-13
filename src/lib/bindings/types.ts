@@ -1,6 +1,6 @@
 // Hand-written mirror of the Rust domain types in src-tauri/src/domain/*.
 // Field names match serde's wire format exactly (snake_case, since the
-// same structs also serialize to the on-disk TOML files) — only Tauri
+// same structs also serialize to the on-disk TOML files) - only Tauri
 // command *arguments* are camelCased by the IPC layer, not struct fields.
 
 export type Id = string;
@@ -102,7 +102,7 @@ export type Language = "en" | "ru";
 
 /// Build- and run-time facts about the app itself, shown in Settings.
 /// Any field can come back empty when it couldn't be determined (no git
-/// checkout, no node on PATH at build time) — the UI words that case.
+/// checkout, no node on PATH at build time) - the UI words that case.
 export interface AppInfo {
 	name: string;
 	version: string;
@@ -142,7 +142,7 @@ export interface EnvironmentFile {
 }
 
 /// An environment paired with its on-disk file path (not part of the
-/// persisted entity itself — see src-tauri EnvironmentEntry).
+/// persisted entity itself - see src-tauri EnvironmentEntry).
 export interface EnvironmentEntry extends EnvironmentFile {
 	path: string;
 }
@@ -158,8 +158,8 @@ export interface TraceEvent {
 }
 
 /// Where the time went. A phase is `null` when it did not happen or could
-/// not be measured — a request on a pooled connection has no DNS or connect
-/// phase at all — while 0 means it happened in under a millisecond. Don't
+/// not be measured - a request on a pooled connection has no DNS or connect
+/// phase at all - while 0 means it happened in under a millisecond. Don't
 /// render the two the same way. Only `total_ms` is always known, failed
 /// attempts included.
 export interface ExecutionTrace {
@@ -195,7 +195,7 @@ export function newKeyValue(): KeyValue {
 const ULID_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 /// Client-side ULID, matching the format the Rust side generates (see
-/// domain::ids::Id) — ids must stay lexicographically time-sortable for the
+/// domain::ids::Id) - ids must stay lexicographically time-sortable for the
 /// planned change-log sync, which a UUIDv4 would break.
 export function newId(): Id {
 	let timestamp = "";

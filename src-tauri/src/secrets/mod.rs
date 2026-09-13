@@ -5,7 +5,7 @@ use crate::error::AppResult;
 use std::path::Path;
 
 /// Values for variables marked `secret = true` never live in the
-/// syncable workspace tree (see domain::environment docs) — they go
+/// syncable workspace tree (see domain::environment docs) - they go
 /// through this trait instead. Kept as a trait so a follow-up OS-keychain
 /// implementation (via the `keyring` crate) can replace the local-file one
 /// without touching call sites in commands/.

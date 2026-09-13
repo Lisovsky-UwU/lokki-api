@@ -16,7 +16,7 @@ pub enum Phase {
     Tls,
     /// Writing the request, body included.
     Send,
-    /// Waiting for the response head — time to first byte.
+    /// Waiting for the response head - time to first byte.
     Wait,
     /// Reading the response body.
     Download,
@@ -56,7 +56,7 @@ pub struct ExecutionTrace {
     pub wait_ms: Option<u64>,
     pub download_ms: Option<u64>,
     /// Wall time of the whole attempt, set when the recorder is finished.
-    /// Unlike the phases this is always known — including for an attempt
+    /// Unlike the phases this is always known - including for an attempt
     /// that failed part way.
     pub total_ms: u64,
     pub reused_connection: Option<bool>,

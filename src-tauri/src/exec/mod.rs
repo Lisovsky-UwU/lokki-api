@@ -35,7 +35,7 @@ pub struct ExecutionOutcome {
     pub status: u16,
     pub status_text: String,
     pub headers: Vec<KeyValue>,
-    /// Base64-encoded response body — cheaper over IPC/JSON than a raw
+    /// Base64-encoded response body - cheaper over IPC/JSON than a raw
     /// byte-array, decoded client-side for display.
     pub body_base64: String,
 }
@@ -86,7 +86,7 @@ fn form_urlencode_pairs(pairs: &[(String, String)]) -> String {
 /// header and body-type-appropriate `Content-Type`. Returns the resolved
 /// request plus any variable names that couldn't be found (left verbatim in
 /// the output rather than failing the whole request).
-/// Sets `Content-Type` unless the request already carries one — an explicit
+/// Sets `Content-Type` unless the request already carries one - an explicit
 /// header the user wrote always wins over the body format's default.
 fn default_content_type(headers: &mut Vec<KeyValue>, value: &str) {
     if headers.iter().any(|h| h.key.eq_ignore_ascii_case("content-type")) {
@@ -142,7 +142,7 @@ pub fn resolve_http_request(
 
     let mut url = interp(&spec.url);
     // Blank-key rows are UI scaffolding (the always-present trailing empty
-    // row), never real params/headers — sending them would make reqwest
+    // row), never real params/headers - sending them would make reqwest
     // reject the whole request as an invalid header name.
     let enabled_query: Vec<(String, String)> = spec
         .query_params

@@ -4,7 +4,7 @@ use crate::store::fs_request;
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 
-/// A request plus the path it now lives at — renaming moves the file, so the
+/// A request plus the path it now lives at - renaming moves the file, so the
 /// frontend needs the new path to keep pointing at the right thing.
 #[derive(Debug, Clone, Serialize)]
 pub struct RequestAtPath {

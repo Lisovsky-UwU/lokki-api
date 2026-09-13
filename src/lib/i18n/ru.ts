@@ -46,12 +46,13 @@ export const ru: Record<keyof typeof en, string> = {
 	"app.restoreFailed": "Не удалось открыть последнее пространство",
 	"app.noWorkspaceHint": "Пространство не открыто — переменные недоступны",
 	"app.requestPaneHeight": "Высота панели запроса",
+	"app.requestPaneWidth": "Ширина панели запроса",
 
 	// --- incognito ---------------------------------------------------------
 	"incognito.badge": "Инкогнито",
 	"incognito.badgeTitle": "Запрос нигде не сохраняется",
 	"incognito.request": "Инкогнито-запрос",
-	"incognito.requestName": "Инкогнито-запрос",
+	"incognito.requestName": "Запрос",
 	"incognito.pickerTitle": "Инкогнито-запрос — выполнить запрос, ничего не сохраняя",
 	"incognito.exit": "Выйти",
 	"incognito.confirmOpen":
@@ -146,6 +147,8 @@ export const ru: Record<keyof typeof en, string> = {
 
 	"menu.addRequest": "Добавить запрос",
 	"menu.addFolder": "Добавить папку",
+	"menu.expandAll": "Развернуть все",
+	"menu.collapseAll": "Свернуть все",
 	"menu.collectionEnvironments": "Окружения коллекции",
 	"menu.renameCollection": "Переименовать коллекцию",
 	"menu.deleteCollection": "Удалить коллекцию",
@@ -281,6 +284,10 @@ export const ru: Record<keyof typeof en, string> = {
 	"settings.themeSystem": "Тема системы ({name})",
 	"settings.themeLight": "Светлая",
 	"settings.themeDark": "Тёмная",
+
+	"settings.paneLayout": "Расположение запроса и ответа",
+	"settings.paneLayoutVertical": "Вертикально",
+	"settings.paneLayoutHorizontal": "Горизонтально",
 
 	"settings.verifyTls": "Проверять TLS-сертификаты",
 	"settings.verifyTlsWarning":

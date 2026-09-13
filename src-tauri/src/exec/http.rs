@@ -45,7 +45,7 @@ impl Default for HttpExecutor {
 fn build_client(settings: &RequestSettings) -> Result<reqwest::Client, ExecutorError> {
     let mut builder = reqwest::Client::builder()
         // Testing against a staging box with a self-signed certificate is a
-        // normal thing to do, so this is a setting rather than a hard rule —
+        // normal thing to do, so this is a setting rather than a hard rule -
         // on by default, and the settings dialog spells out what turning it
         // off means.
         .danger_accept_invalid_certs(!settings.verify_tls)
@@ -179,7 +179,7 @@ impl ProtocolExecutor for HttpExecutor {
         // reqwest drives connecting itself, so from out here the request is
         // two observable spans: waiting for the response head, then reading
         // the body. Splitting out DNS, TCP and TLS needs hooks this client
-        // doesn't expose — those phases stay unset until an executor that
+        // doesn't expose - those phases stay unset until an executor that
         // drives them itself fills them in.
         let sent_at = Instant::now();
         let response = builder.send().await.map_err(|e| {

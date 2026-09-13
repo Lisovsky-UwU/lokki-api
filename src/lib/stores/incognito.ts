@@ -16,7 +16,7 @@ export const INCOGNITO_PATH = "\u0000incognito";
 export const incognito = writable(false);
 
 export function startIncognito() {
-	// No collection means no collection environment — that is the rule the
+	// No collection means no collection environment - that is the rule the
 	// mode is built on, and the switcher follows the active collection.
 	activeCollection.set(null);
 	forgetResponses(INCOGNITO_PATH);

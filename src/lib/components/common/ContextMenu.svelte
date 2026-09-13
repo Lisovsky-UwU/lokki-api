@@ -5,7 +5,7 @@
 	let position = $state({ x: 0, y: 0 });
 
 	// Placed at the pointer, then pulled back inside the window once its real
-	// size is known — a menu opened near the bottom edge would otherwise hang
+	// size is known - a menu opened near the bottom edge would otherwise hang
 	// off the screen with no way to scroll to it.
 	$effect(() => {
 		const state = $contextMenu;

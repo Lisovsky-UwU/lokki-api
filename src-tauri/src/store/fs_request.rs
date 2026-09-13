@@ -75,7 +75,7 @@ pub fn create_request(parent_path: &Path, name: &str, method: HttpMethod) -> App
 
 /// Writes a request that was built in memory (an incognito send) into a
 /// folder, under a name that doesn't collide with what's already there.
-/// Unlike `create_request` this keeps the request's own spec — and gives it
+/// Unlike `create_request` this keeps the request's own spec - and gives it
 /// a fresh identity and position, because until now it existed nowhere.
 pub fn adopt_request(parent_path: &Path, name: &str, mut request: RequestFile) -> AppResult<(PathBuf, RequestFile)> {
     request.meta.name = name.to_string();
@@ -88,7 +88,7 @@ pub fn adopt_request(parent_path: &Path, name: &str, mut request: RequestFile) -
 
 /// Copies a request next to itself under `new_name`. The copy is a new
 /// entity, not a second name for the old one: `adopt_request` gives it its
-/// own id and position. The name is the caller's to choose — the user is
+/// own id and position. The name is the caller's to choose - the user is
 /// asked for it, and the default wording belongs in the UI.
 pub fn clone_request(request_path: &Path, new_name: &str) -> AppResult<(PathBuf, RequestFile)> {
     let request = load_request(request_path)?;

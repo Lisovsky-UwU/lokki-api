@@ -1,7 +1,7 @@
 import { derived, writable } from "svelte/store";
 
 /// `system` follows the OS setting and is the default. The other two pin the
-/// app regardless of it — a dark desktop with one light app on it is a
+/// app regardless of it - a dark desktop with one light app on it is a
 /// legitimate thing to want.
 export type ThemePreference = "system" | "light" | "dark";
 
@@ -25,7 +25,7 @@ function isPreference(value: unknown): value is ThemePreference {
 
 function stored(): ThemePreference {
 	// A per-device preference with no bearing on the core, so it lives in the
-	// webview's own storage rather than in app_state.json — and being
+	// webview's own storage rather than in app_state.json - and being
 	// synchronous is what lets app.html apply it before anything is drawn.
 	try {
 		const raw = localStorage.getItem(STORAGE_KEY);
@@ -41,12 +41,11 @@ function readSystemTheme(): ResolvedTheme {
 
 /// What the OS is asking for right now. A store rather than a function
 /// because, unlike the OS language, this one really does change under a
-/// running app — a desktop that turns dark at sunset.
+/// running app - a desktop that turns dark at sunset.
 export const systemTheme = writable<ResolvedTheme>(readSystemTheme());
 
 export const themePreference = writable<ThemePreference>("system");
 
-/// The theme in force: the preference, with `system` resolved.
 export const theme = derived([themePreference, systemTheme], ([$preference, $system]): ResolvedTheme =>
 	$preference === "system" ? $system : $preference,
 );
@@ -62,8 +61,8 @@ export function setThemePreference(preference: ThemePreference) {
 }
 
 /// Reads the stored preference and keeps `<html data-theme>` in step with it
-/// from then on. The attribute is already set — app.html does that before
-/// the first paint — so this is taking ownership of it, not initialising it.
+/// from then on. The attribute is already set - app.html does that before
+/// the first paint - so this is taking ownership of it, not initialising it.
 export function initTheme() {
 	// Re-read rather than trust the value captured when this module was
 	// evaluated: nothing guarantees the order of that against the rest of

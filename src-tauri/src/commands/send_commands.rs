@@ -36,7 +36,7 @@ impl InFlightSends {
         self.0.lock().expect("in-flight registry poisoned").remove(send_id);
     }
 
-    /// Returns false when there was nothing to cancel — the send had already
+    /// Returns false when there was nothing to cancel - the send had already
     /// finished, which is not an error worth surfacing.
     fn cancel(&self, send_id: &str) -> bool {
         let sender = self.0.lock().expect("in-flight registry poisoned").remove(send_id);
@@ -51,7 +51,7 @@ impl InFlightSends {
 
 /// `send_request`'s result: the HTTP outcome, where the time went, and any
 /// `{{variable}}` names that couldn't be resolved (sent verbatim in the
-/// request) — surfaced so the UI can warn the user rather than silently
+/// request) - surfaced so the UI can warn the user rather than silently
 /// sending literal `{{...}}`.
 #[derive(Debug, Clone, Serialize)]
 pub struct SendResult {
@@ -80,7 +80,7 @@ fn active_environment_for(
 
 /// Builds a `{{var}} -> value` map from an environment's enabled
 /// variables, resolving `secret = true` values via `SecretStore` (their
-/// on-disk `value` is blank — see domain::environment docs).
+/// on-disk `value` is blank - see domain::environment docs).
 fn env_to_scope(
     env: Option<EnvironmentFile>,
     workspace_path: &Path,
@@ -115,7 +115,7 @@ pub async fn send_request(
     // Absent for an incognito send started from the welcome screen: there is
     // no workspace, so no variables and no secrets at all.
     workspace_path: Option<String>,
-    // Absent for any incognito send — a request that lives nowhere has no
+    // Absent for any incognito send - a request that lives nowhere has no
     // collection environment to inherit.
     collection_path: Option<String>,
     // Made up by the frontend for this send; `cancel_send` refers to it.
@@ -149,7 +149,7 @@ pub async fn send_request(
 
     // Checked before sending: a `{{var}}` left in the address produces a URL
     // that can't be parsed, and reqwest reports that as "relative URL without
-    // a base" — true, and useless. Elsewhere (headers, body, auth) the
+    // a base" - true, and useless. Elsewhere (headers, body, auth) the
     // request is still sent and the unresolved names come back as a warning,
     // since a literal placeholder there may well be what the API is being
     // tested with.

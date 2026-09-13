@@ -10,6 +10,17 @@
 	import { activeCollection, treeRefreshToken, requestTreeRefresh } from "../../stores/collectionTree";
 	import { dragging } from "../../stores/dragState";
 	import { activeRequest, isUnder, rebaseActiveRequest, rebasePath } from "../../stores/activeRequest";
+	import {
+		COLLECTION_DEFAULT_EXPANDED,
+		collapseAllUnder,
+		expandAll,
+		expandedPaths,
+		forgetExpandedUnder,
+		isExpanded,
+		rebaseExpanded,
+		setExpanded,
+		toggleExpanded,
+	} from "../../stores/expansion";
 	import { forgetResponsesUnder, rekeyResponses, responsesByRequest, subtreeActivity } from "../../stores/response";
 	import { confirmAction, promptForText } from "../../ui/dialogs";
 	import { openEnvironmentsDialog } from "../../ui/environmentsDialog";
@@ -17,8 +28,11 @@
 	import { reportError } from "../../ui/notices";
 
 	let trees = $state<Record<string, CollectionTreeNode | null>>({});
-	let expandedCollections = $state<Record<string, boolean>>({});
 	let dropTarget = $state<string | null>(null);
+
+	function collectionExpanded(path: string): boolean {
+		return isExpanded($expandedPaths, path, COLLECTION_DEFAULT_EXPANDED);
+	}
 
 	// A drop handled by a child node stops propagation, so this container's
 	// own drop/dragleave never fires and its highlight would stay on. Clear
@@ -35,7 +49,7 @@
 		refreshSeq.set(collection.path, seq);
 		try {
 			const tree = await api.loadCollectionTree(collection.path);
-			// A slower earlier request must not overwrite fresher data — that
+			// A slower earlier request must not overwrite fresher data - that
 			// race is what made a just-created request blink in and out.
 			if (refreshSeq.get(collection.path) !== seq) return;
 			// `trees` is read here, after the await, deliberately: doing it
@@ -53,13 +67,13 @@
 	// request's variables. Browsing another collection's tree must not pull
 	// the environment out from under the request on screen.
 	function toggleCollection(collection: CollectionSummary) {
-		expandedCollections = { ...expandedCollections, [collection.path]: !expandedCollections[collection.path] };
+		toggleExpanded(collection.path, COLLECTION_DEFAULT_EXPANDED);
 		// Loading is left to the effect below, which already reacts to a
 		// collection becoming expanded.
 	}
 
 	/// Renaming a collection renames its directory, so every path below it
-	/// moves with it — including the ones this component keys its own caches
+	/// moves with it - including the ones this component keys its own caches
 	/// by.
 	async function renameCollection(collection: CollectionSummary) {
 		const name = await promptForText($t("prompt.renameCollection"), $t("prompt.collectionName"), collection.name);
@@ -72,7 +86,7 @@
 			collections.update((list) =>
 				list.map((c) => (c.path === collection.path ? renamed : c)).sort((a, b) => a.name.localeCompare(b.name)),
 			);
-			expandedCollections = rekeyByPath(expandedCollections, collection.path, renamed.path);
+			rebaseExpanded(collection.path, renamed.path);
 			trees = rekeyByPath(trees, collection.path, renamed.path);
 			requestTreeRefresh();
 		} catch (e) {
@@ -81,7 +95,7 @@
 	}
 
 	/// Deleting a collection takes its whole tree with it, so everything the
-	/// app holds by path inside it has to go too — the open request, cached
+	/// app holds by path inside it has to go too - the open request, cached
 	/// responses, and this component's own caches.
 	async function removeCollection(collection: CollectionSummary) {
 		const confirmed = await confirmAction(
@@ -95,7 +109,7 @@
 			forgetResponsesUnder(collection.path);
 			if ($activeCollection?.path === collection.path) activeCollection.set(null);
 			if ($activeRequest && isUnder($activeRequest.path, collection.path)) activeRequest.set(null);
-			expandedCollections = dropByPath(expandedCollections, collection.path);
+			forgetExpandedUnder(collection.path);
 			trees = dropByPath(trees, collection.path);
 		} catch (e) {
 			reportError($t("error.deleteCollection"), e);
@@ -111,11 +125,11 @@
 	}
 
 	// Any request/folder create/save/delete/move anywhere in the app bumps
-	// this token — re-fetch every currently-expanded collection's tree so the
+	// this token - re-fetch every currently-expanded collection's tree so the
 	// sidebar never shows stale names, methods or ordering.
 	$effect(() => {
 		$treeRefreshToken;
-		const pending = $collections.filter((c) => expandedCollections[c.path]);
+		const pending = $collections.filter((c) => collectionExpanded(c.path));
 		// Fetching is kept out of the tracked scope so this effect never
 		// subscribes to what the fetch writes.
 		untrack(() => {
@@ -129,14 +143,14 @@
 		if (!path || !name) return;
 		const summary = await api.createCollection(path, name);
 		collections.update((list) => [...list, summary].sort((a, b) => a.name.localeCompare(b.name)));
-		expandedCollections = { ...expandedCollections, [summary.path]: true };
+		setExpanded(summary.path, true);
 	}
 
 	async function addRequest(collection: CollectionSummary) {
 		const name = await promptForText($t("prompt.newRequest"), $t("prompt.requestName"), $t("prompt.newRequest"));
 		if (!name) return;
 		await api.createRequest(collection.path, name, "GET" as HttpMethod);
-		expandedCollections = { ...expandedCollections, [collection.path]: true };
+		setExpanded(collection.path, true);
 		requestTreeRefresh();
 	}
 
@@ -144,15 +158,38 @@
 		const name = await promptForText($t("prompt.newFolder"), $t("prompt.folderName"), $t("prompt.newFolder"));
 		if (!name) return;
 		await api.createFolder(collection.path, name);
-		expandedCollections = { ...expandedCollections, [collection.path]: true };
+		setExpanded(collection.path, true);
 		requestTreeRefresh();
+	}
+
+	/// Requests are left out: they have nothing to expand.
+	function folderPaths(node: CollectionTreeNode, into: string[]) {
+		if (node.kind !== "Folder") return;
+		for (const child of node.children) {
+			if (child.kind !== "Folder") continue;
+			into.push(child.path);
+			folderPaths(child, into);
+		}
+	}
+
+	/// Opens the collection and every folder in it. The tree has to be on
+	/// hand to know what those folders are, so a collapsed collection - which
+	/// may never have loaded one - fetches it first.
+	async function expandAllIn(collection: CollectionSummary) {
+		if (!trees[collection.path]) await refreshCollection(collection);
+		const tree = trees[collection.path];
+		const paths: string[] = [];
+		if (tree) folderPaths(tree, paths);
+		expandAll([collection.path, ...paths]);
 	}
 
 	function collectionMenu(collection: CollectionSummary) {
 		return [
 			{ label: $t("menu.addRequest"), action: () => addRequest(collection) },
 			{ label: $t("menu.addFolder"), action: () => addFolder(collection) },
-			// Reachable without opening a request first — the switcher in the
+			{ label: $t("menu.expandAll"), action: () => expandAllIn(collection) },
+			{ label: $t("menu.collapseAll"), action: () => collapseAllUnder(collection.path) },
+			// Reachable without opening a request first - the switcher in the
 			// top bar only ever shows the active collection's environments.
 			{
 				label: $t("menu.collectionEnvironments"),
@@ -251,7 +288,7 @@
 			</NodeMenu>
 		</div>
 	{/if}
-	<div class="sidebar-header">
+	<div class="sidebar-header sidebar-header-collections">
 		<span>{$t("sidebar.collections")}</span>
 		<button class="icon-btn" title={$t("sidebar.newCollection")} onclick={createCollection}>+</button>
 	</div>
@@ -265,15 +302,15 @@
 				oncontextmenu={(e) => openContextMenu(e, collectionMenu(collection))}
 			>
 				<button class="collection-label" onclick={() => toggleCollection(collection)}>
-					<span class="chevron" class:collapsed={!expandedCollections[collection.path]}>▾</span>
+					<span class="chevron" class:collapsed={!collectionExpanded(collection.path)}>▾</span>
 					<span class="collection-name">{collection.name}</span>
-					{#if !expandedCollections[collection.path]}
+					{#if !collectionExpanded(collection.path)}
 						<ActivityIndicator activity={subtreeActivity($responsesByRequest, collection.path)} group />
 					{/if}
 				</button>
 				<NodeMenu items={collectionMenu(collection)} label={$t("sidebar.collectionActions")} />
 			</div>
-			{#if expandedCollections[collection.path]}
+			{#if collectionExpanded(collection.path)}
 				{@const children = childrenOf(collection.path)}
 				<div
 					class="tree"
@@ -326,6 +363,9 @@
 		letter-spacing: 0.04em;
 		opacity: 0.7;
 	}
+	.sidebar-header-collections {
+		margin-bottom: 0.8em;
+	}
 	.icon-btn {
 		background: none;
 		border: none;
@@ -338,6 +378,20 @@
 	}
 	.icon-btn:hover {
 		background: rgba(127, 127, 127, 0.15);
+	}
+	/* A collection is drawn as a container, a folder as a plain row inside
+	   one. Weight alone stopped carrying that once a workspace had enough
+	   collections for the two to interleave on screen.
+
+	   Outlined rather than filled: a fill would have to be lighter than the
+	   sidebar in the light theme and darker in the dark one to read as
+	   "raised", which is two more palette entries to keep in step. A hairline
+	   says "container" the same way in both. */
+	.collection {
+		border: 1px solid rgba(127, 127, 127, 0.25);
+		border-radius: 6px;
+		padding: 0.15em;
+		margin-bottom: 0.4em;
 	}
 	.collection-header {
 		display: flex;
@@ -366,7 +420,7 @@
 	.collection-label:hover {
 		background: rgba(127, 127, 127, 0.15);
 	}
-	/* The collection whose environment is in effect — it follows the open
+	/* The collection whose environment is in effect - it follows the open
 	   request, so this also says where that request lives. */
 	.collection-header.active {
 		background: rgba(57, 108, 216, 0.14);

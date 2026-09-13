@@ -277,7 +277,7 @@
 		--cm-active-line: rgba(110, 118, 129, 0.1);
 	}
 	/* `:where()` keeps this at the specificity of a bare type selector, the
-	   same as the light rule above it — it must win over that one by source
+	   same as the light rule above it - it must win over that one by source
 	   order and lose to everything else. Plenty of controls opt out of the
 	   chrome entirely (`background: none; border: none` on icon buttons and
 	   tab strips); a selector heavy enough to outrank their class would put

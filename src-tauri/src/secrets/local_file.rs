@@ -20,7 +20,7 @@ fn secrets_path(workspace_path: &Path) -> PathBuf {
 }
 
 /// Missing/corrupt secrets file is treated as "no secrets set yet" rather
-/// than an error — the file is created lazily on first `set`.
+/// than an error - the file is created lazily on first `set`.
 fn load(workspace_path: &Path) -> SecretsFile {
     fs::read_to_string(secrets_path(workspace_path))
         .ok()

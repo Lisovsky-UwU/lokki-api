@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 /// Metadata file inside a folder (`folder.toml`).
 ///
-/// Folders originally carried no metadata at all — the filesystem tree *was*
+/// Folders originally carried no metadata at all - the filesystem tree *was*
 /// the structure. This file exists so a folder can hold a stable id (for the
 /// planned sync) and an explicit position among its siblings, which
 /// drag-and-drop ordering needs. Folders created before it existed simply

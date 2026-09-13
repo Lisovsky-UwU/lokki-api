@@ -16,7 +16,7 @@ fn is_env_file(path: &Path) -> bool {
 /// Lists environments directly inside `scope_path` (a workspace's
 /// top-level `environments/` dir for global scope, or a collection's
 /// `environments/` dir for collection scope), paired with each one's file
-/// path — callers (the command layer) need the path to later save it.
+/// path - callers (the command layer) need the path to later save it.
 pub fn list_environments(scope_path: &Path) -> AppResult<Vec<(PathBuf, EnvironmentFile)>> {
     let mut out = Vec::new();
     if !scope_path.is_dir() {
@@ -62,7 +62,7 @@ fn env_stem(path: &Path) -> String {
 
 /// Saves `environment` to `env_path`, bumping its sync version/timestamp.
 /// A changed `meta.name` also renames the file, the same way requests and
-/// folders work — the folder has to stay readable outside the app, so the
+/// folders work - the folder has to stay readable outside the app, so the
 /// display name and the file name must not drift apart. Returns the path it
 /// ended up at, which callers hold on to for the next save.
 pub fn save_environment(env_path: &Path, mut environment: EnvironmentFile) -> AppResult<(PathBuf, EnvironmentFile)> {

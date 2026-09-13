@@ -15,7 +15,7 @@
 	import { reportError } from "../../ui/notices";
 
 	/// Loads a scope's environments and which one is active. Both go through
-	/// one call site with error handling — previously a failed list left the
+	/// one call site with error handling - previously a failed list left the
 	/// dropdown empty while the active id survived, so the edit button had
 	/// nothing to open and appeared to do nothing.
 	async function loadScope(rootPath: string): Promise<{ entries: EnvironmentEntry[]; activeId: string | null }> {

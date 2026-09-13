@@ -2,7 +2,7 @@ import { writable } from "svelte/store";
 import { api } from "../api/client";
 import { detectLocale, isLocale, locale, type Locale } from "./index";
 
-/// What the user chose in settings, or `null` for "follow the OS" — the
+/// What the user chose in settings, or `null` for "follow the OS" - the
 /// default, and what the app stays on until someone picks a language by
 /// hand. Kept separate from `locale` because the two differ in exactly that
 /// case, and the settings dialog has to show the choice, not the outcome.
@@ -12,7 +12,7 @@ function effective(preference: Locale | null): Locale {
 	return preference ?? detectLocale();
 }
 
-/// Reads the stored preference and puts the resulting language in force —
+/// Reads the stored preference and puts the resulting language in force -
 /// both in the UI and in the core, whose error messages reach the user
 /// verbatim.
 ///
@@ -33,7 +33,7 @@ export async function initLocale(): Promise<void> {
 }
 
 /// Changes the language and remembers the choice. Throws if it can't be
-/// stored — the caller reports that, since the language did change on screen
+/// stored - the caller reports that, since the language did change on screen
 /// and a silent failure would come back at the next launch.
 export async function setLanguagePreference(preference: Locale | null): Promise<void> {
 	languagePreference.set(preference);

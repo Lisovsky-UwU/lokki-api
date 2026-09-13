@@ -6,6 +6,7 @@
 	import { LOCALE_NAMES, t, type Locale } from "../../i18n";
 	import { languagePreference, setLanguagePreference, systemLocale } from "../../i18n/preference";
 	import { setThemePreference, systemTheme, themePreference, type ThemePreference } from "../../stores/theme";
+	import { layout, updateLayout, type PaneOrientation } from "../../stores/layout";
 	import { reportError } from "../../ui/notices";
 
 	let { onClose }: { onClose: () => void } = $props();
@@ -24,15 +25,21 @@
 	/// running webview.
 	const systemLanguageName = LOCALE_NAMES[systemLocale()];
 
-	/// Every theme worth naming in the picker. "System" is named after what
-	/// it currently resolves to, the way the language entry is — and unlike
-	/// the OS language, this one can change under a running app, so the label
-	/// is reactive.
+	/// Reactive, unlike the language entry above: the OS theme really can
+	/// change under a running app.
 	let systemThemeName = $derived($systemTheme === "dark" ? $t("settings.themeDark") : $t("settings.themeLight"));
 	let themeOptions = $derived<{ value: ThemePreference; label: string }[]>([
 		{ value: "system", label: $t("settings.themeSystem", { name: systemThemeName }) },
 		{ value: "light", label: $t("settings.themeLight") },
 		{ value: "dark", label: $t("settings.themeDark") },
+	]);
+
+	/// Labelled by where the response ends up rather than by the axis name:
+	/// "vertical" and "horizontal" each read as either arrangement depending
+	/// on which one you picture being split.
+	let paneLayouts = $derived<{ value: PaneOrientation; label: string }[]>([
+		{ value: "vertical", label: $t("settings.paneLayoutVertical") },
+		{ value: "horizontal", label: $t("settings.paneLayoutHorizontal") },
 	]);
 
 	/// `null` is the "follow the OS" entry. The select needs a string, so it
@@ -157,6 +164,19 @@
 								<option value="">{$t("settings.languageAuto", { name: systemLanguageName })}</option>
 								{#each Object.entries(LOCALE_NAMES) as [code, name] (code)}
 									<option value={code}>{name}</option>
+								{/each}
+							</select>
+						</label>
+
+						<label class="row">
+							<span>{$t("settings.paneLayout")}</span>
+							<select
+								value={$layout.orientation}
+								onchange={(e) =>
+									updateLayout({ orientation: (e.target as HTMLSelectElement).value as PaneOrientation })}
+							>
+								{#each paneLayouts as option (option.value)}
+									<option value={option.value}>{option.label}</option>
 								{/each}
 							</select>
 						</label>

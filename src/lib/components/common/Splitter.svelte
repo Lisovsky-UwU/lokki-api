@@ -43,7 +43,6 @@
 		(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
 	}
 
-	// Keyboard resizing, so the split isn't mouse-only.
 	function onKeyDown(e: KeyboardEvent) {
 		const step = e.shiftKey ? 40 : 12;
 		const back = direction === "vertical" ? "ArrowLeft" : "ArrowUp";

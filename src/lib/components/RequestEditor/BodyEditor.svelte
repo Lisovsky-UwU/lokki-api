@@ -9,7 +9,7 @@
 	let { body, onChange }: { body: BodySpec; onChange: (body: BodySpec) => void } = $props();
 
 	// The value in the picker is the body kind for the structural cases, and
-	// the text format for everything typed into the editor — from the user's
+	// the text format for everything typed into the editor - from the user's
 	// side "JSON" and "form" are one choice, not two.
 	type BodyChoice = "none" | TextFormat | "form" | "file";
 

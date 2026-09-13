@@ -23,7 +23,7 @@ pub enum AppError {
     },
     #[error("not found: {0}")]
     NotFound(String),
-    /// A message written for the user and shown verbatim in the UI — unlike
+    /// A message written for the user and shown verbatim in the UI - unlike
     /// the variants above, it carries no English prefix to prepend to a
     /// Russian sentence.
     #[error("{0}")]

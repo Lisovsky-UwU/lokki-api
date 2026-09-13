@@ -4,7 +4,7 @@ use tauri::AppHandle;
 /// What the About section shows. Build-time values are baked in by build.rs,
 /// the rest is read from the running host; the frontend renders the list
 /// as-is and never has to know which is which. Empty strings mean "couldn't
-/// be determined" — the UI words that, so this layer stays language-neutral.
+/// be determined" - the UI words that, so this layer stays language-neutral.
 #[derive(Debug, Clone, Serialize)]
 pub struct AppInfo {
     pub name: String,
@@ -43,7 +43,7 @@ pub fn app_info(app: AppHandle) -> AppInfo {
 mod tests {
     /// Guards the build.rs wiring: a typo in an env var name only shows up
     /// as a blank line in the About dialog otherwise. Commit and node are
-    /// left out on purpose — both are legitimately empty when building
+    /// left out on purpose - both are legitimately empty when building
     /// outside a git checkout or without node on PATH.
     #[test]
     fn build_metadata_is_captured() {

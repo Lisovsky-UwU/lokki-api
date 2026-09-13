@@ -28,8 +28,8 @@ pub fn save_request_settings(app: AppHandle, settings: RequestSettings) -> AppRe
 }
 
 /// What the user picked in settings, or `None` for "follow the OS". Only the
-/// frontend can resolve that second case — the webview is what knows the
-/// system display language — so the preference is handed over unresolved.
+/// frontend can resolve that second case - the webview is what knows the
+/// system display language - so the preference is handed over unresolved.
 #[tauri::command]
 pub fn get_language_preference(app: AppHandle) -> AppResult<Option<Language>> {
     Ok(fs_app_state::load(&app_local_data_dir(&app)?).language)
@@ -51,7 +51,7 @@ pub fn set_language(app: AppHandle, preference: Option<Language>, effective: Lan
 
 /// Applies the stored preference at start-up, before any command can fail in
 /// the wrong language. "Follow the OS" is left at the English fallback until
-/// the frontend reports what the webview resolved it to — and an unreadable
+/// the frontend reports what the webview resolved it to - and an unreadable
 /// app-local-data dir is not worth failing the launch over, since English is
 /// where it would land anyway.
 pub fn apply_stored_language(app: &AppHandle) {

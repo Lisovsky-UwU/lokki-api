@@ -7,7 +7,7 @@
 	let { rows, onChange }: { rows: KeyValue[]; onChange: (rows: KeyValue[]) => void } = $props();
 
 	// A trailing blank row is always shown so there is something to type into
-	// — including for a brand-new request, whose list starts out empty. It is
+	// - including for a brand-new request, whose list starts out empty. It is
 	// display-only: blank rows are stripped before they reach the store/disk.
 	let displayRows = $derived.by(() => {
 		const last = rows[rows.length - 1];

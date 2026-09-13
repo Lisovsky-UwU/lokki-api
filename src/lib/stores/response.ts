@@ -27,10 +27,10 @@ export interface RequestResponses {
 	/// follows is the cancellation landing, not a failure to report.
 	cancelling: boolean;
 	/// The result arrived while the user was looking at some other request,
-	/// and they haven't opened this one since — the sidebar marks it so a
+	/// and they haven't opened this one since - the sidebar marks it so a
 	/// background result isn't lost.
 	unseen: boolean;
-	/// Newest first. Capped at HISTORY_LIMIT, which is 1 today — the shape is
+	/// Newest first. Capped at HISTORY_LIMIT, which is 1 today - the shape is
 	/// already a list so turning on real response history later is just
 	/// raising the cap and adding a picker, not reworking the store.
 	history: ResponseRecord[];
@@ -65,7 +65,7 @@ export function markSending(path: string, sendId: string) {
 }
 
 /// Marks that cancelling was requested. The send stays "loading" until it
-/// actually comes back — the connection is torn down by the backend, and
+/// actually comes back - the connection is torn down by the backend, and
 /// pretending it is over before that would let a second send start while the
 /// first is still unwinding.
 export function markCancelling(path: string) {
@@ -78,7 +78,7 @@ export function markCancelling(path: string) {
 
 /// Stores a finished send. Returns true when it finished in the background
 /// (the user had moved on to another request), which is the caller's cue to
-/// notify them — decided here, from the one place that knows both paths, so
+/// notify them - decided here, from the one place that knows both paths, so
 /// it can't drift from the `unseen` flag the sidebar renders.
 export function recordResponse(path: string, record: ResponseRecord): boolean {
 	// A cancelled send is never worth a background notification: the user
@@ -128,7 +128,7 @@ const IDLE: SubtreeActivity = { running: false, unseen: null };
 
 /// What is going on at `rootPath` or anywhere below it. Matched by path
 /// prefix rather than by walking the tree, because a collapsed collection
-/// hasn't necessarily loaded its tree yet — and that is exactly the row that
+/// hasn't necessarily loaded its tree yet - and that is exactly the row that
 /// needs to stand in for the requests it hides.
 export function subtreeActivity(map: Record<string, RequestResponses>, rootPath: string): SubtreeActivity {
 	let unseen: ResponseRecord | null = null;
@@ -149,7 +149,7 @@ export function rekeyResponses(oldPrefix: string, newPrefix: string) {
 	);
 }
 
-/// Drops cached responses for everything at or below `rootPath` — used when
+/// Drops cached responses for everything at or below `rootPath` - used when
 /// a folder or collection is deleted and all of its requests go with it.
 export function forgetResponsesUnder(rootPath: string) {
 	responsesByRequest.update((map) =>

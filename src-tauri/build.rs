@@ -3,7 +3,7 @@ use std::process::Command;
 /// Facts that only exist while building: the toolchains involved and the
 /// commit the binary came from. Captured here as compile-time env vars,
 /// since nothing in the running app can look them up afterwards. Anything
-/// unavailable (no git, no node on PATH) becomes an empty string — the
+/// unavailable (no git, no node on PATH) becomes an empty string - the
 /// About dialog words the "unknown" case, this file doesn't.
 fn main() {
     println!("cargo:rustc-env=LOKKI_BUILD_DATE={}", chrono::Utc::now().format("%Y-%m-%d %H:%M UTC"));
@@ -31,7 +31,7 @@ fn output_of(program: &str, args: &[&str]) -> Option<String> {
 }
 
 /// Short hash, suffixed with `-dirty` when the working tree carries changes
-/// that aren't in it — a build from uncommitted code is not the commit it
+/// that aren't in it - a build from uncommitted code is not the commit it
 /// names, and that is exactly what a bug report needs to say.
 fn git_commit() -> String {
     let Some(hash) = output_of("git", &["rev-parse", "--short=12", "HEAD"]) else {
@@ -52,7 +52,7 @@ fn rustc_version() -> String {
         .unwrap_or_default()
 }
 
-/// The Node that builds the frontend — Tauri drives npm, so it is on PATH
+/// The Node that builds the frontend - Tauri drives npm, so it is on PATH
 /// during any real build of the app.
 fn node_version() -> String {
     output_of("node", &["-v"])

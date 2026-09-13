@@ -6,7 +6,7 @@ use std::time::Duration;
 /// the environment being tested from, not the collection, and must not
 /// travel to a teammate through a synced workspace folder.
 ///
-/// Every timeout is in milliseconds, and **0 means no limit** — the value a
+/// Every timeout is in milliseconds, and **0 means no limit** - the value a
 /// user reaches for when a slow endpoint has to be waited out.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
@@ -16,7 +16,7 @@ pub struct RequestSettings {
     pub verify_tls: bool,
     pub connect_timeout_ms: u64,
     /// Cap on the wait between two chunks of the response, not on the whole
-    /// exchange — a streaming endpoint that keeps sending never trips it.
+    /// exchange - a streaming endpoint that keeps sending never trips it.
     pub read_timeout_ms: u64,
     /// Cap on the whole exchange, connection and body included.
     pub total_timeout_ms: u64,
@@ -41,7 +41,7 @@ impl Default for RequestSettings {
     }
 }
 
-/// `None` for 0 — the builder methods take "no timeout" as absence.
+/// `None` for 0 - the builder methods take "no timeout" as absence.
 pub fn optional_duration(millis: u64) -> Option<Duration> {
     (millis > 0).then(|| Duration::from_millis(millis))
 }

@@ -23,7 +23,7 @@ export function rebasePath(path: string, oldPrefix: string, newPrefix: string): 
 }
 
 /// Keeps the open request pointing at the right file after it (or a folder
-/// above it) was renamed or moved — otherwise a later save would write back
+/// above it) was renamed or moved - otherwise a later save would write back
 /// to a path that no longer exists.
 export function rebaseActiveRequest(oldPrefix: string, newPrefix: string) {
 	const current = get(activeRequest);

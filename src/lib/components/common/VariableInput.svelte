@@ -57,7 +57,7 @@
 		open = false;
 		triggerStart = -1;
 		onChange(next);
-		// Caret goes right after the inserted `{{key}}` — computed from the
+		// Caret goes right after the inserted `{{key}}` - computed from the
 		// saved start, not the field that was just reset.
 		const cursor = start + key.length + 4;
 		queueMicrotask(() => {

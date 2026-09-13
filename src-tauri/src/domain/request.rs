@@ -71,7 +71,7 @@ impl Default for AuthSpec {
 }
 
 /// Text body formats. Each one only decides the default `Content-Type` and
-/// which highlighting the editor uses — the payload is always the text the
+/// which highlighting the editor uses - the payload is always the text the
 /// user typed, sent as-is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -123,7 +123,7 @@ pub enum BodySpec {
     },
     /// Sends a file from disk verbatim. The path is absolute and local, so a
     /// request shared through a synced workspace will point at nothing on
-    /// someone else's machine — deliberately, since copying the file into
+    /// someone else's machine - deliberately, since copying the file into
     /// the workspace is the user's decision to make.
     File {
         path: String,

@@ -51,7 +51,7 @@ pub fn create_workspace(workspace_path: &Path, name: &str) -> AppResult<Workspac
     init_workspace(workspace_path, name)
 }
 
-/// The workspace name is metadata, not the folder name — renaming it leaves
+/// The workspace name is metadata, not the folder name - renaming it leaves
 /// the directory (and every path the app has cached) untouched.
 pub fn rename_workspace(workspace_path: &Path, new_name: &str) -> AppResult<WorkspaceFile> {
     let marker = workspace_file_path(workspace_path);

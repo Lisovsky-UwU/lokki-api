@@ -1,7 +1,7 @@
 [package]
 name = "lokki-api"
 version = "0.1.0"
-description = "LokkiAPI — local-first, lightweight API client"
+description = "LokkiAPI - local-first, lightweight API client"
 authors = ["Lisovsky-UwU"]
 license = "Apache-2.0"
 edition = "2021"

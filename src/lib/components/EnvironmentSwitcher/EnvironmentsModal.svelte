@@ -16,7 +16,7 @@
 	}: {
 		rootPath: string;
 		scope: EnvironmentScope;
-		/// Whose environments these are — the workspace or the collection.
+		/// Whose environments these are - the workspace or the collection.
 		title: string;
 		/// Secrets always live in the workspace store, even for a collection
 		/// environment, so both paths are needed.
@@ -26,7 +26,7 @@
 
 	let entries = $state<EnvironmentEntry[]>([]);
 	// Which environment this scope currently resolves variables from. Shown
-	// only as a marker — switching stays in the top-bar selector, where it is
+	// only as a marker - switching stays in the top-bar selector, where it is
 	// part of the send flow rather than of editing.
 	let activeId = $state<string | null>(null);
 	let loading = $state(true);
@@ -36,7 +36,7 @@
 	// showing what is actually on disk until a save goes through.
 	let draft = $state<EnvironmentEntry | null>(null);
 	// Secret values never travel inside the environment file (that one gets
-	// written to the possibly-synced .env.toml) — they are read from and
+	// written to the possibly-synced .env.toml) - they are read from and
 	// written to the local SecretStore separately.
 	let secretValues = $state<Record<string, string>>({});
 	// Snapshot of the draft as last loaded or saved. Comparing against it is

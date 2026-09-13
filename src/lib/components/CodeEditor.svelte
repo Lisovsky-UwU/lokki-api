@@ -52,7 +52,7 @@
 	let view: EditorView | undefined;
 
 	// Marks doc changes pushed in from outside (opening a different request,
-	// rendering a new response) so they don't echo back through `onChange` —
+	// rendering a new response) so they don't echo back through `onChange` -
 	// otherwise merely opening a request would mark it as edited.
 	const External = Annotation.define<boolean>();
 
@@ -64,10 +64,10 @@
 
 	// Colors come from CSS custom properties (GitHub's palette, defined per
 	// theme in +page.svelte) so the editor follows light/dark automatically.
-	// GitHub's palette, mapped tag by tag. The list has to be this explicit:
-	// every language marks its tokens with its own tags, and a tag that isn't
-	// listed simply renders as plain text — which is why XML (tagName,
-	// attributeName, angleBracket) looked unhighlighted before.
+	// The tag list has to be this exhaustive: every language marks its tokens
+	// with its own tags, and a tag that isn't listed renders as plain text -
+	// which is why XML (tagName, attributeName, angleBracket) came out
+	// unhighlighted before.
 	const highlightStyle = HighlightStyle.define([
 		{ tag: [tags.propertyName, tags.definition(tags.propertyName)], color: "var(--cm-property)" },
 		{
@@ -93,7 +93,6 @@
 			],
 			color: "var(--cm-keyword)",
 		},
-		// Markup: tags green, attribute names blue, as on GitHub.
 		{ tag: [tags.tagName, tags.standard(tags.tagName), tags.namespace], color: "var(--cm-tag)" },
 		{ tag: tags.attributeName, color: "var(--cm-attribute)" },
 		{
@@ -131,7 +130,7 @@
 
 	// The caret and selection are drawn by CodeMirror, so they need explicit
 	// colors: the defaults are tuned for a light theme and were invisible
-	// (white on white) here. Blinking is left to CodeMirror's own animation —
+	// (white on white) here. Blinking is left to CodeMirror's own animation -
 	// defining a competing one made the caret flicker erratically.
 	const theme = EditorView.theme({
 		"&": { fontSize: "0.85em", height: "100%", backgroundColor: "transparent" },
@@ -177,7 +176,6 @@
 		}
 	};
 
-	/// Completes environment variable names right after a `{{`.
 	function variableCompletions(context: CompletionContext): CompletionResult | null {
 		const match = context.matchBefore(/\{\{[A-Za-z0-9_.-]*/);
 		if (!match || (match.from === match.to && !context.explicit)) return null;
@@ -256,7 +254,7 @@
 	});
 
 	// Push external `value` changes into the editor, but never when they
-	// already match — that would fight the user's cursor as they type.
+	// already match - that would fight the user's cursor as they type.
 	$effect(() => {
 		const current = value;
 		untrack(() => {

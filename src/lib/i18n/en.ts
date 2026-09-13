@@ -47,12 +47,13 @@ export const en = {
 	"app.restoreFailed": "Could not open the last workspace",
 	"app.noWorkspaceHint": "No workspace is open — variables are unavailable",
 	"app.requestPaneHeight": "Request pane height",
+	"app.requestPaneWidth": "Request pane width",
 
 	// --- incognito ---------------------------------------------------------
 	"incognito.badge": "Incognito",
 	"incognito.badgeTitle": "This request is never saved",
 	"incognito.request": "Incognito request",
-	"incognito.requestName": "Incognito request",
+	"incognito.requestName": "Request",
 	"incognito.pickerTitle": "Incognito request — send a request without saving anything",
 	"incognito.exit": "Leave",
 	"incognito.confirmOpen": "The current request has unsaved changes. They will be lost. Open an incognito request?",
@@ -146,6 +147,8 @@ export const en = {
 
 	"menu.addRequest": "Add request",
 	"menu.addFolder": "Add folder",
+	"menu.expandAll": "Expand all",
+	"menu.collapseAll": "Collapse all",
 	"menu.collectionEnvironments": "Collection environments",
 	"menu.renameCollection": "Rename collection",
 	"menu.deleteCollection": "Delete collection",
@@ -280,6 +283,10 @@ export const en = {
 	"settings.themeSystem": "System theme ({name})",
 	"settings.themeLight": "Light",
 	"settings.themeDark": "Dark",
+
+	"settings.paneLayout": "Request and response layout",
+	"settings.paneLayoutVertical": "Vertical",
+	"settings.paneLayoutHorizontal": "Horizontal",
 
 	"settings.verifyTls": "Verify TLS certificates",
 	"settings.verifyTlsWarning":

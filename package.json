@@ -1,7 +1,7 @@
 {
   "name": "lokki-api",
   "version": "0.1.0",
-  "description": "LokkiAPI — local-first, lightweight API client",
+  "description": "LokkiAPI - local-first, lightweight API client",
   "type": "module",
   "scripts": {
     "dev": "vite dev",

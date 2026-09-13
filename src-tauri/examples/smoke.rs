@@ -1,6 +1,6 @@
 // Manual end-to-end smoke test of the non-Tauri-specific pipeline (store +
 // interpolate + exec), exercising the same functions the IPC commands call.
-// Hits the real network (httpbin.org) — not part of `cargo test`, run
+// Hits the real network (httpbin.org) - not part of `cargo test`, run
 // manually via `cargo run --example smoke`.
 use lokki_api_lib::domain::{EnvironmentScope, HttpMethod};
 use lokki_api_lib::exec::{resolve_http_request, ExecutionContext, HttpExecutor, ProtocolExecutor, TraceRecorder};

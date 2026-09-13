@@ -12,7 +12,7 @@ pub struct VariableScope(pub HashMap<String, String>);
 
 /// Resolves `{{var}}` references. Precedence: active collection-scoped
 /// environment, then active global environment. No per-request local
-/// variables in MVP — an easy additive tier later.
+/// variables in MVP - an easy additive tier later.
 pub struct Resolver {
     global: VariableScope,
     collection: Option<VariableScope>,

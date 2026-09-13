@@ -83,7 +83,7 @@ function looksBinary(text: string): boolean {
 	return text.includes(NUL) || text.includes(REPLACEMENT_CHAR);
 }
 
-/// Guesses from the body when the server sent no usable type — common enough
+/// Guesses from the body when the server sent no usable type - common enough
 /// with hand-rolled APIs to be worth doing rather than falling back to
 /// "binary" and hiding the response.
 function sniff(text: string): EditorLanguage {
@@ -96,7 +96,7 @@ function sniff(text: string): EditorLanguage {
 			JSON.parse(trimmed);
 			return "json";
 		} catch {
-			// Not JSON after all — treat it as plain text.
+			// Not JSON after all - treat it as plain text.
 		}
 	}
 	return "text";
