@@ -276,6 +276,11 @@ export const en = {
 	"settings.languageAuto": "System language ({name})",
 	"settings.languageSaveFailed": "Could not save the language",
 
+	"settings.theme": "Theme",
+	"settings.themeSystem": "System theme ({name})",
+	"settings.themeLight": "Light",
+	"settings.themeDark": "Dark",
+
 	"settings.verifyTls": "Verify TLS certificates",
 	"settings.verifyTlsWarning":
 		"Verification is off: any certificate is accepted, a forged one included. For test rigs only.",

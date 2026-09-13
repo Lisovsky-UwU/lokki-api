@@ -5,6 +5,7 @@
 	import { copyText } from "../../ui/clipboard";
 	import { LOCALE_NAMES, t, type Locale } from "../../i18n";
 	import { languagePreference, setLanguagePreference, systemLocale } from "../../i18n/preference";
+	import { setThemePreference, systemTheme, themePreference, type ThemePreference } from "../../stores/theme";
 	import { reportError } from "../../ui/notices";
 
 	let { onClose }: { onClose: () => void } = $props();
@@ -22,6 +23,17 @@
 	/// is not a guess. Read once: the OS language cannot change under a
 	/// running webview.
 	const systemLanguageName = LOCALE_NAMES[systemLocale()];
+
+	/// Every theme worth naming in the picker. "System" is named after what
+	/// it currently resolves to, the way the language entry is — and unlike
+	/// the OS language, this one can change under a running app, so the label
+	/// is reactive.
+	let systemThemeName = $derived($systemTheme === "dark" ? $t("settings.themeDark") : $t("settings.themeLight"));
+	let themeOptions = $derived<{ value: ThemePreference; label: string }[]>([
+		{ value: "system", label: $t("settings.themeSystem", { name: systemThemeName }) },
+		{ value: "light", label: $t("settings.themeLight") },
+		{ value: "dark", label: $t("settings.themeDark") },
+	]);
 
 	/// `null` is the "follow the OS" entry. The select needs a string, so it
 	/// travels as the empty one.
@@ -145,6 +157,18 @@
 								<option value="">{$t("settings.languageAuto", { name: systemLanguageName })}</option>
 								{#each Object.entries(LOCALE_NAMES) as [code, name] (code)}
 									<option value={code}>{name}</option>
+								{/each}
+							</select>
+						</label>
+
+						<label class="row">
+							<span>{$t("settings.theme")}</span>
+							<select
+								value={$themePreference}
+								onchange={(e) => setThemePreference((e.target as HTMLSelectElement).value as ThemePreference)}
+							>
+								{#each themeOptions as option (option.value)}
+									<option value={option.value}>{option.label}</option>
 								{/each}
 							</select>
 						</label>

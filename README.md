@@ -55,7 +55,7 @@ LokkiAPI does three things differently from the clients already out there.
 
 **Interface**
 - English and Russian: picked from the OS language on first launch, falling back to English; switchable under Settings → Interface
-- Light and dark theme, following the system setting
+- Light and dark theme: follows the system by default, or pin either one under Settings → Interface
 - Resizable panes: collection tree width, request and response heights
 - The last workspace reopens on launch
 

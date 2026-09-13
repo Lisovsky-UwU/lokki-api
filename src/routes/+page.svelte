@@ -5,6 +5,7 @@
 	import { api } from "../lib/api/client";
 	import { t } from "../lib/i18n";
 	import { initLocale } from "../lib/i18n/preference";
+	import { initTheme } from "../lib/stores/theme";
 	import { installGlobalErrorReporting, reportError } from "../lib/ui/notices";
 	import { closeEnvironmentsDialog, environmentsDialog } from "../lib/ui/environmentsDialog";
 	import { closeSettings, openSettings, settingsOpen } from "../lib/ui/settingsDialog";
@@ -55,6 +56,10 @@
 	// pick the same folder on every launch.
 	onMount(async () => {
 		installGlobalErrorReporting();
+		// The attribute is already on <html> (app.html sets it before the
+		// first paint); this takes ownership of it and starts following the
+		// OS while the preference is "system".
+		initTheme();
 		// Before anything that can fail: the core words its own errors, and
 		// restoring the workspace below is the first thing that can raise one.
 		await initLocale();
@@ -174,6 +179,7 @@
 		height: 100%;
 		overflow: hidden;
 	}
+	/* The light palette is the base; the dark one overrides it below. */
 	:global(:root) {
 		font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
 		color-scheme: light;
@@ -183,6 +189,10 @@
 		   (sidebar, editor, dialog) instead of carrying its own colour. */
 		--scrollbar-thumb: rgba(27, 31, 36, 0.2);
 		--scrollbar-thumb-hover: rgba(27, 31, 36, 0.35);
+		/* The tree sits a shade off the page so the panel reads as its own
+		   surface rather than as part of the editor next to it. Both themes
+		   do this; see the dark block below. */
+		--sidebar-bg: #f6f8fa;
 		/* GitHub light syntax palette, consumed by the code editor. */
 		--cm-property: #0550ae;
 		--cm-string: #0a3069;
@@ -234,35 +244,47 @@
 		background: var(--scrollbar-thumb-hover);
 		background-clip: padding-box;
 	}
-	@media (prefers-color-scheme: dark) {
-		:global(:root) {
-			color-scheme: dark;
-			color: #e6edf3;
-			background-color: #0d1117;
-			--modal-bg: #161b22;
-			--scrollbar-thumb: rgba(240, 246, 252, 0.16);
-			--scrollbar-thumb-hover: rgba(240, 246, 252, 0.3);
-			/* GitHub dark syntax palette. */
-			--cm-property: #79c0ff;
-			--cm-string: #a5d6ff;
-			--cm-number: #79c0ff;
-			--cm-keyword: #ff7b72;
-			--cm-comment: #8b949e;
-			--cm-punctuation: #c9d1d9;
-			--cm-tag: #7ee787;
-			--cm-attribute: #79c0ff;
-			--cm-function: #d2a8ff;
-			--cm-variable: #ffa657;
-			--cm-type: #ffa657;
-			--cm-meta: #8b949e;
-			--cm-invalid: #ffa198;
-			--cm-selection: rgba(56, 139, 253, 0.4);
-			--cm-active-line: rgba(110, 118, 129, 0.1);
-		}
-		:global(input, select, textarea, button) {
-			background: #161b22;
-			border-color: rgba(240, 246, 252, 0.15);
-		}
+	/* Keyed off the attribute rather than `prefers-color-scheme`, because the
+	   theme can also be pinned in settings. `stores/theme.ts` resolves
+	   "follow the system" and stamps the answer on <html>, so there is one
+	   selector here instead of a media query plus a duplicate of it. */
+	:global(:root[data-theme="dark"]) {
+		color-scheme: dark;
+		color: #e6edf3;
+		background-color: #0d1117;
+		--modal-bg: #161b22;
+		/* One step off the page, the same lift the light theme gives it
+		   (#ffffff -> #f6f8fa). Shares a value with --modal-bg by
+		   coincidence of the palette, not by dependence on it. */
+		--sidebar-bg: #161b22;
+		--scrollbar-thumb: rgba(240, 246, 252, 0.16);
+		--scrollbar-thumb-hover: rgba(240, 246, 252, 0.3);
+		/* GitHub dark syntax palette. */
+		--cm-property: #79c0ff;
+		--cm-string: #a5d6ff;
+		--cm-number: #79c0ff;
+		--cm-keyword: #ff7b72;
+		--cm-comment: #8b949e;
+		--cm-punctuation: #c9d1d9;
+		--cm-tag: #7ee787;
+		--cm-attribute: #79c0ff;
+		--cm-function: #d2a8ff;
+		--cm-variable: #ffa657;
+		--cm-type: #ffa657;
+		--cm-meta: #8b949e;
+		--cm-invalid: #ffa198;
+		--cm-selection: rgba(56, 139, 253, 0.4);
+		--cm-active-line: rgba(110, 118, 129, 0.1);
+	}
+	/* `:where()` keeps this at the specificity of a bare type selector, the
+	   same as the light rule above it — it must win over that one by source
+	   order and lose to everything else. Plenty of controls opt out of the
+	   chrome entirely (`background: none; border: none` on icon buttons and
+	   tab strips); a selector heavy enough to outrank their class would put
+	   a filled box and a visible border back on every one of them. */
+	:global(:where(:root[data-theme="dark"]) :is(input, select, textarea, button)) {
+		background: #161b22;
+		border-color: rgba(240, 246, 252, 0.15);
 	}
 
 	.app {
@@ -271,6 +293,7 @@
 		height: 100vh;
 	}
 	.sidebar {
+		background: var(--sidebar-bg);
 		border-right: 1px solid rgba(127, 127, 127, 0.25);
 		overflow-y: auto;
 		min-width: 0;

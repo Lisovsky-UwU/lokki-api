@@ -5,6 +5,29 @@
     <link rel="icon" href="%sveltekit.assets%/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LokkiAPI</title>
+    <script>
+      // Runs before anything is drawn, so the window never flashes the light
+      // theme on its way to the dark one. Deliberately duplicates the two
+      // lines of logic in stores/theme.ts rather than importing it: the
+      // bundle has not loaded yet at this point. The storage key and the
+      // resolved values must stay in step with that module.
+      (function () {
+        var preference = "system";
+        try {
+          var stored = localStorage.getItem("lokki.theme");
+          if (stored === "light" || stored === "dark" || stored === "system") preference = stored;
+        } catch (e) {
+          // Storage blocked: fall through to following the OS.
+        }
+        var resolved =
+          preference === "system"
+            ? window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light"
+            : preference;
+        document.documentElement.dataset.theme = resolved;
+      })();
+    </script>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">

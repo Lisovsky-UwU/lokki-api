@@ -277,6 +277,11 @@ export const ru: Record<keyof typeof en, string> = {
 	"settings.languageAuto": "Язык системы ({name})",
 	"settings.languageSaveFailed": "Не удалось сохранить язык",
 
+	"settings.theme": "Тема",
+	"settings.themeSystem": "Тема системы ({name})",
+	"settings.themeLight": "Светлая",
+	"settings.themeDark": "Тёмная",
+
 	"settings.verifyTls": "Проверять TLS-сертификаты",
 	"settings.verifyTlsWarning":
 		"Проверка отключена: принимается любой сертификат, включая подменённый. Только для тестовых стендов.",
