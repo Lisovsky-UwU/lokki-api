@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { closeContextMenu, contextMenu, type MenuItem } from "../../ui/contextMenu";
+	import MenuList from "./MenuList.svelte";
 
 	let menu = $state<HTMLDivElement>();
 	let position = $state({ x: 0, y: 0 });
@@ -57,9 +58,7 @@
 		tabindex="-1"
 		style="left: {position.x}px; top: {position.y}px"
 	>
-		{#each $contextMenu.items as item (item.label)}
-			<button role="menuitem" class:danger={item.danger} onclick={() => run(item)}>{item.label}</button>
-		{/each}
+		<MenuList menu={$contextMenu.menu} onselect={run} />
 	</div>
 {/if}
 
@@ -75,22 +74,5 @@
 		background: var(--modal-bg, #fff);
 		border: 1px solid rgba(127, 127, 127, 0.3);
 		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-	}
-	.context-menu button {
-		background: none;
-		border: none;
-		text-align: left;
-		padding: 0.45em 0.6em;
-		border-radius: 5px;
-		cursor: pointer;
-		color: inherit;
-		font-size: 0.85em;
-		white-space: nowrap;
-	}
-	.context-menu button:hover {
-		background: rgba(127, 127, 127, 0.18);
-	}
-	.context-menu button.danger {
-		color: #d1443c;
 	}
 </style>

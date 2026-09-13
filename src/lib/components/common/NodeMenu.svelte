@@ -3,16 +3,18 @@
 	// One definition for both ways of opening the same actions: the ⋯ button
 	// and the right-click menu.
 	import { t } from "../../i18n";
-	import type { MenuItem } from "../../ui/contextMenu";
+	import type { Menu, MenuItem } from "../../ui/contextMenu";
+	import Icon from "./Icon.svelte";
+	import MenuList from "./MenuList.svelte";
 
 	// `trigger` replaces the ⋯ button, so a row can *be* the menu button (the
 	// workspace name opens the workspace menu) instead of carrying one.
 	let {
-		items,
+		menu,
 		label,
 		trigger,
 		align = "right",
-	}: { items: MenuItem[]; label?: string; trigger?: Snippet; align?: "left" | "right" } = $props();
+	}: { menu: Menu; label?: string; trigger?: Snippet; align?: "left" | "right" } = $props();
 
 	// Derived rather than a default prop value, so the fallback follows a
 	// language change like every other string does.
@@ -58,13 +60,11 @@
 		aria-expanded={open}
 		onclick={toggle}
 	>
-		{#if trigger}{@render trigger()}{:else}⋯{/if}
+		{#if trigger}{@render trigger()}{:else}<Icon name="more" size="1.2em" stroke={2.4} />{/if}
 	</button>
 	{#if open}
 		<div class="menu" class:align-left={align === "left"} role="menu">
-			{#each items as item (item.label)}
-				<button role="menuitem" class:danger={item.danger} onclick={(e) => run(item, e)}>{item.label}</button>
-			{/each}
+			<MenuList {menu} onselect={run} />
 		</div>
 	{/if}
 </div>
@@ -75,12 +75,14 @@
 		flex-shrink: 0;
 	}
 	.trigger {
+		display: flex;
+		align-items: center;
 		background: none;
 		border: none;
 		cursor: pointer;
 		color: inherit;
 		opacity: 0.55;
-		padding: 0.1em 0.35em;
+		padding: 0.25em 0.35em;
 		border-radius: 4px;
 		font-size: 0.95em;
 		line-height: 1;
@@ -118,22 +120,5 @@
 	.menu.align-left {
 		left: 0;
 		right: auto;
-	}
-	.menu button {
-		background: none;
-		border: none;
-		text-align: left;
-		padding: 0.45em 0.6em;
-		border-radius: 5px;
-		cursor: pointer;
-		color: inherit;
-		font-size: 0.85em;
-		white-space: nowrap;
-	}
-	.menu button:hover {
-		background: rgba(127, 127, 127, 0.18);
-	}
-	.menu button.danger {
-		color: #d1443c;
 	}
 </style>

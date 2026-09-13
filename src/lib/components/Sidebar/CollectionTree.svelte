@@ -6,6 +6,7 @@
 	import type { CollectionSummary, CollectionTreeNode, HttpMethod } from "../../bindings/types";
 	import TreeNode from "./TreeNode.svelte";
 	import NodeMenu from "../common/NodeMenu.svelte";
+	import Icon from "../common/Icon.svelte";
 	import ActivityIndicator from "../common/ActivityIndicator.svelte";
 	import { activeCollection, treeRefreshToken, requestTreeRefresh } from "../../stores/collectionTree";
 	import { dragging } from "../../stores/dragState";
@@ -24,7 +25,7 @@
 	import { forgetResponsesUnder, rekeyResponses, responsesByRequest, subtreeActivity } from "../../stores/response";
 	import { confirmAction, promptForText } from "../../ui/dialogs";
 	import { openEnvironmentsDialog } from "../../ui/environmentsDialog";
-	import { openContextMenu } from "../../ui/contextMenu";
+	import { openContextMenu, type Menu } from "../../ui/contextMenu";
 	import { reportError } from "../../ui/notices";
 
 	let trees = $state<Record<string, CollectionTreeNode | null>>({});
@@ -183,20 +184,31 @@
 		expandAll([collection.path, ...paths]);
 	}
 
-	function collectionMenu(collection: CollectionSummary) {
+	/// Four groups, in the order a collection is usually worked with: fill
+	/// it, look through it, change what it is, then get rid of it.
+	function collectionMenu(collection: CollectionSummary): Menu {
 		return [
-			{ label: $t("menu.addRequest"), action: () => addRequest(collection) },
-			{ label: $t("menu.addFolder"), action: () => addFolder(collection) },
-			{ label: $t("menu.expandAll"), action: () => expandAllIn(collection) },
-			{ label: $t("menu.collapseAll"), action: () => collapseAllUnder(collection.path) },
-			// Reachable without opening a request first - the switcher in the
-			// top bar only ever shows the active collection's environments.
-			{
-				label: $t("menu.collectionEnvironments"),
-				action: () => openEnvironmentsDialog({ rootPath: collection.path, scope: "collection", title: collection.name }),
-			},
-			{ label: $t("menu.renameCollection"), action: () => renameCollection(collection) },
-			{ label: $t("menu.deleteCollection"), action: () => removeCollection(collection), danger: true },
+			[
+				{ label: $t("menu.addRequest"), icon: "request-add", action: () => addRequest(collection) },
+				{ label: $t("menu.addFolder"), icon: "folder-add", action: () => addFolder(collection) },
+			],
+			[
+				{ label: $t("menu.expandAll"), icon: "expand-all", action: () => expandAllIn(collection) },
+				{ label: $t("menu.collapseAll"), icon: "collapse-all", action: () => collapseAllUnder(collection.path) },
+			],
+			[
+				// Reachable without opening a request first - the switcher in
+				// the top bar only ever shows the active collection's
+				// environments.
+				{
+					label: $t("menu.collectionEnvironments"),
+					icon: "environments",
+					action: () =>
+						openEnvironmentsDialog({ rootPath: collection.path, scope: "collection", title: collection.name }),
+				},
+				{ label: $t("menu.renameCollection"), icon: "rename", action: () => renameCollection(collection) },
+			],
+			[{ label: $t("menu.deleteCollection"), icon: "delete", action: () => removeCollection(collection), danger: true }],
 		];
 	}
 
@@ -251,15 +263,20 @@
 	// Only workspace-scoped actions belong here: app settings sit in the top
 	// bar, since a menu hanging off the workspace name reads as "settings of
 	// this workspace".
-	let workspaceMenu = $derived([
-		{ label: $t("menu.renameWorkspace"), action: renameWorkspace },
-		{
-			label: $t("menu.workspaceEnvironments"),
-			action: () =>
-				$workspacePath &&
-				openEnvironmentsDialog({ rootPath: $workspacePath, scope: "global", title: $workspace?.name ?? "" }),
-		},
-		{ label: $t("menu.switchWorkspace"), action: closeWorkspace },
+	let workspaceMenu: Menu = $derived([
+		[
+			{ label: $t("menu.renameWorkspace"), icon: "rename", action: renameWorkspace },
+			{
+				label: $t("menu.workspaceEnvironments"),
+				icon: "environments",
+				action: () =>
+					$workspacePath &&
+					openEnvironmentsDialog({ rootPath: $workspacePath, scope: "global", title: $workspace?.name ?? "" }),
+			},
+		],
+		// Leaving this workspace is not an edit of it - it belongs on the
+		// other side of a rule, the way a delete does elsewhere.
+		[{ label: $t("menu.switchWorkspace"), icon: "switch", action: closeWorkspace }],
 	]);
 
 	function closeWorkspace() {
@@ -280,7 +297,7 @@
 		<div class="empty">{$t("sidebar.noWorkspace")}</div>
 	{:else}
 		<div class="workspace-name-outer">
-			<NodeMenu items={workspaceMenu} label={$t("sidebar.workspaceMenu")} align="left">
+			<NodeMenu menu={workspaceMenu} label={$t("sidebar.workspaceMenu")} align="left">
 				{#snippet trigger()}
 					<span class="workspace-name">{$workspace?.name}</span>
 					<span class="switch-hint">▾</span>
@@ -290,7 +307,9 @@
 	{/if}
 	<div class="sidebar-header sidebar-header-collections">
 		<span>{$t("sidebar.collections")}</span>
-		<button class="icon-btn" title={$t("sidebar.newCollection")} onclick={createCollection}>+</button>
+		<button class="icon-btn" title={$t("sidebar.newCollection")} aria-label={$t("sidebar.newCollection")} onclick={createCollection}>
+			<Icon name="plus" size="1.1em" />
+		</button>
 	</div>
 
 	{#each $collections as collection (collection.path)}
@@ -308,7 +327,7 @@
 						<ActivityIndicator activity={subtreeActivity($responsesByRequest, collection.path)} group />
 					{/if}
 				</button>
-				<NodeMenu items={collectionMenu(collection)} label={$t("sidebar.collectionActions")} />
+				<NodeMenu menu={collectionMenu(collection)} label={$t("sidebar.collectionActions")} />
 			</div>
 			{#if collectionExpanded(collection.path)}
 				{@const children = childrenOf(collection.path)}
@@ -367,12 +386,14 @@
 		margin-bottom: 0.8em;
 	}
 	.icon-btn {
+		display: flex;
+		align-items: center;
 		background: none;
 		border: none;
 		cursor: pointer;
 		font-size: 1em;
 		line-height: 1;
-		padding: 0.1em 0.4em;
+		padding: 0.2em 0.35em;
 		border-radius: 4px;
 		color: inherit;
 	}

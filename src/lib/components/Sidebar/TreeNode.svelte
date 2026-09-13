@@ -17,7 +17,7 @@
 	import { dragging } from "../../stores/dragState";
 	import { forgetResponses, markSeen, rekeyResponses, responsesByRequest, subtreeActivity } from "../../stores/response";
 	import { confirmAction, promptForText } from "../../ui/dialogs";
-	import { openContextMenu } from "../../ui/contextMenu";
+	import { openContextMenu, type Menu } from "../../ui/contextMenu";
 	import { reportError } from "../../ui/notices";
 	import { api } from "../../api/client";
 	import { t } from "../../i18n";
@@ -240,17 +240,22 @@
 		}
 	}
 
-	let folderMenu = $derived([
-		{ label: $t("menu.addRequest"), action: addRequest },
-		{ label: $t("menu.addFolder"), action: addFolder },
-		{ label: $t("menu.renameFolder"), action: renameFolder },
-		{ label: $t("menu.deleteFolder"), action: removeFolder, danger: true },
+	// Grouped the same way in every menu in the sidebar: what this entry can
+	// contain, then what can be done to the entry itself, then what destroys
+	// it - so the delete item is never the neighbour of something harmless.
+	let folderMenu: Menu = $derived([
+		[
+			{ label: $t("menu.addRequest"), icon: "request-add", action: addRequest },
+			{ label: $t("menu.addFolder"), icon: "folder-add", action: addFolder },
+		],
+		[{ label: $t("menu.renameFolder"), icon: "rename", action: renameFolder }],
+		[{ label: $t("menu.deleteFolder"), icon: "delete", action: removeFolder, danger: true }],
 	]);
 
-	let requestMenu = $derived([
-		{ label: $t("menu.cloneRequest"), action: cloneRequest },
-		{ label: $t("menu.renameRequest"), action: renameRequest },
-		{ label: $t("menu.deleteRequest"), action: removeRequest, danger: true },
+	let requestMenu: Menu = $derived([
+		[{ label: $t("menu.cloneRequest"), icon: "clone", action: cloneRequest }],
+		[{ label: $t("menu.renameRequest"), icon: "rename", action: renameRequest }],
+		[{ label: $t("menu.deleteRequest"), icon: "delete", action: removeRequest, danger: true }],
 	]);
 </script>
 
@@ -276,7 +281,7 @@
 				<span class="node-name">{node.name}</span>
 				<ActivityIndicator {activity} group />
 			</button>
-			<NodeMenu items={folderMenu} label={$t("sidebar.folderActions")} />
+			<NodeMenu menu={folderMenu} label={$t("sidebar.folderActions")} />
 		</div>
 		{#if expanded}
 			<div class="children">
@@ -310,7 +315,7 @@
 			<span class="node-name">{node.name}</span>
 			<ActivityIndicator {activity} />
 		</button>
-		<NodeMenu items={requestMenu} label={$t("sidebar.requestActions")} />
+		<NodeMenu menu={requestMenu} label={$t("sidebar.requestActions")} />
 	</div>
 {/if}
 
