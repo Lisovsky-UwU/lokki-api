@@ -302,13 +302,15 @@
 					{/if}
 
 					<div class="section-head">
-						<h3>GitHub</h3>
+						<h3>{$t("about.application")}</h3>
 					</div>
 					<dl class="facts">
 						<dt>{$t("about.author")}</dt>
 						<dd><a href="https://github.com/Lisovsky-UwU" target="_blank" rel="noopener">Lisovsky-UwU</a></dd>
 						<dt>{$t("about.repository")}</dt>
 						<dd><a href="https://github.com/Lisovsky-UwU/lokki-api" target="_blank" rel="noopener">lokki-api</a></dd>
+						<dt>{$t("about.license")}</dt>
+						<dd><a href="https://github.com/Lisovsky-UwU/lokki-api/blob/master/LICENSE" target="_blank" rel="noopener">Apache License 2.0</a></dd>
 					</dl>
 				{/if}
 			</section>

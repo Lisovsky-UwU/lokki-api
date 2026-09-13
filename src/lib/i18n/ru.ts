@@ -310,6 +310,8 @@ export const ru: Record<keyof typeof en, string> = {
 	"about.buildDate": "Дата сборки",
 	"about.commit": "Коммит",
 	"about.os": "Операционная система",
+	"about.application": "Приложение",
 	"about.author": "Автор",
 	"about.repository": "Репозиторий",
+	"about.license": "Лицензия",
 };

@@ -311,6 +311,8 @@ export const en = {
 	"about.buildDate": "Build date",
 	"about.commit": "Commit",
 	"about.os": "Operating system",
+	"about.application": "Application",
 	"about.author": "Author",
 	"about.repository": "Repository",
+	"about.license": "License",
 } as const;
