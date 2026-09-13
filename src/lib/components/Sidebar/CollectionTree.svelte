@@ -8,10 +8,11 @@
 	import ActivityIndicator from "../common/ActivityIndicator.svelte";
 	import { activeCollection, treeRefreshToken, requestTreeRefresh } from "../../stores/collectionTree";
 	import { dragging } from "../../stores/dragState";
-	import { activeRequest, rebaseActiveRequest, rebasePath } from "../../stores/activeRequest";
-	import { rekeyResponses, responsesByRequest, subtreeActivity } from "../../stores/response";
-	import { promptForText } from "../../ui/dialogs";
+	import { activeRequest, isUnder, rebaseActiveRequest, rebasePath } from "../../stores/activeRequest";
+	import { forgetResponsesUnder, rekeyResponses, responsesByRequest, subtreeActivity } from "../../stores/response";
+	import { confirmAction, promptForText } from "../../ui/dialogs";
 	import { openEnvironmentsDialog } from "../../ui/environmentsDialog";
+	import { openContextMenu } from "../../ui/contextMenu";
 	import { reportError } from "../../ui/notices";
 
 	let trees = $state<Record<string, CollectionTreeNode | null>>({});
@@ -78,6 +79,32 @@
 		}
 	}
 
+	/// Deleting a collection takes its whole tree with it, so everything the
+	/// app holds by path inside it has to go too — the open request, cached
+	/// responses, and this component's own caches.
+	async function removeCollection(collection: CollectionSummary) {
+		const confirmed = await confirmAction(
+			`Удалить коллекцию «${collection.name}» со всеми запросами, папками и окружениями? Папка будет удалена с диска.`,
+			{ title: "Удаление коллекции", confirmLabel: "Удалить", danger: true },
+		);
+		if (!confirmed) return;
+		try {
+			await api.deleteCollection(collection.path);
+			collections.update((list) => list.filter((c) => c.path !== collection.path));
+			forgetResponsesUnder(collection.path);
+			if ($activeCollection?.path === collection.path) activeCollection.set(null);
+			if ($activeRequest && isUnder($activeRequest.path, collection.path)) activeRequest.set(null);
+			expandedCollections = dropByPath(expandedCollections, collection.path);
+			trees = dropByPath(trees, collection.path);
+		} catch (e) {
+			reportError("Не удалось удалить коллекцию", e);
+		}
+	}
+
+	function dropByPath<T>(map: Record<string, T>, prefix: string): Record<string, T> {
+		return Object.fromEntries(Object.entries(map).filter(([key]) => !isUnder(key, prefix)));
+	}
+
 	function rekeyByPath<T>(map: Record<string, T>, from: string, to: string): Record<string, T> {
 		return Object.fromEntries(Object.entries(map).map(([key, value]) => [rebasePath(key, from, to), value]));
 	}
@@ -131,6 +158,7 @@
 				action: () => openEnvironmentsDialog({ rootPath: collection.path, scope: "collection", title: collection.name }),
 			},
 			{ label: "Переименовать коллекцию", action: () => renameCollection(collection) },
+			{ label: "Удалить коллекцию", action: () => removeCollection(collection), danger: true },
 		];
 	}
 
@@ -229,7 +257,12 @@
 
 	{#each $collections as collection (collection.path)}
 		<div class="collection">
-			<div class="collection-header" class:active={$activeCollection?.path === collection.path}>
+			<div
+				class="collection-header"
+				class:active={$activeCollection?.path === collection.path}
+				role="presentation"
+				oncontextmenu={(e) => openContextMenu(e, collectionMenu(collection))}
+			>
 				<button class="collection-label" onclick={() => toggleCollection(collection)}>
 					<span class="chevron" class:collapsed={!expandedCollections[collection.path]}>▾</span>
 					<span class="collection-name">{collection.name}</span>

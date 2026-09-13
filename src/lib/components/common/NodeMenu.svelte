@@ -1,11 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
-
-	export interface MenuItem {
-		label: string;
-		action: () => void;
-		danger?: boolean;
-	}
+	// One definition for both ways of opening the same actions: the ⋯ button
+	// and the right-click menu.
+	import type { MenuItem } from "../../ui/contextMenu";
 
 	// `trigger` replaces the ⋯ button, so a row can *be* the menu button (the
 	// workspace name opens the workspace menu) instead of carrying one.

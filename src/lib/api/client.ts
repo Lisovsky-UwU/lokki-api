@@ -44,13 +44,15 @@ export const api = {
 		invoke<CollectionTreeNode>("load_collection_tree", { collectionPath }),
 	renameCollection: (collectionPath: string, newName: string) =>
 		invoke<CollectionSummary>("rename_collection", { collectionPath, newName }),
+	deleteCollection: (collectionPath: string) => invoke<void>("delete_collection", { collectionPath }),
 
 	loadRequest: (requestPath: string) => invoke<RequestFile>("load_request", { requestPath }),
 	saveRequest: (requestPath: string, request: RequestFile) =>
 		invoke<RequestFile>("save_request", { requestPath, request }),
 	createRequest: (parentPath: string, name: string, method: HttpMethod) =>
 		invoke<RequestFile>("create_request", { parentPath, name, method }),
-	cloneRequest: (requestPath: string) => invoke<RequestAtPath>("clone_request", { requestPath }),
+	cloneRequest: (requestPath: string, newName: string) =>
+		invoke<RequestAtPath>("clone_request", { requestPath, newName }),
 	deleteRequest: (requestPath: string) => invoke<void>("delete_request", { requestPath }),
 	/// Files an in-memory request into a workspace folder, where it becomes
 	/// an ordinary request with an identity of its own.

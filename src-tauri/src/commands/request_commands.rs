@@ -29,8 +29,8 @@ pub fn create_request(parent_path: String, name: String, method: HttpMethod) -> 
 }
 
 #[tauri::command]
-pub fn clone_request(request_path: String) -> AppResult<RequestAtPath> {
-    let (path, request) = fs_request::clone_request(Path::new(&request_path))?;
+pub fn clone_request(request_path: String, new_name: String) -> AppResult<RequestAtPath> {
+    let (path, request) = fs_request::clone_request(Path::new(&request_path), &new_name)?;
     Ok(RequestAtPath {
         path: path.display().to_string(),
         request,

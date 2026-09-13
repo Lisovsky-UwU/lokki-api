@@ -149,6 +149,14 @@ export function rekeyResponses(oldPrefix: string, newPrefix: string) {
 	);
 }
 
+/// Drops cached responses for everything at or below `rootPath` — used when
+/// a folder or collection is deleted and all of its requests go with it.
+export function forgetResponsesUnder(rootPath: string) {
+	responsesByRequest.update((map) =>
+		Object.fromEntries(Object.entries(map).filter(([path]) => !isUnder(path, rootPath))),
+	);
+}
+
 export function forgetResponses(path: string) {
 	responsesByRequest.update((map) => {
 		const next = { ...map };

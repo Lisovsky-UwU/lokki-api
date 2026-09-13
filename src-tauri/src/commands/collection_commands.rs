@@ -34,3 +34,14 @@ pub fn rename_collection(app: AppHandle, collection_path: String, new_name: Stri
     }
     Ok(summary)
 }
+
+/// Deletes a collection and forgets the per-device settings that pointed at
+/// it.
+#[tauri::command]
+pub fn delete_collection(app: AppHandle, collection_path: String) -> AppResult<()> {
+    fs_collection::delete_collection(Path::new(&collection_path))?;
+    let dir = app_local_data_dir(&app)?;
+    let mut state = fs_app_state::load(&dir);
+    state.forget_root(&collection_path);
+    fs_app_state::save(&dir, &state)
+}

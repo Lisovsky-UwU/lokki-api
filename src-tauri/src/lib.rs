@@ -25,6 +25,7 @@ pub fn run() {
             commands::collection_commands::create_collection,
             commands::collection_commands::load_collection_tree,
             commands::collection_commands::rename_collection,
+            commands::collection_commands::delete_collection,
             commands::request_commands::load_request,
             commands::request_commands::save_request,
             commands::request_commands::create_request,

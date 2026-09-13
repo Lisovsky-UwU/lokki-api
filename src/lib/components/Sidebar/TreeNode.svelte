@@ -8,6 +8,7 @@
 	import { dragging } from "../../stores/dragState";
 	import { forgetResponses, markSeen, rekeyResponses, responsesByRequest, subtreeActivity } from "../../stores/response";
 	import { confirmAction, promptForText } from "../../ui/dialogs";
+	import { openContextMenu } from "../../ui/contextMenu";
 	import { reportError } from "../../ui/notices";
 	import { api } from "../../api/client";
 	import { methodColor } from "../../ui/methods";
@@ -108,8 +109,10 @@
 	/// would be anyway. Opening goes through `openRequest`, so an unsaved
 	/// request on screen still gets its confirmation.
 	async function cloneRequest() {
+		const name = await promptForText("Клонировать запрос", "Название копии", `${node.name} (копия)`);
+		if (!name) return;
 		try {
-			const clone = await api.cloneRequest(node.path);
+			const clone = await api.cloneRequest(node.path, name);
 			requestTreeRefresh();
 			await openRequest(clone.path);
 		} catch (e) {
@@ -240,6 +243,7 @@
 			class:drop-inside={dropZone === "inside"}
 			class:dragged={isDragged}
 			role="presentation"
+			oncontextmenu={(e) => openContextMenu(e, folderMenu)}
 			draggable="true"
 			ondragstart={onDragStart}
 			ondragend={onDragEnd}
@@ -273,6 +277,7 @@
 		class:drop-after={dropZone === "after"}
 		class:dragged={isDragged}
 		role="presentation"
+		oncontextmenu={(e) => openContextMenu(e, requestMenu)}
 		draggable="true"
 		ondragstart={onDragStart}
 		ondragend={onDragEnd}

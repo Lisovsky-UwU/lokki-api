@@ -84,6 +84,22 @@ pub fn rename_collection(collection_path: &Path, new_name: &str) -> AppResult<Co
     })
 }
 
+/// Deletes a collection with everything inside it. The `collection.toml`
+/// check is the safety rail: this removes a directory tree recursively, and
+/// a wrong path would otherwise wipe whatever folder it pointed at.
+pub fn delete_collection(collection_path: &Path) -> AppResult<()> {
+    if !collection_path.join(COLLECTION_FILE).is_file() {
+        return Err(AppError::Message(format!(
+            "{} — не коллекция LokkiAPI, удаление отменено.",
+            collection_path.display()
+        )));
+    }
+    fs::remove_dir_all(collection_path).map_err(|source| AppError::Io {
+        path: collection_path.display().to_string(),
+        source,
+    })
+}
+
 pub fn list_collections(workspace_path: &Path) -> AppResult<Vec<CollectionSummary>> {
     let mut out = Vec::new();
     if !workspace_path.is_dir() {
@@ -217,6 +233,25 @@ mod tests {
         let collections = list_collections(dir.path()).unwrap();
         assert_eq!(collections.len(), 1);
         assert_eq!(collections[0].name, "Petstore");
+    }
+
+    #[test]
+    fn delete_collection_removes_the_tree_but_only_for_a_real_collection() {
+        let dir = tempfile::tempdir().unwrap();
+        let created = create_collection(dir.path(), "Petstore").unwrap();
+        let path = std::path::PathBuf::from(&created.path);
+        std::fs::create_dir_all(path.join("Pets")).unwrap();
+        std::fs::write(path.join("Pets").join("List.lokki.toml"), "x").unwrap();
+
+        // A folder that isn't a collection is refused rather than removed.
+        let bystander = dir.path().join("важные-документы");
+        std::fs::create_dir_all(&bystander).unwrap();
+        assert!(delete_collection(&bystander).is_err());
+        assert!(bystander.is_dir());
+
+        delete_collection(&path).unwrap();
+        assert!(!path.exists());
+        assert!(list_collections(dir.path()).unwrap().is_empty());
     }
 
     #[test]

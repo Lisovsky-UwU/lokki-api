@@ -19,6 +19,7 @@
 	import CollectionTree from "../lib/components/Sidebar/CollectionTree.svelte";
 	import RequestWorkbench from "../lib/components/RequestWorkbench.svelte";
 	import GhostIcon from "../lib/components/common/GhostIcon.svelte";
+	import ContextMenu from "../lib/components/common/ContextMenu.svelte";
 	import EnvironmentSwitcher from "../lib/components/EnvironmentSwitcher/EnvironmentSwitcher.svelte";
 
 	let restoring = $state(true);
@@ -71,6 +72,7 @@
 <PromptDialog />
 <ConfirmDialog />
 <Toasts />
+<ContextMenu />
 {#if $settingsOpen}
 	<SettingsModal onClose={closeSettings} />
 {/if}

@@ -24,6 +24,14 @@ impl AppState {
     /// Moves per-root settings from `old_root` to `new_root`. Roots are
     /// keyed by path, so a renamed collection would otherwise silently lose
     /// its active environment.
+    /// Forgets per-root settings for a root and anything under it. Used when
+    /// a collection is deleted: its entry would otherwise linger in
+    /// app_state.json pointing at a path that no longer exists.
+    pub fn forget_root(&mut self, root: &str) {
+        self.active_environments
+            .retain(|path, _| path != root && !path.starts_with(&format!("{root}\\")) && !path.starts_with(&format!("{root}/")));
+    }
+
     pub fn rebase_root(&mut self, old_root: &str, new_root: &str) {
         if let Some(id) = self.active_environments.remove(old_root) {
             self.active_environments.insert(new_root.to_string(), id);
