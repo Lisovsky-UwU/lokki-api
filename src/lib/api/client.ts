@@ -12,6 +12,7 @@ import type {
 	Id,
 	RequestAtPath,
 	RequestFile,
+	RequestSettings,
 	WorkspaceFile,
 } from "../bindings/types";
 
@@ -22,6 +23,9 @@ export interface OpenWorkspaceResult {
 
 export const api = {
 	appInfo: () => invoke<AppInfo>("app_info"),
+	getRequestSettings: () => invoke<RequestSettings>("get_request_settings"),
+	saveRequestSettings: (settings: RequestSettings) =>
+		invoke<RequestSettings>("save_request_settings", { settings }),
 
 	pickWorkspaceFolder: (): Promise<string | null> =>
 		openDialog({ directory: true, multiple: false, title: "Open workspace folder" }) as Promise<string | null>,

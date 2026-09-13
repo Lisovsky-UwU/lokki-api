@@ -115,7 +115,7 @@
 		{@const outcome = latest.outcome}
 		<div class="status-bar">
 			<span class="status {statusClass(outcome.status)}">{outcome.status} {outcome.status_text}</span>
-			<span class="meta" title="Продолжительность запроса">{formatDuration(outcome.duration_ms)}</span>
+			<span class="meta" title="Продолжительность запроса">{formatDuration(outcome.trace.total_ms)}</span>
 			<span class="meta" title="Размер тела ответа">{formatSize(byteLength(outcome.body_base64))}</span>
 			<span class="meta time" title="Когда был отправлен запрос">{new Date(latest.at).toLocaleTimeString()}</span>
 		</div>

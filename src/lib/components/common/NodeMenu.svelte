@@ -1,11 +1,20 @@
 <script lang="ts">
+	import type { Snippet } from "svelte";
+
 	export interface MenuItem {
 		label: string;
 		action: () => void;
 		danger?: boolean;
 	}
 
-	let { items, label = "Действия" }: { items: MenuItem[]; label?: string } = $props();
+	// `trigger` replaces the ⋯ button, so a row can *be* the menu button (the
+	// workspace name opens the workspace menu) instead of carrying one.
+	let {
+		items,
+		label = "Действия",
+		trigger,
+		align = "right",
+	}: { items: MenuItem[]; label?: string; trigger?: Snippet; align?: "left" | "right" } = $props();
 
 	let open = $state(false);
 	let root = $state<HTMLDivElement>();
@@ -40,9 +49,18 @@
 </script>
 
 <div class="node-menu" bind:this={root}>
-	<button class="trigger" title={label} aria-label={label} aria-expanded={open} onclick={toggle}>⋯</button>
+	<button
+		class="trigger"
+		class:custom={trigger}
+		title={label}
+		aria-label={label}
+		aria-expanded={open}
+		onclick={toggle}
+	>
+		{#if trigger}{@render trigger()}{:else}⋯{/if}
+	</button>
 	{#if open}
-		<div class="menu" role="menu">
+		<div class="menu" class:align-left={align === "left"} role="menu">
 			{#each items as item (item.label)}
 				<button role="menuitem" class:danger={item.danger} onclick={(e) => run(item, e)}>{item.label}</button>
 			{/each}
@@ -70,9 +88,21 @@
 		opacity: 1;
 		background: rgba(127, 127, 127, 0.2);
 	}
+	/* A custom trigger brings its own layout; only the button chrome is
+	   reused. */
+	.trigger.custom {
+		display: flex;
+		align-items: center;
+		gap: 0.4em;
+		width: 100%;
+		opacity: 1;
+		font-size: inherit;
+		padding: 0;
+	}
 	.menu {
 		position: absolute;
 		right: 0;
+		left: auto;
 		top: 100%;
 		z-index: 30;
 		min-width: 12em;
@@ -83,6 +113,10 @@
 		background: var(--modal-bg, #fff);
 		border: 1px solid rgba(127, 127, 127, 0.3);
 		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+	}
+	.menu.align-left {
+		left: 0;
+		right: auto;
 	}
 	.menu button {
 		background: none;

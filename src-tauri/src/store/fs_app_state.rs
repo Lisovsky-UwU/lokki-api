@@ -1,4 +1,4 @@
-use crate::domain::Id;
+use crate::domain::{Id, RequestSettings};
 use crate::error::{AppError, AppResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -16,6 +16,8 @@ pub struct AppState {
     pub active_environments: HashMap<String, Id>,
     #[serde(default)]
     pub last_workspace: Option<String>,
+    #[serde(default)]
+    pub request_settings: RequestSettings,
 }
 
 impl AppState {

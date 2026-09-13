@@ -41,6 +41,8 @@ pub fn run() {
             commands::environment_commands::set_active_environment,
             commands::environment_commands::get_active_environment,
             commands::send_commands::send_request,
+            commands::settings_commands::get_request_settings,
+            commands::settings_commands::save_request_settings,
             commands::secret_commands::set_secret,
             commands::secret_commands::reveal_secret,
         ])

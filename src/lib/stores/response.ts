@@ -7,7 +7,7 @@ export interface ResponseRecord {
 	error: string | null;
 	at: number;
 	/// Wall-clock time from send to result, measured in the UI and filled in
-	/// by recordResponse. Slightly longer than outcome.duration_ms (which
+	/// by recordResponse. Slightly longer than outcome.trace.total_ms (which
 	/// times only the HTTP exchange, not the IPC round trip), and the only
 	/// duration available at all when the request failed.
 	elapsedMs?: number;

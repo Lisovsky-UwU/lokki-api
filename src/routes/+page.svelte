@@ -5,6 +5,7 @@
 	import { api } from "../lib/api/client";
 	import { installGlobalErrorReporting, reportError } from "../lib/ui/notices";
 	import { closeEnvironmentsDialog, environmentsDialog } from "../lib/ui/environmentsDialog";
+	import { closeSettings, openSettings, settingsOpen } from "../lib/ui/settingsDialog";
 	import { layout, updateLayout } from "../lib/stores/layout";
 	import Toasts from "../lib/components/common/Toasts.svelte";
 	import SettingsModal from "../lib/components/Settings/SettingsModal.svelte";
@@ -19,7 +20,6 @@
 	import EnvironmentSwitcher from "../lib/components/EnvironmentSwitcher/EnvironmentSwitcher.svelte";
 
 	let restoring = $state(true);
-	let settingsOpen = $state(false);
 	let panesHeight = $state(0);
 
 	// Reopen whatever workspace was last used instead of making the user
@@ -45,8 +45,8 @@
 <PromptDialog />
 <ConfirmDialog />
 <Toasts />
-{#if settingsOpen}
-	<SettingsModal onClose={() => (settingsOpen = false)} />
+{#if $settingsOpen}
+	<SettingsModal onClose={closeSettings} />
 {/if}
 <!-- Rendered here rather than in the switcher: the collection menu in the
      sidebar opens the same dialog for a collection that isn't the active one. -->
@@ -80,7 +80,7 @@
 		<div class="main">
 			<header class="topbar">
 				<EnvironmentSwitcher />
-				<button class="settings-btn" title="Настройки" aria-label="Настройки" onclick={() => (settingsOpen = true)}>⚙</button>
+				<button class="settings-btn" title="Настройки" aria-label="Настройки" onclick={openSettings}>⚙</button>
 			</header>
 			{#if !$activeRequest}
 				<div class="empty-state-outer">
@@ -216,14 +216,6 @@
 		min-width: 0;
 		min-height: 0;
 	}
-	.topbar {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1em;
-		padding: 0.5em 1em;
-		border-bottom: 1px solid rgba(127, 127, 127, 0.25);
-	}
 	.settings-btn {
 		background: none;
 		border: none;
@@ -235,6 +227,14 @@
 	}
 	.settings-btn:hover {
 		opacity: 1;
+	}
+	.topbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1em;
+		padding: 0.5em 1em;
+		border-bottom: 1px solid rgba(127, 127, 127, 0.25);
 	}
 	.restoring {
 		display: flex;

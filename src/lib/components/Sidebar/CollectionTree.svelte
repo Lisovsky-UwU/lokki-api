@@ -182,6 +182,9 @@
 		}
 	}
 
+	// Only workspace-scoped actions belong here: app settings sit in the top
+	// bar, since a menu hanging off the workspace name reads as "settings of
+	// this workspace".
 	let workspaceMenu = $derived([
 		{ label: "Переименовать пространство", action: renameWorkspace },
 		{
@@ -211,11 +214,12 @@
 		<div class="empty">Нет открытого пространства. Создайте или откройте существующий</div>
 	{:else}
 		<div class="workspace-name-outer">
-			<button class="workspace-name" title="Сменить пространство" onclick={closeWorkspace}>
-				{$workspace.name}
-				<span class="switch-hint">⇄</span>
-			</button>
-			<NodeMenu items={workspaceMenu} label="Действия с пространством" />
+			<NodeMenu items={workspaceMenu} label="Меню пространства" align="left">
+				{#snippet trigger()}
+					<span class="workspace-name">{$workspace?.name}</span>
+					<span class="switch-hint">▾</span>
+				{/snippet}
+			</NodeMenu>
 		</div>
 	{/if}
 	<div class="sidebar-header">
@@ -361,26 +365,26 @@
 		align-items: center;
 		padding: 0.5em 0.2em;
 	}
-	.workspace-name {
-		display: flex;
-		align-items: center;
-		gap: 0.4em;
-		font-weight: 600;
-		background: none;
-		border: none;
+	/* The menu component owns the button; these rules dress its trigger. */
+	.workspace-name-outer :global(.node-menu) {
+		flex: 1;
+		min-width: 0;
+	}
+	.workspace-name-outer :global(.trigger.custom) {
 		padding: 0.6em 0.8em;
 		border-radius: 6px;
-		cursor: pointer;
-		color: inherit;
+	}
+	.workspace-name-outer :global(.trigger.custom:hover) {
+		background: rgba(127, 127, 127, 0.15);
+	}
+	.workspace-name {
+		font-weight: 600;
 		white-space: nowrap;
 		flex: 1;
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		text-align: left;
-	}
-	.workspace-name:hover {
-		background: rgba(127, 127, 127, 0.15);
 	}
 	.switch-hint {
 		opacity: 0.5;

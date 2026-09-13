@@ -3,6 +3,7 @@ pub mod environment;
 pub mod folder;
 pub mod ids;
 pub mod request;
+pub mod settings;
 pub mod sync_meta;
 pub mod workspace;
 
@@ -13,5 +14,6 @@ pub use ids::Id;
 pub use request::{
     AuthSpec, BodySpec, HttpMethod, HttpRequestSpec, KeyValue, Protocol, RequestFile, RequestMeta,
 };
+pub use settings::{optional_duration, RequestSettings};
 pub use sync_meta::SyncMeta;
 pub use workspace::WorkspaceFile;

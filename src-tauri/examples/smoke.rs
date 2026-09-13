@@ -3,7 +3,7 @@
 // Hits the real network (httpbin.org) — not part of `cargo test`, run
 // manually via `cargo run --example smoke`.
 use lokki_api_lib::domain::{EnvironmentScope, HttpMethod};
-use lokki_api_lib::exec::{resolve_http_request, ExecutionContext, HttpExecutor, ProtocolExecutor};
+use lokki_api_lib::exec::{resolve_http_request, ExecutionContext, HttpExecutor, ProtocolExecutor, TraceRecorder};
 use lokki_api_lib::interpolate::{Resolver, VariableScope};
 use lokki_api_lib::store::{fs_collection, fs_environment, fs_request, fs_workspace};
 use std::collections::HashMap;
@@ -46,13 +46,18 @@ async fn main() {
     println!("unresolved vars: {:?}", unresolved);
 
     let executor = HttpExecutor::new();
+    let mut recorder = TraceRecorder::start();
     let outcome = executor
-        .execute(&resolved, &ExecutionContext::default())
+        .execute(&resolved, &ExecutionContext::default(), &mut recorder)
         .await
         .expect("http request should succeed");
+    let trace = recorder.finish();
 
     println!("status: {} {}", outcome.status, outcome.status_text);
-    println!("duration: {} ms", outcome.duration_ms);
+    println!("total: {} ms, wait: {:?}, download: {:?}", trace.total_ms, trace.wait_ms, trace.download_ms);
+    for event in &trace.events {
+        println!("  [{:>5} ms] {:?} {}", event.at_ms, event.level, event.message);
+    }
     let body = String::from_utf8_lossy(
         &base64::Engine::decode(&base64::engine::general_purpose::STANDARD, &outcome.body_base64).unwrap(),
     )

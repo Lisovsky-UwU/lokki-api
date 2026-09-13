@@ -74,6 +74,20 @@ export type CollectionTreeNode =
 			method: HttpMethod | null;
 	  };
 
+/// How requests go out. Per-device (stored next to the app's other local
+/// state, not in the workspace): timeouts and TLS checking describe the
+/// machine being tested from, not the collection. Every timeout is in
+/// milliseconds and 0 means "no limit".
+export interface RequestSettings {
+	verify_tls: boolean;
+	connect_timeout_ms: number;
+	read_timeout_ms: number;
+	total_timeout_ms: number;
+	follow_redirects: boolean;
+	max_redirects: number;
+	user_agent: string;
+}
+
 /// Build- and run-time facts about the app itself, shown in Settings.
 /// Any field can come back empty when it couldn't be determined (no git
 /// checkout, no node on PATH at build time) — the UI words that case.
@@ -121,12 +135,40 @@ export interface EnvironmentEntry extends EnvironmentFile {
 	path: string;
 }
 
+export type TraceLevel = "info" | "warn" | "error";
+
+/// One line of the request log, stamped with how far into the request it
+/// happened.
+export interface TraceEvent {
+	at_ms: number;
+	level: TraceLevel;
+	message: string;
+}
+
+/// Where the time went. A phase is `null` when it did not happen or could
+/// not be measured — a request on a pooled connection has no DNS or connect
+/// phase at all — while 0 means it happened in under a millisecond. Don't
+/// render the two the same way. Only `total_ms` is always known, failed
+/// attempts included.
+export interface ExecutionTrace {
+	dns_ms: number | null;
+	connect_ms: number | null;
+	tls_ms: number | null;
+	send_ms: number | null;
+	wait_ms: number | null;
+	download_ms: number | null;
+	total_ms: number;
+	reused_connection: boolean | null;
+	remote_addr: string | null;
+	events: TraceEvent[];
+}
+
 export interface ExecutionOutcome {
 	status: number;
 	status_text: string;
 	headers: KeyValue[];
 	body_base64: string;
-	duration_ms: number;
+	trace: ExecutionTrace;
 	unresolved_variables: string[];
 }
 

@@ -1,6 +1,8 @@
 use crate::domain::{EnvironmentFile, RequestFile};
 use crate::error::{AppError, AppResult};
-use crate::exec::{resolve_http_request, ExecutionContext, ExecutionOutcome, HttpExecutor, ProtocolExecutor};
+use crate::exec::{
+    resolve_http_request, ExecutionContext, ExecutionOutcome, ExecutionTrace, HttpExecutor, ProtocolExecutor, TraceRecorder,
+};
 use crate::interpolate::{Resolver, VariableScope};
 use crate::secrets::{local_file::LocalFileSecretStore, SecretStore};
 use crate::store::{fs_app_state, fs_environment};
@@ -9,13 +11,15 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager, State};
 
-/// `send_request`'s result: the HTTP outcome plus any `{{variable}}` names
-/// that couldn't be resolved (sent verbatim in the request) — surfaced so
-/// the UI can warn the user rather than silently sending literal `{{...}}`.
+/// `send_request`'s result: the HTTP outcome, where the time went, and any
+/// `{{variable}}` names that couldn't be resolved (sent verbatim in the
+/// request) — surfaced so the UI can warn the user rather than silently
+/// sending literal `{{...}}`.
 #[derive(Debug, Clone, Serialize)]
 pub struct SendResult {
     #[serde(flatten)]
     pub outcome: ExecutionOutcome,
+    pub trace: ExecutionTrace,
     pub unresolved_variables: Vec<String>,
 }
 
@@ -94,15 +98,47 @@ pub async fn send_request(
     };
 
     let resolver = Resolver::new(global_scope, collection_scope);
+
+    // Checked before sending: a `{{var}}` left in the address produces a URL
+    // that can't be parsed, and reqwest reports that as "relative URL without
+    // a base" — true, and useless. Elsewhere (headers, body, auth) the
+    // request is still sent and the unresolved names come back as a warning,
+    // since a literal placeholder there may well be what the API is being
+    // tested with.
+    let (_, mut url_missing) = resolver.interpolate(&http_spec.url);
+    url_missing.sort();
+    url_missing.dedup();
+    if !url_missing.is_empty() {
+        let names = url_missing
+            .iter()
+            .map(|name| format!("{{{{{name}}}}}"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        return Err(AppError::Message(format!(
+            "В адресе запроса не подставлены переменные: {names}. Проверьте активное окружение."
+        )));
+    }
+
     let (resolved, unresolved_variables) = resolve_http_request(&http_spec, &resolver);
 
-    let outcome = executor
-        .execute(&resolved, &ExecutionContext::default())
-        .await
-        .map_err(|e| AppError::Execution(e.to_string()))?;
+    let settings = state.request_settings.clone();
+    // The recorder is owned here, not by the executor, so a failed attempt
+    // still has a timeline. Handing it back on the error path needs a
+    // structured IPC error and is a separate change; for now it is finished
+    // and dropped, and only the message reaches the UI.
+    let mut recorder = TraceRecorder::start();
+    for name in &unresolved_variables {
+        recorder.warn(format!("Не подставлена переменная {{{{{name}}}}}"));
+    }
+    let result = executor
+        .execute(&resolved, &ExecutionContext { settings }, &mut recorder)
+        .await;
+    let trace = recorder.finish();
+    let outcome = result.map_err(|e| AppError::Message(e.to_string()))?;
 
     Ok(SendResult {
         outcome,
+        trace,
         unresolved_variables,
     })
 }

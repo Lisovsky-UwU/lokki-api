@@ -1,13 +1,14 @@
 pub mod http;
+pub mod trace;
 
 pub use http::HttpExecutor;
+pub use trace::{ExecutionTrace, Phase, TraceEvent, TraceLevel, TraceRecorder};
 
-use crate::domain::{AuthSpec, BodySpec, HttpMethod, HttpRequestSpec, KeyValue};
+use crate::domain::{AuthSpec, BodySpec, HttpMethod, HttpRequestSpec, KeyValue, RequestSettings};
 use crate::interpolate::Resolver;
 use async_trait::async_trait;
 use base64::Engine;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 use thiserror::Error;
 
 /// A fully-resolved HTTP request: every `{{variable}}` has already been
@@ -20,18 +21,14 @@ pub struct ResolvedHttpRequest {
     pub body: Option<Vec<u8>>,
 }
 
+#[derive(Debug, Clone, Default)]
 pub struct ExecutionContext {
-    pub timeout: Duration,
+    pub settings: RequestSettings,
 }
 
-impl Default for ExecutionContext {
-    fn default() -> Self {
-        ExecutionContext {
-            timeout: Duration::from_secs(30),
-        }
-    }
-}
-
+/// The response itself. How long it took lives in the `ExecutionTrace` the
+/// caller passes into `execute`, not here: timings exist for a failed
+/// attempt too, and that one produces no outcome at all.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExecutionOutcome {
     pub status: u16,
@@ -40,24 +37,33 @@ pub struct ExecutionOutcome {
     /// Base64-encoded response body — cheaper over IPC/JSON than a raw
     /// byte-array, decoded client-side for display.
     pub body_base64: String,
-    pub duration_ms: u64,
 }
 
+/// Carries a message written for the user: the raw reqwest error text
+/// ("error sending request for url (...): dns error") says nothing to
+/// someone testing an API, so http::describe_error turns it into a sentence
+/// naming what went wrong and, where there is one, the fix.
 #[derive(Debug, Error, Serialize)]
 pub enum ExecutorError {
-    #[error("request failed: {0}")]
+    #[error("{0}")]
     Failed(String),
 }
 
 /// Future protocols (WebSocket, SSE, GraphQL) implement this trait as
 /// siblings to HttpExecutor and get their own Tauri commands (e.g. a
 /// streamed `send_ws_connect`) rather than overloading `send_request`.
+///
+/// `trace` is where the implementation reports where the time went and what
+/// happened. Filling it is best-effort and transport-specific: whatever a
+/// given client can't see stays `None`, which the UI shows as "not
+/// measured" rather than as zero.
 #[async_trait]
 pub trait ProtocolExecutor: Send + Sync {
     async fn execute(
         &self,
         request: &ResolvedHttpRequest,
         ctx: &ExecutionContext,
+        trace: &mut TraceRecorder,
     ) -> Result<ExecutionOutcome, ExecutorError>;
 }
 
