@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import type {
 	AppInfo,
 	CollectionSummary,
@@ -51,6 +51,19 @@ export const api = {
 	createRequest: (parentPath: string, name: string, method: HttpMethod) =>
 		invoke<RequestFile>("create_request", { parentPath, name, method }),
 	deleteRequest: (requestPath: string) => invoke<void>("delete_request", { requestPath }),
+	/// Files an in-memory request into a workspace folder, where it becomes
+	/// an ordinary request with an identity of its own.
+	adoptRequest: (parentPath: string, name: string, request: RequestFile) =>
+		invoke<RequestAtPath>("adopt_request", { parentPath, name, request }),
+	/// Writes an in-memory request to a file outside any workspace.
+	exportRequest: (filePath: string, name: string, request: RequestFile) =>
+		invoke<RequestFile>("export_request", { filePath, name, request }),
+	pickRequestFile: (defaultName: string): Promise<string | null> =>
+		saveDialog({
+			title: "Сохранить запрос",
+			defaultPath: `${defaultName}.lokki.toml`,
+			filters: [{ name: "Запрос LokkiAPI", extensions: ["toml"] }],
+		}) as Promise<string | null>,
 	renameRequest: (requestPath: string, newName: string) =>
 		invoke<RequestAtPath>("rename_request", { requestPath, newName }),
 	createFolder: (parentPath: string, name: string) =>
@@ -77,9 +90,16 @@ export const api = {
 	getActiveEnvironment: (rootPath: string) =>
 		invoke<EnvironmentEntry | null>("get_active_environment", { rootPath }),
 
-	// `sendId` is minted per send by the caller so it can be cancelled.
-	sendRequest: (request: RequestFile, collectionPath: string, sendId: string) =>
-		invoke<ExecutionOutcome>("send_request", { request, collectionPath, sendId }),
+	// `sendId` is minted per send by the caller so it can be cancelled. Both
+	// paths are optional: an incognito request belongs to no collection, and
+	// one started from the welcome screen has no workspace either — it then
+	// resolves no variables at all.
+	sendRequest: (
+		request: RequestFile,
+		workspacePath: string | null,
+		collectionPath: string | null,
+		sendId: string,
+	) => invoke<ExecutionOutcome>("send_request", { request, workspacePath, collectionPath, sendId }),
 	// Resolves to false when the send had already finished — a click and a
 	// response can always cross paths, and that isn't an error.
 	cancelSend: (sendId: string) => invoke<boolean>("cancel_send", { sendId }),

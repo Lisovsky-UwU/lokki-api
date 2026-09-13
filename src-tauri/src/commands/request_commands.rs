@@ -28,6 +28,24 @@ pub fn create_request(parent_path: String, name: String, method: HttpMethod) -> 
     fs_request::create_request(Path::new(&parent_path), &name, method)
 }
 
+/// Saves an incognito request into a workspace folder, where it becomes an
+/// ordinary request.
+#[tauri::command]
+pub fn adopt_request(parent_path: String, name: String, request: RequestFile) -> AppResult<RequestAtPath> {
+    let (path, request) = fs_request::adopt_request(Path::new(&parent_path), &name, request)?;
+    Ok(RequestAtPath {
+        path: path.display().to_string(),
+        request,
+    })
+}
+
+/// Saves an incognito request to a file the user picked, outside any
+/// workspace.
+#[tauri::command]
+pub fn export_request(file_path: String, name: String, request: RequestFile) -> AppResult<RequestFile> {
+    fs_request::export_request(Path::new(&file_path), request, &name)
+}
+
 #[tauri::command]
 pub fn delete_request(request_path: String) -> AppResult<()> {
     fs_request::delete_request(Path::new(&request_path))

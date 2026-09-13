@@ -28,6 +28,8 @@ pub fn run() {
             commands::request_commands::load_request,
             commands::request_commands::save_request,
             commands::request_commands::create_request,
+            commands::request_commands::adopt_request,
+            commands::request_commands::export_request,
             commands::request_commands::delete_request,
             commands::request_commands::rename_request,
             commands::request_commands::create_folder,

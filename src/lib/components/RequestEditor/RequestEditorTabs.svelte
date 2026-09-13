@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { activeRequest } from "../../stores/activeRequest";
 	import { activeCollection, requestTreeRefresh } from "../../stores/collectionTree";
+	import { incognito } from "../../stores/incognito";
+	import { workspacePath } from "../../stores/workspace";
 	import { activeResponses, markSending, recordResponse } from "../../stores/response";
 	import { availableVariables } from "../../stores/environments";
 	import { api } from "../../api/client";
@@ -13,11 +15,20 @@
 	import KeyValueTable from "./KeyValueTable.svelte";
 	import AuthEditor from "./AuthEditor.svelte";
 	import BodyEditor from "./BodyEditor.svelte";
+	import SaveIncognitoModal from "./SaveIncognitoModal.svelte";
 
 	type Tab = "params" | "headers" | "body" | "auth";
 	let tab = $state<Tab>("params");
 	let saving = $state(false);
 	let copied = $state(false);
+	// An incognito request has nowhere to be saved to yet, so saving means
+	// choosing a destination first.
+	let saveIncognito = $state(false);
+
+	// Sending needs a collection only to resolve that collection's
+	// environment; an incognito request has none by design and can still be
+	// sent.
+	let canSend = $derived($incognito || $activeCollection != null);
 
 	let http = $derived($activeRequest?.request.http ?? newHttpRequestSpec());
 
@@ -32,6 +43,10 @@
 
 	async function save() {
 		if (!$activeRequest) return;
+		if ($incognito) {
+			saveIncognito = true;
+			return;
+		}
 		saving = true;
 		try {
 			const saved = await api.saveRequest($activeRequest.path, $activeRequest.request);
@@ -43,7 +58,7 @@
 	}
 
 	async function send() {
-		if (!$activeRequest || !$activeCollection) return;
+		if (!$activeRequest || !canSend) return;
 		// Results are stored against the request's path, so each request keeps
 		// its own last response instead of sharing one global slot.
 		const path = $activeRequest.path;
@@ -54,7 +69,12 @@
 		let kind: NoticeKind;
 		let inBackground: boolean;
 		try {
-			const outcome = await api.sendRequest($activeRequest.request, $activeCollection.path, sendId);
+			const outcome = await api.sendRequest(
+				$activeRequest.request,
+				$workspacePath,
+				$activeCollection?.path ?? null,
+				sendId,
+			);
 			summary = `${outcome.status} ${outcome.status_text}`;
 			kind = outcome.status >= 400 ? "error" : "success";
 			inBackground = recordResponse(path, { outcome, error: null, at: Date.now() });
@@ -81,7 +101,9 @@
 		// physical key instead.
 		if (e.code === "KeyS" || e.key.toLowerCase() === "s") {
 			e.preventDefault();
-			if ($activeRequest?.dirty && !saving) save();
+			// In incognito there is nothing to compare against, so Ctrl+S
+			// always offers to save rather than waiting for a dirty flag.
+			if (!saving && ($incognito || $activeRequest?.dirty)) save();
 		}
 	}
 
@@ -92,6 +114,7 @@
 		const request = $activeRequest;
 		const collection = $activeCollection;
 		if (!request) return [] as string[];
+		if ($incognito) return ["Инкогнито", request.request.meta.name];
 		if (!collection) return [request.request.meta.name];
 		const relative = request.path.startsWith(collection.path)
 			? request.path.slice(collection.path.length).replace(/^[\\/]+/, "")
@@ -130,6 +153,10 @@
 
 <svelte:window onkeydown={onShortcut} />
 
+{#if saveIncognito && $activeRequest}
+	<SaveIncognitoModal request={$activeRequest.request} onClose={() => (saveIncognito = false)} />
+{/if}
+
 {#if $activeRequest}
 	<div class="editor">
 		<div class="request-title">
@@ -140,7 +167,7 @@
 				{/each}
 			</span>
 			{#if $activeRequest.dirty}<span class="dirty" title="Есть несохранённые изменения">●</span>{/if}
-			{#if !$activeCollection}
+			{#if !canSend}
 				<span class="warn">Коллекция не определена — отправка недоступна</span>
 			{/if}
 		</div>
@@ -153,11 +180,16 @@
 				placeholder="https://api.example.com/pets или {'{{baseUrl}}'}/pets"
 				onChange={(url) => mutate({ url })}
 			/>
-			<button class="send" title="Ctrl+Enter" onclick={send} disabled={$activeResponses.loading || !$activeCollection}>
+			<button class="send" title="Ctrl+Enter" onclick={send} disabled={$activeResponses.loading || !canSend}>
 				{$activeResponses.loading ? "Отправка..." : "Отправить"}
 			</button>
-			<button class="save" title="Ctrl+S" onclick={save} disabled={!$activeRequest.dirty || saving}>
-				{saving ? "Сохранение..." : "Сохранить"}
+			<button
+				class="save"
+				title="Ctrl+S"
+				onclick={save}
+				disabled={saving || (!$incognito && !$activeRequest.dirty)}
+			>
+				{#if saving}Сохранение...{:else if $incognito}Сохранить...{:else}Сохранить{/if}
 			</button>
 		</div>
 

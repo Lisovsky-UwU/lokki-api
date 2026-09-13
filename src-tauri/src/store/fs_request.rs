@@ -72,6 +72,29 @@ pub fn create_request(parent_path: &Path, name: &str, method: HttpMethod) -> App
     Ok(request)
 }
 
+/// Writes a request that was built in memory (an incognito send) into a
+/// folder, under a name that doesn't collide with what's already there.
+/// Unlike `create_request` this keeps the request's own spec — and gives it
+/// a fresh identity and position, because until now it existed nowhere.
+pub fn adopt_request(parent_path: &Path, name: &str, mut request: RequestFile) -> AppResult<(PathBuf, RequestFile)> {
+    request.meta.name = name.to_string();
+    request.meta.seq = next_seq(parent_path)?;
+    request.meta.sync = crate::domain::SyncMeta::new();
+    let path = unique_path(parent_path, name, REQUEST_EXT);
+    write_toml(&path, &request)?;
+    Ok((path, request))
+}
+
+/// Writes a request to an arbitrary path the user picked in a save dialog.
+/// The file keeps the same TOML shape as one inside a workspace, so it can
+/// simply be dropped into a collection folder later.
+pub fn export_request(file_path: &Path, mut request: RequestFile, name: &str) -> AppResult<RequestFile> {
+    request.meta.name = name.to_string();
+    request.meta.sync.touch();
+    write_toml(file_path, &request)?;
+    Ok(request)
+}
+
 pub fn delete_request(request_path: &Path) -> AppResult<()> {
     fs::remove_file(request_path).map_err(|source| AppError::Io {
         path: request_path.display().to_string(),
@@ -352,6 +375,50 @@ mod tests {
         assert_eq!(read_folder_meta(&renamed).name, "New");
         // Contents travel with the folder.
         assert!(renamed.join(format!("Kept{}", REQUEST_EXT)).is_file());
+    }
+
+    #[test]
+    fn adopt_request_keeps_the_spec_but_gives_it_a_new_identity_and_place() {
+        let dir = tempfile::tempdir().unwrap();
+        create_request(dir.path(), "Existing", HttpMethod::Get).unwrap();
+
+        let mut in_memory = RequestFile::new_http("Инкогнито", 0, HttpMethod::Post);
+        in_memory.http.as_mut().unwrap().url = "https://example.com/pets".to_string();
+        let original_id = in_memory.meta.sync.id.clone();
+
+        let (path, saved) = adopt_request(dir.path(), "Создать питомца", in_memory).unwrap();
+
+        assert_eq!(path.file_name().unwrap(), "Создать питомца.lokki.toml");
+        assert_eq!(saved.meta.name, "Создать питомца");
+        assert_eq!(saved.http.as_ref().unwrap().url, "https://example.com/pets");
+        assert_eq!(saved.http.as_ref().unwrap().method, HttpMethod::Post);
+        // It lands after what is already in the folder, with an identity of
+        // its own rather than the one it carried in memory.
+        assert_eq!(saved.meta.seq, 2);
+        assert_ne!(saved.meta.sync.id, original_id);
+        assert_eq!(load_request(&path).unwrap().meta.name, "Создать питомца");
+    }
+
+    #[test]
+    fn adopt_request_does_not_overwrite_a_taken_name() {
+        let dir = tempfile::tempdir().unwrap();
+        create_request(dir.path(), "Питомцы", HttpMethod::Get).unwrap();
+
+        let (path, _) = adopt_request(dir.path(), "Питомцы", RequestFile::new_http("x", 0, HttpMethod::Get)).unwrap();
+
+        assert_eq!(path.file_name().unwrap(), "Питомцы (2).lokki.toml");
+    }
+
+    #[test]
+    fn export_request_writes_a_loadable_file_anywhere() {
+        let dir = tempfile::tempdir().unwrap();
+        let target = dir.path().join("вне-пространства.lokki.toml");
+
+        export_request(&target, RequestFile::new_http("x", 0, HttpMethod::Delete), "Удалить").unwrap();
+
+        let loaded = load_request(&target).unwrap();
+        assert_eq!(loaded.meta.name, "Удалить");
+        assert_eq!(loaded.http.unwrap().method, HttpMethod::Delete);
     }
 
     #[test]

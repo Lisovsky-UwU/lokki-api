@@ -4,6 +4,8 @@
 	import { workspace, workspacePath, collections } from "../../stores/workspace";
 	import type { OpenWorkspaceResult } from "../../api/client";
 	import { promptForText } from "../../ui/dialogs";
+	import { startIncognito } from "../../stores/incognito";
+	import GhostIcon from "../common/GhostIcon.svelte";
 
 	let error = $state<string | null>(null);
 	let busy = $state<"create" | "open" | null>(null);
@@ -52,6 +54,15 @@
 </script>
 
 <div class="picker">
+	<button
+		class="ghost"
+		title="Инкогнито-запрос — выполнить запрос, ничего не сохраняя"
+		aria-label="Инкогнито-запрос"
+		onclick={startIncognito}
+		disabled={busy !== null}
+	>
+		<GhostIcon size="1.3em" />
+	</button>
 	<img class="logo" src="{base}/logo-horizontal.png" alt="LokkiAPI" />
 	<p>Локальный, файловый клиент для тестирования API.</p>
 	<div class="actions">
@@ -80,6 +91,7 @@
 		margin-bottom: 0.25rem;
 	}
 	.picker {
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -112,6 +124,23 @@
 	button:disabled {
 		opacity: 0.6;
 		cursor: default;
+	}
+	.ghost {
+		position: absolute;
+		top: 1rem;
+		right: 1rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: none;
+		background: none;
+		border-radius: 6px;
+		padding: 0.4em;
+		opacity: 0.6;
+	}
+	.ghost:hover:not(:disabled) {
+		opacity: 1;
+		background: rgba(127, 127, 127, 0.15);
 	}
 	.hint {
 		margin: 0;

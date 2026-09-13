@@ -194,6 +194,25 @@ export function newId(): Id {
 	return timestamp + suffix;
 }
 
+/// A request that exists only in memory (an incognito send). It carries the
+/// same shape as one read from disk, ids included, so saving it later is a
+/// plain write rather than a conversion.
+export function newRequestFile(name: string): RequestFile {
+	const now = new Date().toISOString();
+	return {
+		meta: {
+			id: newId(),
+			created_at: now,
+			updated_at: now,
+			version: 1,
+			name,
+			seq: 1,
+			protocol: "http",
+		},
+		http: newHttpRequestSpec(),
+	};
+}
+
 export function newHttpRequestSpec(method: HttpMethod = "GET"): HttpRequestSpec {
 	return {
 		method,

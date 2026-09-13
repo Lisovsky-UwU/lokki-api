@@ -111,7 +111,12 @@ pub async fn send_request(
     executor: State<'_, HttpExecutor>,
     in_flight: State<'_, InFlightSends>,
     request: RequestFile,
-    collection_path: String,
+    // Absent for an incognito send started from the welcome screen: there is
+    // no workspace, so no variables and no secrets at all.
+    workspace_path: Option<String>,
+    // Absent for any incognito send — a request that lives nowhere has no
+    // collection environment to inherit.
+    collection_path: Option<String>,
     // Made up by the frontend for this send; `cancel_send` refers to it.
     send_id: String,
 ) -> AppResult<SendResult> {
@@ -119,22 +124,24 @@ pub async fn send_request(
         .http
         .ok_or_else(|| AppError::NotFound("request has no http spec".to_string()))?;
 
-    let collection_dir = Path::new(&collection_path);
-    let workspace_dir = collection_dir.parent().unwrap_or(collection_dir);
-
     let data_dir = app_local_data_dir(&app)?;
     let state = fs_app_state::load(&data_dir);
     let secrets = LocalFileSecretStore;
 
-    let global_env = active_environment_for(workspace_dir, &state.active_environments)?;
-    let collection_env = active_environment_for(collection_dir, &state.active_environments)?;
-    let has_collection_env = collection_env.is_some();
+    let workspace_dir = workspace_path.as_deref().map(Path::new);
+    let global_scope = match workspace_dir {
+        Some(dir) => env_to_scope(active_environment_for(dir, &state.active_environments)?, dir, &secrets)?,
+        None => VariableScope::default(),
+    };
 
-    let global_scope = env_to_scope(global_env, workspace_dir, &secrets)?;
-    let collection_scope = if has_collection_env {
-        Some(env_to_scope(collection_env, workspace_dir, &secrets)?)
-    } else {
-        None
+    let collection_scope = match (collection_path.as_deref().map(Path::new), workspace_dir) {
+        (Some(collection_dir), Some(workspace_dir)) => {
+            match active_environment_for(collection_dir, &state.active_environments)? {
+                Some(env) => Some(env_to_scope(Some(env), workspace_dir, &secrets)?),
+                None => None,
+            }
+        }
+        _ => None,
     };
 
     let resolver = Resolver::new(global_scope, collection_scope);

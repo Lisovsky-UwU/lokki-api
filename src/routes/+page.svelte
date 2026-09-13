@@ -6,6 +6,8 @@
 	import { installGlobalErrorReporting, reportError } from "../lib/ui/notices";
 	import { closeEnvironmentsDialog, environmentsDialog } from "../lib/ui/environmentsDialog";
 	import { closeSettings, openSettings, settingsOpen } from "../lib/ui/settingsDialog";
+	import { exitIncognito, incognito, startIncognito } from "../lib/stores/incognito";
+	import { confirmAction } from "../lib/ui/dialogs";
 	import { layout, updateLayout } from "../lib/stores/layout";
 	import Toasts from "../lib/components/common/Toasts.svelte";
 	import SettingsModal from "../lib/components/Settings/SettingsModal.svelte";
@@ -15,12 +17,36 @@
 	import Splitter from "../lib/components/common/Splitter.svelte";
 	import WorkspacePicker from "../lib/components/WorkspacePicker/WorkspacePicker.svelte";
 	import CollectionTree from "../lib/components/Sidebar/CollectionTree.svelte";
-	import RequestEditorTabs from "../lib/components/RequestEditor/RequestEditorTabs.svelte";
-	import ResponseViewer from "../lib/components/ResponseViewer/ResponseViewer.svelte";
+	import RequestWorkbench from "../lib/components/RequestWorkbench.svelte";
+	import GhostIcon from "../lib/components/common/GhostIcon.svelte";
 	import EnvironmentSwitcher from "../lib/components/EnvironmentSwitcher/EnvironmentSwitcher.svelte";
 
 	let restoring = $state(true);
-	let panesHeight = $state(0);
+
+	/// Both directions throw away whatever is on screen, so both ask first
+	/// when there is something to lose. Leaving incognito is the harsher of
+	/// the two: that request exists nowhere else.
+	async function openIncognito() {
+		if ($activeRequest?.dirty) {
+			const proceed = await confirmAction(
+				"В текущем запросе есть несохранённые изменения. Они будут потеряны. Открыть инкогнито-запрос?",
+				{ title: "Несохранённые изменения", confirmLabel: "Открыть" },
+			);
+			if (!proceed) return;
+		}
+		startIncognito();
+	}
+
+	async function leaveIncognito() {
+		if ($activeRequest?.dirty) {
+			const proceed = await confirmAction(
+				"Инкогнито-запрос нигде не сохранён и будет потерян. Выйти из режима?",
+				{ title: "Выход из инкогнито", confirmLabel: "Выйти", danger: true },
+			);
+			if (!proceed) return;
+		}
+		exitIncognito();
+	}
 
 	// Reopen whatever workspace was last used instead of making the user
 	// pick the same folder on every launch.
@@ -62,6 +88,29 @@
 
 {#if restoring}
 	<div class="restoring">Загрузка…</div>
+{:else if $incognito}
+	<!-- No sidebar on purpose: an incognito request belongs to no collection,
+	     so there is no tree to place it in. -->
+	<div class="app incognito">
+		<div class="main">
+			<header class="topbar">
+				<span class="incognito-badge" title="Запрос нигде не сохраняется">
+					<GhostIcon />
+					Инкогнито
+				</span>
+				{#if $workspacePath}
+					<EnvironmentSwitcher />
+				{:else}
+					<span class="hint">Пространство не открыто — переменные недоступны</span>
+				{/if}
+				<div class="topbar-actions">
+					<button class="settings-btn" title="Настройки" aria-label="Настройки" onclick={openSettings}>⚙</button>
+					<button class="exit-incognito" onclick={leaveIncognito}>Выйти</button>
+				</div>
+			</header>
+			<RequestWorkbench />
+		</div>
+	</div>
 {:else if !$workspace}
 	<WorkspacePicker />
 {:else}
@@ -80,7 +129,17 @@
 		<div class="main">
 			<header class="topbar">
 				<EnvironmentSwitcher />
-				<button class="settings-btn" title="Настройки" aria-label="Настройки" onclick={openSettings}>⚙</button>
+				<div class="topbar-actions">
+					<button
+						class="settings-btn"
+						title="Инкогнито-запрос"
+						aria-label="Инкогнито-запрос"
+						onclick={openIncognito}
+					>
+						<GhostIcon />
+					</button>
+					<button class="settings-btn" title="Настройки" aria-label="Настройки" onclick={openSettings}>⚙</button>
+				</div>
 			</header>
 			{#if !$activeRequest}
 				<div class="empty-state-outer">
@@ -89,26 +148,7 @@
 					</div>
 				</div>
 			{:else}
-				<div
-					class="panes"
-					bind:clientHeight={panesHeight}
-					style="grid-template-rows: {$layout.editorHeight}px auto 1fr"
-				>
-					<section class="pane editor-pane">
-						<RequestEditorTabs />
-					</section>
-					<Splitter
-						direction="horizontal"
-						value={$layout.editorHeight}
-						min={140}
-						max={Math.max(200, panesHeight - 160)}
-						ariaLabel="Высота панели запроса"
-						onResize={(v) => updateLayout({ editorHeight: v })}
-					/>
-					<section class="pane response-pane">
-						<ResponseViewer />
-					</section>
-				</div>
+				<RequestWorkbench />
 			{/if}
 		</div>
 	</div>
@@ -216,7 +256,41 @@
 		min-width: 0;
 		min-height: 0;
 	}
+	.topbar-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.4em;
+		margin-left: auto;
+	}
+	.incognito-badge {
+		display: flex;
+		align-items: center;
+		gap: 0.35em;
+		font-size: 0.85em;
+		font-weight: 600;
+		opacity: 0.75;
+		white-space: nowrap;
+	}
+	.exit-incognito {
+		background: none;
+		border: 1px solid rgba(127, 127, 127, 0.45);
+		color: inherit;
+		border-radius: 6px;
+		padding: 0.25em 0.7em;
+		font-size: 0.85em;
+		cursor: pointer;
+	}
+	.exit-incognito:hover {
+		background: rgba(127, 127, 127, 0.15);
+	}
+	.hint {
+		font-size: 0.85em;
+		opacity: 0.6;
+	}
 	.settings-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		background: none;
 		border: none;
 		padding: 0.2em 0.4em;
@@ -242,23 +316,6 @@
 		justify-content: center;
 		height: 100vh;
 		opacity: 0.6;
-	}
-	.panes {
-		flex: 1;
-		display: grid;
-		min-height: 0;
-		padding: 0.8em;
-	}
-	.pane {
-		min-height: 0;
-		overflow: hidden;
-	}
-	.editor-pane {
-		display: flex;
-	}
-	.response-pane {
-		border-top: 1px solid rgba(127, 127, 127, 0.2);
-		padding-top: 0.6em;
 	}
 	.empty-state-outer {
 		flex: 1;
