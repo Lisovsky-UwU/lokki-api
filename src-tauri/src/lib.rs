@@ -14,6 +14,7 @@ pub fn run() {
         // One HTTP client for the whole app: reqwest pools connections and
         // builds its TLS root store once, instead of per request.
         .manage(exec::HttpExecutor::new())
+        .manage(commands::send_commands::InFlightSends::default())
         .invoke_handler(tauri::generate_handler![
             commands::app_commands::app_info,
             commands::workspace_commands::open_workspace,
@@ -41,6 +42,7 @@ pub fn run() {
             commands::environment_commands::set_active_environment,
             commands::environment_commands::get_active_environment,
             commands::send_commands::send_request,
+            commands::send_commands::cancel_send,
             commands::settings_commands::get_request_settings,
             commands::settings_commands::save_request_settings,
             commands::secret_commands::set_secret,

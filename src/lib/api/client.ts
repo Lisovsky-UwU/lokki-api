@@ -77,8 +77,12 @@ export const api = {
 	getActiveEnvironment: (rootPath: string) =>
 		invoke<EnvironmentEntry | null>("get_active_environment", { rootPath }),
 
-	sendRequest: (request: RequestFile, collectionPath: string) =>
-		invoke<ExecutionOutcome>("send_request", { request, collectionPath }),
+	// `sendId` is minted per send by the caller so it can be cancelled.
+	sendRequest: (request: RequestFile, collectionPath: string, sendId: string) =>
+		invoke<ExecutionOutcome>("send_request", { request, collectionPath, sendId }),
+	// Resolves to false when the send had already finished — a click and a
+	// response can always cross paths, and that isn't an error.
+	cancelSend: (sendId: string) => invoke<boolean>("cancel_send", { sendId }),
 
 	setSecret: (workspacePath: string, variableId: Id, value: string) =>
 		invoke<void>("set_secret", { workspacePath, variableId, value }),

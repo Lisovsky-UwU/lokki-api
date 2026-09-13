@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { activeResponses } from "../../stores/response";
+	import { activeResponses, markCancelling } from "../../stores/response";
+	import { api } from "../../api/client";
+	import { reportError } from "../../ui/notices";
 	import { activeRequest } from "../../stores/activeRequest";
 	import CodeEditor from "../CodeEditor.svelte";
 
@@ -85,6 +87,21 @@
 		$activeResponses.startedAt != null ? Math.max(0, now - $activeResponses.startedAt) : 0,
 	);
 
+	/// Stops the in-flight send. The request stays "loading" until the
+	/// backend comes back with the cancellation — the connection is torn down
+	/// there, and reporting it as finished any earlier would let a second
+	/// send start while the first is still unwinding.
+	async function cancel() {
+		const sendId = $activeResponses.sendId;
+		if (!sendId) return;
+		markCancelling($activeRequest!.path);
+		try {
+			await api.cancelSend(sendId);
+		} catch (e) {
+			reportError("Не удалось отменить запрос", e);
+		}
+	}
+
 	// Only the newest record is kept today (see HISTORY_LIMIT), but reading
 	// it as "the first of a list" keeps the viewer ready for real history.
 	let latest = $derived($activeResponses.history[0] ?? null);
@@ -103,14 +120,21 @@
 				<span class="hint">Отправка...</span>
 			</div>
 			<span class="elapsed" aria-live="off">{formatElapsed(elapsed)}</span>
+			<button class="cancel" onclick={cancel} disabled={$activeResponses.cancelling}>
+				{$activeResponses.cancelling ? "Отмена..." : "Отменить"}
+			</button>
 		</div>
 	{:else if latest?.error}
 		<div class="status-bar">
-			<span class="status status-server-error">Ошибка</span>
+			{#if latest.cancelled}
+				<span class="status status-cancelled">Отменён</span>
+			{:else}
+				<span class="status status-server-error">Ошибка</span>
+			{/if}
 			{#if latest.elapsedMs != null}<span class="meta" title="Продолжительность запроса">{formatDuration(latest.elapsedMs)}</span>{/if}
 			<span class="meta time" title="Когда был отправлен запрос">{new Date(latest.at).toLocaleTimeString()}</span>
 		</div>
-		<p class="error">{latest.error}</p>
+		<p class:error={!latest.cancelled} class:hint={latest.cancelled}>{latest.error}</p>
 	{:else if latest?.outcome}
 		{@const outcome = latest.outcome}
 		<div class="status-bar">
@@ -206,6 +230,26 @@
 		justify-content: center;
 		gap: 0.6em;
 		height: 100%;
+	}
+	.cancel {
+		background: none;
+		border: 1px solid rgba(127, 127, 127, 0.45);
+		color: inherit;
+		border-radius: 6px;
+		padding: 0.3em 0.9em;
+		font-size: 0.85em;
+		cursor: pointer;
+	}
+	.cancel:hover:not(:disabled) {
+		border-color: #d1443c;
+		color: #d1443c;
+	}
+	.cancel:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+	.status-cancelled {
+		opacity: 0.6;
 	}
 	.loading-row {
 		display: flex;

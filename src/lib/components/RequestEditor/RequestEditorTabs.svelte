@@ -6,7 +6,7 @@
 	import { api } from "../../api/client";
 	import { notifyResult, type NoticeKind } from "../../ui/notices";
 	import { copyText } from "../../ui/clipboard";
-	import { newHttpRequestSpec } from "../../bindings/types";
+	import { newHttpRequestSpec, newId } from "../../bindings/types";
 	import type { HttpMethod, HttpRequestSpec } from "../../bindings/types";
 	import VariableInput from "../common/VariableInput.svelte";
 	import MethodSelect from "./MethodSelect.svelte";
@@ -48,12 +48,13 @@
 		// its own last response instead of sharing one global slot.
 		const path = $activeRequest.path;
 		const name = $activeRequest.request.meta.name;
-		markSending(path);
+		const sendId = newId();
+		markSending(path, sendId);
 		let summary: string;
 		let kind: NoticeKind;
 		let inBackground: boolean;
 		try {
-			const outcome = await api.sendRequest($activeRequest.request, $activeCollection.path);
+			const outcome = await api.sendRequest($activeRequest.request, $activeCollection.path, sendId);
 			summary = `${outcome.status} ${outcome.status_text}`;
 			kind = outcome.status >= 400 ? "error" : "success";
 			inBackground = recordResponse(path, { outcome, error: null, at: Date.now() });

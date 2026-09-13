@@ -9,7 +9,44 @@ use crate::store::{fs_app_state, fs_environment};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+use tokio::sync::oneshot;
 use tauri::{AppHandle, Manager, State};
+
+/// Sends that are currently in flight, keyed by the id the frontend made up
+/// for this particular send. Dropping the sender (or firing it) is what
+/// cancels: the executor's future is awaited inside a `select!`, and letting
+/// that future go closes the connection.
+///
+/// Keyed by send rather than by request path so a rename mid-flight can't
+/// orphan the entry, and so several sends of one request stay separable if
+/// that is ever allowed.
+#[derive(Default)]
+pub struct InFlightSends(Mutex<HashMap<String, oneshot::Sender<()>>>);
+
+impl InFlightSends {
+    fn register(&self, send_id: String) -> oneshot::Receiver<()> {
+        let (tx, rx) = oneshot::channel();
+        self.0.lock().expect("in-flight registry poisoned").insert(send_id, tx);
+        rx
+    }
+
+    fn forget(&self, send_id: &str) {
+        self.0.lock().expect("in-flight registry poisoned").remove(send_id);
+    }
+
+    /// Returns false when there was nothing to cancel — the send had already
+    /// finished, which is not an error worth surfacing.
+    fn cancel(&self, send_id: &str) -> bool {
+        let sender = self.0.lock().expect("in-flight registry poisoned").remove(send_id);
+        match sender {
+            // A closed receiver means the send is already past awaiting;
+            // either way there is nothing left to stop.
+            Some(sender) => sender.send(()).is_ok(),
+            None => false,
+        }
+    }
+}
 
 /// `send_request`'s result: the HTTP outcome, where the time went, and any
 /// `{{variable}}` names that couldn't be resolved (sent verbatim in the
@@ -72,8 +109,11 @@ pub async fn send_request(
     // rebuild the whole rustls/TLS root store every time and throw away
     // connection pooling.
     executor: State<'_, HttpExecutor>,
+    in_flight: State<'_, InFlightSends>,
     request: RequestFile,
     collection_path: String,
+    // Made up by the frontend for this send; `cancel_send` refers to it.
+    send_id: String,
 ) -> AppResult<SendResult> {
     let http_spec = request
         .http
@@ -130,10 +170,20 @@ pub async fn send_request(
     for name in &unresolved_variables {
         recorder.warn(format!("Не подставлена переменная {{{{{name}}}}}"));
     }
-    let result = executor
-        .execute(&resolved, &ExecutionContext { settings }, &mut recorder)
-        .await;
+    let cancelled = in_flight.register(send_id.clone());
+    let ctx = ExecutionContext { settings };
+    let result = tokio::select! {
+        result = executor.execute(&resolved, &ctx, &mut recorder) => Some(result),
+        // Dropping the executor's future is the cancellation: reqwest tears
+        // the connection down as it unwinds.
+        _ = cancelled => None,
+    };
+    in_flight.forget(&send_id);
     let trace = recorder.finish();
+
+    let Some(result) = result else {
+        return Err(AppError::Message("Запрос отменён".to_string()));
+    };
     let outcome = result.map_err(|e| AppError::Message(e.to_string()))?;
 
     Ok(SendResult {
@@ -141,4 +191,38 @@ pub async fn send_request(
         trace,
         unresolved_variables,
     })
+}
+
+/// Stops a send that is still running. Cancelling something that already
+/// finished is a no-op, not an error: the click and the response can always
+/// cross paths.
+#[tauri::command]
+pub fn cancel_send(in_flight: State<'_, InFlightSends>, send_id: String) -> AppResult<bool> {
+    Ok(in_flight.cancel(&send_id))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cancelling_a_registered_send_signals_it_once() {
+        let registry = InFlightSends::default();
+        let mut receiver = registry.register("send-1".to_string());
+
+        assert!(registry.cancel("send-1"));
+        assert_eq!(receiver.try_recv(), Ok(()));
+        // The entry is gone, so a second click does nothing.
+        assert!(!registry.cancel("send-1"));
+    }
+
+    #[test]
+    fn cancelling_an_unknown_or_finished_send_is_a_no_op() {
+        let registry = InFlightSends::default();
+        assert!(!registry.cancel("never-started"));
+
+        let _ = registry.register("send-2".to_string());
+        registry.forget("send-2");
+        assert!(!registry.cancel("send-2"));
+    }
 }

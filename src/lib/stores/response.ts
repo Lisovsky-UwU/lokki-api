@@ -11,6 +11,8 @@ export interface ResponseRecord {
 	/// times only the HTTP exchange, not the IPC round trip), and the only
 	/// duration available at all when the request failed.
 	elapsedMs?: number;
+	/// The user stopped this send. Not a failure, and shown as neither.
+	cancelled?: boolean;
 }
 
 export interface RequestResponses {
@@ -18,6 +20,12 @@ export interface RequestResponses {
 	/// When the in-flight send started, so the viewer can tick a live timer
 	/// while waiting. Null whenever nothing is in flight.
 	startedAt: number | null;
+	/// Identifies the in-flight send to the backend, which is what cancelling
+	/// refers to. Null whenever nothing is in flight.
+	sendId: string | null;
+	/// Cancel was asked for and the send hasn't come back yet. The error that
+	/// follows is the cancellation landing, not a failure to report.
+	cancelling: boolean;
 	/// The result arrived while the user was looking at some other request,
 	/// and they haven't opened this one since — the sidebar marks it so a
 	/// background result isn't lost.
@@ -29,17 +37,43 @@ export interface RequestResponses {
 }
 
 const HISTORY_LIMIT = 1;
-const EMPTY: RequestResponses = { loading: false, startedAt: null, unseen: false, history: [] };
+const EMPTY: RequestResponses = {
+	loading: false,
+	startedAt: null,
+	sendId: null,
+	cancelling: false,
+	unseen: false,
+	history: [],
+};
 
 /// Responses are cached per request path, so switching requests shows that
 /// request's own last response instead of leaving the previous one on screen.
 export const responsesByRequest = writable<Record<string, RequestResponses>>({});
 
-export function markSending(path: string) {
+export function markSending(path: string, sendId: string) {
 	responsesByRequest.update((map) => ({
 		...map,
-		[path]: { loading: true, startedAt: Date.now(), unseen: false, history: map[path]?.history ?? [] },
+		[path]: {
+			loading: true,
+			startedAt: Date.now(),
+			sendId,
+			cancelling: false,
+			unseen: false,
+			history: map[path]?.history ?? [],
+		},
 	}));
+}
+
+/// Marks that cancelling was requested. The send stays "loading" until it
+/// actually comes back — the connection is torn down by the backend, and
+/// pretending it is over before that would let a second send start while the
+/// first is still unwinding.
+export function markCancelling(path: string) {
+	responsesByRequest.update((map) => {
+		const current = map[path];
+		if (!current?.loading) return map;
+		return { ...map, [path]: { ...current, cancelling: true } };
+	});
 }
 
 /// Stores a finished send. Returns true when it finished in the background
@@ -47,11 +81,15 @@ export function markSending(path: string) {
 /// notify them — decided here, from the one place that knows both paths, so
 /// it can't drift from the `unseen` flag the sidebar renders.
 export function recordResponse(path: string, record: ResponseRecord): boolean {
-	const inBackground = get(activeRequest)?.path !== path;
+	// A cancelled send is never worth a background notification: the user
+	// asked for it to stop, so its ending is not news.
+	const cancelled = get(responsesByRequest)[path]?.cancelling === true;
+	const inBackground = !cancelled && get(activeRequest)?.path !== path;
 	responsesByRequest.update((map) => {
 		const current = map[path];
 		const complete: ResponseRecord = {
 			...record,
+			cancelled,
 			elapsedMs: record.elapsedMs ?? (current?.startedAt != null ? record.at - current.startedAt : undefined),
 		};
 		return {
@@ -59,6 +97,8 @@ export function recordResponse(path: string, record: ResponseRecord): boolean {
 			[path]: {
 				loading: false,
 				startedAt: null,
+				sendId: null,
+				cancelling: false,
 				unseen: inBackground,
 				history: [complete, ...(current?.history ?? [])].slice(0, HISTORY_LIMIT),
 			},
