@@ -2,6 +2,7 @@ use super::{
     ExecutionContext, ExecutionOutcome, ExecutorError, Phase, ProtocolExecutor, ResolvedHttpRequest, TraceRecorder,
 };
 use crate::domain::{optional_duration, HttpMethod, KeyValue, RequestSettings};
+use crate::i18n::messages;
 use async_trait::async_trait;
 use base64::Engine;
 use std::sync::Mutex;
@@ -66,7 +67,7 @@ fn build_client(settings: &RequestSettings) -> Result<reqwest::Client, ExecutorE
 
     builder
         .build()
-        .map_err(|e| ExecutorError::Failed(format!("Не удалось настроить HTTP-клиент: {e}")))
+        .map_err(|e| ExecutorError::Failed(messages::http_client_setup_failed(&e.to_string())))
 }
 
 fn method_to_reqwest(method: HttpMethod) -> reqwest::Method {
@@ -110,43 +111,41 @@ pub fn describe_error(error: &reqwest::Error, url: &str) -> String {
 
     if error.is_timeout() {
         return if error.is_connect() {
-            format!("Не удалось подключиться к {host}: превышено время ожидания подключения. Увеличьте таймаут в настройках или проверьте доступность хоста.")
+            messages::connect_timeout(&host)
         } else {
-            format!("Превышено время ожидания ответа от {host}. Увеличьте таймаут в настройках или проверьте, отвечает ли сервис.")
+            messages::response_timeout(&host)
         };
     }
     if error.is_redirect() {
-        return format!("Слишком много перенаправлений при обращении к {host}. Ограничение задаётся в настройках.");
+        return messages::too_many_redirects(&host);
     }
     if error.is_builder() || chain.contains("relative url without a base") {
-        return format!("Некорректный адрес запроса: {url}");
+        return messages::invalid_url(url);
     }
     // DNS: the OS resolver's own wording differs per platform and locale, so
     // both the generic and the Windows phrasings are matched.
     if chain.contains("dns error") || chain.contains("lookup address") || chain.contains("failed to lookup") {
-        return format!("Не удалось определить адрес хоста {host}. Проверьте имя хоста и подключение к сети.");
+        return messages::dns_failed(&host);
     }
     if chain.contains("certificate") || chain.contains("invalid peer certificate") || chain.contains("certexpired") {
-        return format!(
-            "Не удалось проверить TLS-сертификат {host}. Если это тестовый сервер с самоподписанным сертификатом, отключите проверку TLS в настройках."
-        );
+        return messages::tls_failed(&host);
     }
     if chain.contains("connection refused") || chain.contains("10061") {
-        return format!("Хост {host} отклонил подключение. Проверьте порт и что сервис запущен.");
+        return messages::connection_refused(&host);
     }
     if chain.contains("connection reset") || chain.contains("10054") {
-        return format!("Соединение с {host} разорвано сервером.");
+        return messages::connection_reset(&host);
     }
     if chain.contains("network is unreachable") || chain.contains("10051") || chain.contains("os error 10065") {
-        return format!("Сеть недоступна: не удалось добраться до {host}.");
+        return messages::network_unreachable(&host);
     }
     if error.is_connect() {
-        return format!("Не удалось подключиться к {host}. {}", error_chain(error));
+        return messages::connect_failed(&host, &error_chain(error));
     }
     if error.is_body() || error.is_decode() {
-        return format!("Не удалось прочитать ответ от {host}. {}", error_chain(error));
+        return messages::read_response_failed(&host, &error_chain(error));
     }
-    format!("Запрос к {host} не выполнен. {}", error_chain(error))
+    messages::request_failed(&host, &error_chain(error))
 }
 
 #[async_trait]
@@ -174,7 +173,7 @@ impl ProtocolExecutor for HttpExecutor {
 
         trace.info(format!("{} {}", method_to_reqwest(request.method), request.url));
         if !ctx.settings.verify_tls {
-            trace.warn("Проверка TLS-сертификата отключена в настройках");
+            trace.warn(messages::tls_verification_disabled());
         }
 
         // reqwest drives connecting itself, so from out here the request is
@@ -195,11 +194,10 @@ impl ProtocolExecutor for HttpExecutor {
         if let Some(addr) = response.remote_addr() {
             trace.set_remote_addr(addr.to_string());
         }
-        trace.info(format!(
-            "Получен ответ {} {} ({:?})",
+        trace.info(messages::response_received(
             status.as_u16(),
             status.canonical_reason().unwrap_or(""),
-            response.version()
+            &format!("{:?}", response.version()),
         ));
 
         let headers = response
@@ -220,7 +218,7 @@ impl ProtocolExecutor for HttpExecutor {
             ExecutorError::Failed(described)
         })?;
         trace.phase(Phase::Download, download_at.elapsed());
-        trace.info(format!("Тело ответа получено, {} байт", body.len()));
+        trace.info(messages::body_received(body.len()));
 
         Ok(ExecutionOutcome {
             status: status.as_u16(),
@@ -234,6 +232,8 @@ impl ProtocolExecutor for HttpExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::Language;
+    use crate::i18n::with_language;
 
     fn cached_settings(executor: &HttpExecutor) -> Option<RequestSettings> {
         executor.cached.lock().unwrap().as_ref().map(|(settings, _)| settings.clone())
@@ -264,13 +264,18 @@ mod tests {
         assert_eq!(cached_settings(&executor).as_ref(), Some(&defaults));
     }
 
+    /// Both languages, because the classification and the wording are
+    /// separate steps now: matching the chain could keep working while the
+    /// catalogue lost a translation.
     #[test]
     fn a_bad_url_is_reported_as_a_bad_url() {
         let error = reqwest::Client::new()
             .get("not-a-url")
             .build()
             .expect_err("relative url must not build");
-        let described = describe_error(&error, "not-a-url");
-        assert!(described.contains("Некорректный адрес запроса"), "{described}");
+        let english = with_language(Language::En, || describe_error(&error, "not-a-url"));
+        assert!(english.contains("Malformed request URL"), "{english}");
+        let russian = with_language(Language::Ru, || describe_error(&error, "not-a-url"));
+        assert!(russian.contains("Некорректный адрес запроса"), "{russian}");
     }
 }

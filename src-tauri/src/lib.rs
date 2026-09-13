@@ -2,6 +2,7 @@ pub mod commands;
 pub mod domain;
 pub mod error;
 pub mod exec;
+pub mod i18n;
 pub mod interpolate;
 pub mod secrets;
 pub mod store;
@@ -15,6 +16,14 @@ pub fn run() {
         // builds its TLS root store once, instead of per request.
         .manage(exec::HttpExecutor::new())
         .manage(commands::send_commands::InFlightSends::default())
+        // The stored preference is applied before any command can run, so a
+        // failure during start-up (restoring the last workspace, say) is
+        // already worded in the user's language. The frontend confirms the
+        // language once it has resolved "follow the OS" against the webview.
+        .setup(|app| {
+            commands::settings_commands::apply_stored_language(app.handle());
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::app_commands::app_info,
             commands::workspace_commands::open_workspace,
@@ -50,6 +59,8 @@ pub fn run() {
             commands::send_commands::save_response_body,
             commands::settings_commands::get_request_settings,
             commands::settings_commands::save_request_settings,
+            commands::settings_commands::get_language_preference,
+            commands::settings_commands::set_language,
             commands::secret_commands::set_secret,
             commands::secret_commands::reveal_secret,
         ])

@@ -3,6 +3,7 @@ use crate::error::{AppError, AppResult};
 use crate::exec::{
     resolve_http_request, ExecutionContext, ExecutionOutcome, ExecutionTrace, HttpExecutor, ProtocolExecutor, TraceRecorder,
 };
+use crate::i18n::messages;
 use crate::interpolate::{Resolver, VariableScope};
 use crate::secrets::{local_file::LocalFileSecretStore, SecretStore};
 use crate::store::{fs_app_state, fs_environment};
@@ -161,9 +162,7 @@ pub async fn send_request(
             .map(|name| format!("{{{{{name}}}}}"))
             .collect::<Vec<_>>()
             .join(", ");
-        return Err(AppError::Message(format!(
-            "В адресе запроса не подставлены переменные: {names}. Проверьте активное окружение."
-        )));
+        return Err(AppError::Message(messages::unresolved_url_variables(&names)));
     }
 
     // Can fail before anything is sent: a file body that isn't readable is
@@ -178,7 +177,7 @@ pub async fn send_request(
     // and dropped, and only the message reaches the UI.
     let mut recorder = TraceRecorder::start();
     for name in &unresolved_variables {
-        recorder.warn(format!("Не подставлена переменная {{{{{name}}}}}"));
+        recorder.warn(messages::unresolved_variable(name));
     }
     let cancelled = in_flight.register(send_id.clone());
     let ctx = ExecutionContext { settings };
@@ -192,7 +191,7 @@ pub async fn send_request(
     let trace = recorder.finish();
 
     let Some(result) = result else {
-        return Err(AppError::Message("Запрос отменён".to_string()));
+        return Err(AppError::Message(messages::request_cancelled()));
     };
     let outcome = result.map_err(|e| AppError::Message(e.to_string()))?;
 
@@ -212,7 +211,7 @@ pub fn save_response_body(file_path: String, body_base64: String) -> AppResult<(
     use base64::Engine;
     let bytes = base64::engine::general_purpose::STANDARD
         .decode(body_base64.as_bytes())
-        .map_err(|e| AppError::Message(format!("Не удалось раскодировать тело ответа: {e}")))?;
+        .map_err(|e| AppError::Message(messages::decode_body_failed(&e.to_string())))?;
     std::fs::write(&file_path, bytes).map_err(|source| AppError::Io {
         path: file_path,
         source,

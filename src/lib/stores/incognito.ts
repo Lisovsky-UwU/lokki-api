@@ -1,5 +1,6 @@
 import { writable } from "svelte/store";
 import { newRequestFile } from "../bindings/types";
+import { translate } from "../i18n";
 import { activeRequest } from "./activeRequest";
 import { activeCollection } from "./collectionTree";
 import { forgetResponses } from "./response";
@@ -19,7 +20,7 @@ export function startIncognito() {
 	// mode is built on, and the switcher follows the active collection.
 	activeCollection.set(null);
 	forgetResponses(INCOGNITO_PATH);
-	activeRequest.set({ path: INCOGNITO_PATH, request: newRequestFile("Инкогнито-запрос"), dirty: false });
+	activeRequest.set({ path: INCOGNITO_PATH, request: newRequestFile(translate("incognito.requestName")), dirty: false });
 	incognito.set(true);
 }
 

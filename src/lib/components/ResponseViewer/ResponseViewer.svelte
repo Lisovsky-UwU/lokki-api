@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { activeResponses, markCancelling } from "../../stores/response";
 	import { api } from "../../api/client";
+	import { locale, t } from "../../i18n";
 	import { reportError } from "../../ui/notices";
 	import { activeRequest } from "../../stores/activeRequest";
 	import CodeEditor from "../CodeEditor.svelte";
@@ -17,7 +18,7 @@
 			const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
 			return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
 		} catch {
-			return "(двоичное или нечитаемое тело)";
+			return $t("response.binaryBody");
 		}
 	}
 
@@ -30,26 +31,26 @@
 	}
 
 	function formatSize(bytes: number): string {
-		if (bytes < 1024) return `${bytes} Б`;
-		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
-		return `${(bytes / (1024 * 1024)).toFixed(2)} МБ`;
+		if (bytes < 1024) return $t("unit.bytes", { value: bytes });
+		if (bytes < 1024 * 1024) return $t("unit.kilobytes", { value: (bytes / 1024).toFixed(1) });
+		return $t("unit.megabytes", { value: (bytes / (1024 * 1024)).toFixed(2) });
 	}
 
 	function formatDuration(ms: number): string {
-		if (ms < 1000) return `${ms} мс`;
-		if (ms < 60_000) return `${(ms / 1000).toFixed(2)} с`;
+		if (ms < 1000) return $t("unit.milliseconds", { value: ms });
+		if (ms < 60_000) return $t("unit.seconds", { value: (ms / 1000).toFixed(2) });
 		const minutes = Math.floor(ms / 60_000);
 		const seconds = Math.round((ms % 60_000) / 1000);
-		return `${minutes} мин ${seconds} с`;
+		return $t("unit.minutesSeconds", { minutes, seconds });
 	}
 
 	/// Live counter while the request is in flight. Kept at one decimal: at a
 	/// 100 ms tick, millisecond precision would just flicker.
 	function formatElapsed(ms: number): string {
-		if (ms < 60_000) return `${(ms / 1000).toFixed(1)} с`;
+		if (ms < 60_000) return $t("unit.seconds", { value: (ms / 1000).toFixed(1) });
 		const minutes = Math.floor(ms / 60_000);
 		const seconds = Math.floor((ms % 60_000) / 1000);
-		return `${minutes} мин ${String(seconds).padStart(2, "0")} с`;
+		return $t("unit.minutesSeconds", { minutes, seconds: String(seconds).padStart(2, "0") });
 	}
 
 	function isJson(text: string): boolean {
@@ -101,7 +102,7 @@
 		try {
 			await api.cancelSend(sendId);
 		} catch (e) {
-			reportError("Не удалось отменить запрос", e);
+			reportError($t("response.cancelFailed"), e);
 		}
 	}
 
@@ -127,13 +128,14 @@
 		const outcome = latest?.outcome;
 		if (!outcome || !format) return [] as { id: string; label: string }[];
 		const list: { id: string; label: string }[] = [];
-		if (format.kind === "html") list.push({ id: "preview", label: "Просмотр" }, { id: "body", label: "Код" });
-		else if (format.kind === "image") list.push({ id: "image", label: "Изображение" });
-		else if (format.kind === "binary") list.push({ id: "file", label: "Файл" });
-		else list.push({ id: "body", label: "Тело" });
+		if (format.kind === "html")
+			list.push({ id: "preview", label: $t("response.tab.preview") }, { id: "body", label: $t("response.tab.source") });
+		else if (format.kind === "image") list.push({ id: "image", label: $t("response.tab.image") });
+		else if (format.kind === "binary") list.push({ id: "file", label: $t("response.tab.file") });
+		else list.push({ id: "body", label: $t("response.tab.body") });
 		// SVG is markup as well as a picture, so its source stays reachable.
-		if (format.mediaType === "image/svg+xml") list.push({ id: "body", label: "Код" });
-		list.push({ id: "headers", label: `Заголовки (${outcome.headers.length})` });
+		if (format.mediaType === "image/svg+xml") list.push({ id: "body", label: $t("response.tab.source") });
+		list.push({ id: "headers", label: $t("response.tab.headers", { count: outcome.headers.length }) });
 		return list;
 	});
 
@@ -154,7 +156,7 @@
 			const target = await api.pickDownloadTarget(format.fileName);
 			if (target) await api.saveResponseBody(target, outcome.body_base64);
 		} catch (e) {
-			reportError("Не удалось сохранить ответ", e);
+			reportError($t("response.saveFailed"), e);
 		} finally {
 			saving = false;
 		}
@@ -163,46 +165,51 @@
 
 <div class="response-viewer">
 	{#if !$activeRequest}
-		<p class="hint">Выберите запрос.</p>
+		<p class="hint">{$t("response.pickRequest")}</p>
 	{:else if $activeResponses.loading}
 		<div class="loading-state">
 			<div class="loading-row">
 				<span class="spinner" aria-hidden="true"></span>
-				<span class="hint">Отправка...</span>
+				<span class="hint">{$t("response.sending")}</span>
 			</div>
 			<span class="elapsed" aria-live="off">{formatElapsed(elapsed)}</span>
 			<button class="cancel" onclick={cancel} disabled={$activeResponses.cancelling}>
-				{$activeResponses.cancelling ? "Отмена..." : "Отменить"}
+				{$activeResponses.cancelling ? $t("response.cancelling") : $t("response.cancel")}
 			</button>
 		</div>
 	{:else if latest?.error}
 		<div class="status-bar">
 			{#if latest.cancelled}
-				<span class="status status-cancelled">Отменён</span>
+				<span class="status status-cancelled">{$t("response.cancelled")}</span>
 			{:else}
-				<span class="status status-server-error">Ошибка</span>
+				<span class="status status-server-error">{$t("response.error")}</span>
 			{/if}
-			{#if latest.elapsedMs != null}<span class="meta" title="Продолжительность запроса">{formatDuration(latest.elapsedMs)}</span>{/if}
-			<span class="meta time" title="Когда был отправлен запрос">{new Date(latest.at).toLocaleTimeString()}</span>
+			{#if latest.elapsedMs != null}<span class="meta" title={$t("response.duration")}
+					>{formatDuration(latest.elapsedMs)}</span
+				>{/if}
+			<span class="meta time" title={$t("response.sentAt")}
+				>{new Date(latest.at).toLocaleTimeString($locale)}</span
+			>
 		</div>
 		<p class:error={!latest.cancelled} class:hint={latest.cancelled}>{latest.error}</p>
 	{:else if latest?.outcome}
 		{@const outcome = latest.outcome}
 		<div class="status-bar">
 			<span class="status {statusClass(outcome.status)}">{outcome.status} {outcome.status_text}</span>
-			<span class="meta" title="Продолжительность запроса">{formatDuration(outcome.trace.total_ms)}</span>
-			<span class="meta" title="Размер тела ответа">{formatSize(byteLength(outcome.body_base64))}</span>
-			{#if format}<span class="meta" title="Content-Type ответа">{format.mediaType}</span>{/if}
-			<span class="meta time" title="Когда был отправлен запрос">{new Date(latest.at).toLocaleTimeString()}</span>
-			<button class="save-body" onclick={saveBody} disabled={saving} title="Сохранить тело ответа в файл">
-				{saving ? "Сохранение..." : "Сохранить"}
+			<span class="meta" title={$t("response.duration")}>{formatDuration(outcome.trace.total_ms)}</span>
+			<span class="meta" title={$t("response.bodySize")}>{formatSize(byteLength(outcome.body_base64))}</span>
+			{#if format}<span class="meta" title={$t("response.contentType")}>{format.mediaType}</span>{/if}
+			<span class="meta time" title={$t("response.sentAt")}
+				>{new Date(latest.at).toLocaleTimeString($locale)}</span
+			>
+			<button class="save-body" onclick={saveBody} disabled={saving} title={$t("response.saveBody")}>
+				{saving ? $t("common.saving") : $t("common.save")}
 			</button>
 		</div>
 
 		{#if outcome.unresolved_variables.length > 0}
 			<p class="warning">
-				Не найдено значение для: {outcome.unresolved_variables.map((v) => `{{${v}}}`).join(", ")} — проверьте активное
-				окружение.
+				{$t("response.unresolved", { names: outcome.unresolved_variables.map((v) => `{{${v}}}`).join(", ") })}
 			</p>
 		{/if}
 
@@ -215,16 +222,16 @@
 		{#if tab === "preview"}
 			<!-- Sandboxed with nothing allowed: a response is untrusted content,
 			     and a preview has no business running its scripts. -->
-			<iframe class="preview" title="Просмотр страницы" sandbox="" srcdoc={bodyText}></iframe>
+			<iframe class="preview" title={$t("response.previewTitle")} sandbox="" srcdoc={bodyText}></iframe>
 		{:else if tab === "image"}
 			<div class="image-view">
-				<img src={dataUrl} alt="Ответ сервера" />
+				<img src={dataUrl} alt={$t("response.imageAlt")} />
 			</div>
 		{:else if tab === "file"}
 			<div class="file-view">
 				<p class="file-line">{format?.mediaType}</p>
-				<p class="hint">{formatSize(byteLength(outcome.body_base64))} — двоичные данные, показать их как текст нельзя.</p>
-				<button onclick={saveBody} disabled={saving}>{saving ? "Сохранение..." : "Сохранить как файл..."}</button>
+				<p class="hint">{$t("response.binaryHint", { size: formatSize(byteLength(outcome.body_base64)) })}</p>
+				<button onclick={saveBody} disabled={saving}>{saving ? $t("common.saving") : $t("response.saveAsFile")}</button>
 			</div>
 		{:else if tab === "body"}
 			<div class="body">
@@ -235,8 +242,8 @@
 				<table>
 					<thead>
 						<tr>
-							<th>Заголовок</th>
-							<th>Значение</th>
+							<th>{$t("response.headerName")}</th>
+							<th>{$t("response.headerValue")}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -255,7 +262,7 @@
 		{/if}
 	{:else}
 		<div class="hint-outer">
-			<p class="hint">Запрос еще не был отправлен</p>
+			<p class="hint">{$t("response.notSent")}</p>
 		</div>
 	{/if}
 </div>

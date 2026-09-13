@@ -5,6 +5,7 @@
 	import Splitter from "./common/Splitter.svelte";
 	import RequestEditorTabs from "./RequestEditor/RequestEditorTabs.svelte";
 	import ResponseViewer from "./ResponseViewer/ResponseViewer.svelte";
+	import { t } from "../i18n";
 	import { layout, updateLayout } from "../stores/layout";
 
 	let panesHeight = $state(0);
@@ -19,7 +20,7 @@
 		value={$layout.editorHeight}
 		min={140}
 		max={Math.max(200, panesHeight - 160)}
-		ariaLabel="Высота панели запроса"
+		ariaLabel={$t("app.requestPaneHeight")}
 		onResize={(v) => updateLayout({ editorHeight: v })}
 	/>
 	<section class="pane response-pane">

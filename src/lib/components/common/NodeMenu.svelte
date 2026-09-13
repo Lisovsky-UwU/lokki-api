@@ -2,16 +2,21 @@
 	import type { Snippet } from "svelte";
 	// One definition for both ways of opening the same actions: the ⋯ button
 	// and the right-click menu.
+	import { t } from "../../i18n";
 	import type { MenuItem } from "../../ui/contextMenu";
 
 	// `trigger` replaces the ⋯ button, so a row can *be* the menu button (the
 	// workspace name opens the workspace menu) instead of carrying one.
 	let {
 		items,
-		label = "Действия",
+		label,
 		trigger,
 		align = "right",
 	}: { items: MenuItem[]; label?: string; trigger?: Snippet; align?: "left" | "right" } = $props();
+
+	// Derived rather than a default prop value, so the fallback follows a
+	// language change like every other string does.
+	let title = $derived(label ?? $t("common.actions"));
 
 	let open = $state(false);
 	let root = $state<HTMLDivElement>();
@@ -49,8 +54,8 @@
 	<button
 		class="trigger"
 		class:custom={trigger}
-		title={label}
-		aria-label={label}
+		title={title}
+		aria-label={title}
 		aria-expanded={open}
 		onclick={toggle}
 	>

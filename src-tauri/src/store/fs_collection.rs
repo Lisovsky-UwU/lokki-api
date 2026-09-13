@@ -1,6 +1,7 @@
 use super::format::{read_toml, write_toml};
 use crate::domain::{CollectionFile, CollectionSummary, FolderFile, Protocol, RequestFile};
 use crate::error::{AppError, AppResult};
+use crate::i18n::messages;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
@@ -89,9 +90,8 @@ pub fn rename_collection(collection_path: &Path, new_name: &str) -> AppResult<Co
 /// a wrong path would otherwise wipe whatever folder it pointed at.
 pub fn delete_collection(collection_path: &Path) -> AppResult<()> {
     if !collection_path.join(COLLECTION_FILE).is_file() {
-        return Err(AppError::Message(format!(
-            "{} — не коллекция LokkiAPI, удаление отменено.",
-            collection_path.display()
+        return Err(AppError::Message(messages::not_a_collection(
+            &collection_path.display().to_string(),
         )));
     }
     fs::remove_dir_all(collection_path).map_err(|source| AppError::Io {

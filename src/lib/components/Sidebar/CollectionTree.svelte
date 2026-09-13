@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from "svelte";
 	import { api } from "../../api/client";
+	import { t } from "../../i18n";
 	import { workspacePath, collections, workspace } from "../../stores/workspace";
 	import type { CollectionSummary, CollectionTreeNode, HttpMethod } from "../../bindings/types";
 	import TreeNode from "./TreeNode.svelte";
@@ -43,7 +44,7 @@
 			// would depend on the state it writes and loop forever.
 			trees = { ...trees, [collection.path]: tree };
 		} catch (e) {
-			reportError("Не удалось загрузить коллекцию", e);
+			reportError($t("error.loadCollection"), e);
 		}
 	}
 
@@ -61,7 +62,7 @@
 	/// moves with it — including the ones this component keys its own caches
 	/// by.
 	async function renameCollection(collection: CollectionSummary) {
-		const name = await promptForText("Переименовать коллекцию", "Название коллекции", collection.name);
+		const name = await promptForText($t("prompt.renameCollection"), $t("prompt.collectionName"), collection.name);
 		if (!name || name === collection.name) return;
 		try {
 			const renamed = await api.renameCollection(collection.path, name);
@@ -75,7 +76,7 @@
 			trees = rekeyByPath(trees, collection.path, renamed.path);
 			requestTreeRefresh();
 		} catch (e) {
-			reportError("Не удалось переименовать коллекцию", e);
+			reportError($t("error.renameCollection"), e);
 		}
 	}
 
@@ -84,8 +85,8 @@
 	/// responses, and this component's own caches.
 	async function removeCollection(collection: CollectionSummary) {
 		const confirmed = await confirmAction(
-			`Удалить коллекцию «${collection.name}» со всеми запросами, папками и окружениями? Папка будет удалена с диска.`,
-			{ title: "Удаление коллекции", confirmLabel: "Удалить", danger: true },
+			$t("confirm.deleteCollection", { name: collection.name }),
+			{ title: $t("confirm.deleteCollectionTitle"), confirmLabel: $t("common.delete"), danger: true },
 		);
 		if (!confirmed) return;
 		try {
@@ -97,7 +98,7 @@
 			expandedCollections = dropByPath(expandedCollections, collection.path);
 			trees = dropByPath(trees, collection.path);
 		} catch (e) {
-			reportError("Не удалось удалить коллекцию", e);
+			reportError($t("error.deleteCollection"), e);
 		}
 	}
 
@@ -124,7 +125,7 @@
 
 	async function createCollection() {
 		const path = $workspacePath;
-		const name = await promptForText("Новая коллекция", "Название коллекции", "Новая коллекция");
+		const name = await promptForText($t("prompt.newCollection"), $t("prompt.collectionName"), $t("prompt.newCollection"));
 		if (!path || !name) return;
 		const summary = await api.createCollection(path, name);
 		collections.update((list) => [...list, summary].sort((a, b) => a.name.localeCompare(b.name)));
@@ -132,7 +133,7 @@
 	}
 
 	async function addRequest(collection: CollectionSummary) {
-		const name = await promptForText("Новый запрос", "Название запроса", "Новый запрос");
+		const name = await promptForText($t("prompt.newRequest"), $t("prompt.requestName"), $t("prompt.newRequest"));
 		if (!name) return;
 		await api.createRequest(collection.path, name, "GET" as HttpMethod);
 		expandedCollections = { ...expandedCollections, [collection.path]: true };
@@ -140,7 +141,7 @@
 	}
 
 	async function addFolder(collection: CollectionSummary) {
-		const name = await promptForText("Новая папка", "Название папки", "Новая папка");
+		const name = await promptForText($t("prompt.newFolder"), $t("prompt.folderName"), $t("prompt.newFolder"));
 		if (!name) return;
 		await api.createFolder(collection.path, name);
 		expandedCollections = { ...expandedCollections, [collection.path]: true };
@@ -149,16 +150,16 @@
 
 	function collectionMenu(collection: CollectionSummary) {
 		return [
-			{ label: "Добавить запрос", action: () => addRequest(collection) },
-			{ label: "Добавить папку", action: () => addFolder(collection) },
+			{ label: $t("menu.addRequest"), action: () => addRequest(collection) },
+			{ label: $t("menu.addFolder"), action: () => addFolder(collection) },
 			// Reachable without opening a request first — the switcher in the
 			// top bar only ever shows the active collection's environments.
 			{
-				label: "Окружения коллекции",
+				label: $t("menu.collectionEnvironments"),
 				action: () => openEnvironmentsDialog({ rootPath: collection.path, scope: "collection", title: collection.name }),
 			},
-			{ label: "Переименовать коллекцию", action: () => renameCollection(collection) },
-			{ label: "Удалить коллекцию", action: () => removeCollection(collection), danger: true },
+			{ label: $t("menu.renameCollection"), action: () => renameCollection(collection) },
+			{ label: $t("menu.deleteCollection"), action: () => removeCollection(collection), danger: true },
 		];
 	}
 
@@ -189,7 +190,7 @@
 			order.push(sourcePath);
 			await api.reorderChildren(order);
 		} catch (e) {
-			reportError("Не удалось переместить", e);
+			reportError($t("error.move"), e);
 		} finally {
 			requestTreeRefresh();
 		}
@@ -201,12 +202,12 @@
 		const path = $workspacePath;
 		const current = $workspace;
 		if (!path || !current) return;
-		const name = await promptForText("Переименовать пространство", "Название пространства", current.name);
+		const name = await promptForText($t("prompt.renameWorkspace"), $t("prompt.workspaceName"), current.name);
 		if (!name || name === current.name) return;
 		try {
 			workspace.set(await api.renameWorkspace(path, name));
 		} catch (e) {
-			reportError("Не удалось переименовать пространство", e);
+			reportError($t("error.renameWorkspace"), e);
 		}
 	}
 
@@ -214,14 +215,14 @@
 	// bar, since a menu hanging off the workspace name reads as "settings of
 	// this workspace".
 	let workspaceMenu = $derived([
-		{ label: "Переименовать пространство", action: renameWorkspace },
+		{ label: $t("menu.renameWorkspace"), action: renameWorkspace },
 		{
-			label: "Окружения пространства",
+			label: $t("menu.workspaceEnvironments"),
 			action: () =>
 				$workspacePath &&
 				openEnvironmentsDialog({ rootPath: $workspacePath, scope: "global", title: $workspace?.name ?? "" }),
 		},
-		{ label: "Сменить пространство", action: closeWorkspace },
+		{ label: $t("menu.switchWorkspace"), action: closeWorkspace },
 	]);
 
 	function closeWorkspace() {
@@ -236,13 +237,13 @@
 
 <div class="sidebar">
 	<div class="sidebar-header">
-		<span>Пространство</span>
+		<span>{$t("sidebar.workspace")}</span>
 	</div>
 	{#if $workspace === null}
-		<div class="empty">Нет открытого пространства. Создайте или откройте существующий</div>
+		<div class="empty">{$t("sidebar.noWorkspace")}</div>
 	{:else}
 		<div class="workspace-name-outer">
-			<NodeMenu items={workspaceMenu} label="Меню пространства" align="left">
+			<NodeMenu items={workspaceMenu} label={$t("sidebar.workspaceMenu")} align="left">
 				{#snippet trigger()}
 					<span class="workspace-name">{$workspace?.name}</span>
 					<span class="switch-hint">▾</span>
@@ -251,8 +252,8 @@
 		</div>
 	{/if}
 	<div class="sidebar-header">
-		<span>Коллекции</span>
-		<button class="icon-btn" title="Новая коллекция" onclick={createCollection}>+</button>
+		<span>{$t("sidebar.collections")}</span>
+		<button class="icon-btn" title={$t("sidebar.newCollection")} onclick={createCollection}>+</button>
 	</div>
 
 	{#each $collections as collection (collection.path)}
@@ -270,7 +271,7 @@
 						<ActivityIndicator activity={subtreeActivity($responsesByRequest, collection.path)} group />
 					{/if}
 				</button>
-				<NodeMenu items={collectionMenu(collection)} label="Действия с коллекцией" />
+				<NodeMenu items={collectionMenu(collection)} label={$t("sidebar.collectionActions")} />
 			</div>
 			{#if expandedCollections[collection.path]}
 				{@const children = childrenOf(collection.path)}
@@ -293,7 +294,7 @@
 						<TreeNode node={child} {collection} parentPath={collection.path} siblings={children} />
 					{/each}
 					{#if children.length === 0}
-						<p class="empty">Пусто - создайте запрос или папку</p>
+						<p class="empty">{$t("sidebar.emptyCollection")}</p>
 					{/if}
 				</div>
 			{/if}
@@ -301,7 +302,7 @@
 	{/each}
 
 	{#if $collections.length === 0}
-		<p class="empty">Нет коллекций. Создайте первую.</p>
+		<p class="empty">{$t("sidebar.noCollections")}</p>
 	{/if}
 </div>
 

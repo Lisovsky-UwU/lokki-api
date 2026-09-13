@@ -1,4 +1,4 @@
-use crate::domain::{Id, RequestSettings};
+use crate::domain::{Id, Language, RequestSettings};
 use crate::error::{AppError, AppResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -18,6 +18,11 @@ pub struct AppState {
     pub last_workspace: Option<String>,
     #[serde(default)]
     pub request_settings: RequestSettings,
+    /// The UI language the user picked, or `None` for "follow the OS" —
+    /// which is the default, and what an app that has never been to the
+    /// settings dialog stays on.
+    #[serde(default)]
+    pub language: Option<Language>,
 }
 
 impl AppState {

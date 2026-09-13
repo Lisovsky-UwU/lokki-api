@@ -1,4 +1,5 @@
 import { writable } from "svelte/store";
+import { translate } from "../i18n";
 
 /// The webview's built-in `window.confirm` / `window.prompt` are unreliable
 /// inside Tauri, and the OS-native dialog plugin looks like a foreign
@@ -40,9 +41,9 @@ export interface ConfirmOptions {
 export function confirmAction(message: string, options: ConfirmOptions = {}): Promise<boolean> {
 	return new Promise((resolve) => {
 		confirmRequest.set({
-			title: options.title ?? "Подтверждение",
+			title: options.title ?? translate("common.confirmTitle"),
 			message,
-			confirmLabel: options.confirmLabel ?? "Да",
+			confirmLabel: options.confirmLabel ?? translate("common.yes"),
 			danger: options.danger ?? false,
 			resolve,
 		});

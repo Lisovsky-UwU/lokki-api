@@ -2,6 +2,7 @@
 	import { untrack } from "svelte";
 	import type { CollectionSummary, CollectionTreeNode, RequestFile } from "../../bindings/types";
 	import { api } from "../../api/client";
+	import { t } from "../../i18n";
 	import { activeRequest } from "../../stores/activeRequest";
 	import { activeCollection, requestTreeRefresh } from "../../stores/collectionTree";
 	import { exitIncognito } from "../../stores/incognito";
@@ -58,12 +59,12 @@
 		void (async () => {
 			try {
 				const tree = await api.loadCollectionTree(chosen.path);
-				const list: FolderChoice[] = [{ path: chosen.path, label: "Корень коллекции", depth: 0 }];
+				const list: FolderChoice[] = [{ path: chosen.path, label: $t("saveIncognito.collectionRoot"), depth: 0 }];
 				flatten(tree, 1, list);
 				folders = list;
 				folderPath = chosen.path;
 			} catch (e) {
-				reportError("Не удалось загрузить папки коллекции", e);
+				reportError($t("saveIncognito.loadFoldersFailed"), e);
 				folders = [];
 				folderPath = null;
 			}
@@ -83,7 +84,7 @@
 		activeCollection.set(collection);
 		activeRequest.set({ path: saved.path, request: saved, dirty: false });
 		requestTreeRefresh();
-		notifyResult(`Запрос сохранён в «${collection.name}»`);
+		notifyResult($t("saveIncognito.savedToCollection", { name: collection.name }));
 	}
 
 	async function saveToFile() {
@@ -95,7 +96,7 @@
 		if (current) {
 			activeRequest.set({ ...current, request: { ...current.request, meta: { ...current.request.meta, name: name.trim() } } });
 		}
-		notifyResult(`Запрос сохранён в файл ${filePath}`);
+		notifyResult($t("saveIncognito.savedToFile", { path: filePath }));
 	}
 
 	async function save() {
@@ -105,7 +106,7 @@
 			else await saveToFile();
 			onClose();
 		} catch (e) {
-			reportError("Не удалось сохранить запрос", e);
+			reportError($t("request.saveFailed"), e);
 		} finally {
 			saving = false;
 		}
@@ -121,29 +122,29 @@
 		if (e.target === e.currentTarget) onClose();
 	}}
 >
-	<div class="modal" role="dialog" tabindex="-1" aria-modal="true" aria-label="Сохранить запрос">
-		<h2>Сохранить запрос</h2>
+	<div class="modal" role="dialog" tabindex="-1" aria-modal="true" aria-label={$t("saveIncognito.title")}>
+		<h2>{$t("saveIncognito.title")}</h2>
 
 		<label class="field">
-			<span>Название</span>
-			<input bind:value={name} placeholder="Название запроса" />
+			<span>{$t("common.name")}</span>
+			<input bind:value={name} placeholder={$t("saveIncognito.namePlaceholder")} />
 		</label>
 
 		<div class="targets">
 			<label class="radio" class:disabled={!canUseWorkspace}>
 				<input type="radio" value="workspace" bind:group={target} disabled={!canUseWorkspace} />
-				<span>В пространство</span>
+				<span>{$t("saveIncognito.toWorkspace")}</span>
 			</label>
 			<label class="radio">
 				<input type="radio" value="file" bind:group={target} />
-				<span>Файлом на компьютер</span>
+				<span>{$t("saveIncognito.toFile")}</span>
 			</label>
 		</div>
 
 		{#if target === "workspace"}
 			{#if canUseWorkspace}
 				<label class="field">
-					<span>Коллекция</span>
+					<span>{$t("saveIncognito.collection")}</span>
 					<select
 						value={collection?.path ?? ""}
 						onchange={(e) => {
@@ -157,7 +158,7 @@
 					</select>
 				</label>
 				<label class="field">
-					<span>Папка</span>
+					<span>{$t("saveIncognito.folder")}</span>
 					<select bind:value={folderPath}>
 						{#each folders as folder (folder.path)}
 							<option value={folder.path}>{"  ".repeat(folder.depth) + folder.label}</option>
@@ -165,18 +166,19 @@
 					</select>
 				</label>
 			{:else}
-				<p class="hint">Нет открытого пространства — сохранить можно только файлом.</p>
+				<p class="hint">{$t("saveIncognito.noWorkspace")}</p>
 			{/if}
 		{:else}
 			<p class="hint">
-				Запрос будет записан в тот же формат TOML, что и внутри пространства, — такой файл можно позже положить в
-				коллекцию.
+				{$t("saveIncognito.fileHint")}
 			</p>
 		{/if}
 
 		<div class="actions">
-			<button onclick={onClose}>Отмена</button>
-			<button class="primary" onclick={save} disabled={!canSave}>{saving ? "Сохранение..." : "Сохранить"}</button>
+			<button onclick={onClose}>{$t("common.cancel")}</button>
+			<button class="primary" onclick={save} disabled={!canSave}
+				>{saving ? $t("common.saving") : $t("common.save")}</button
+			>
 		</div>
 	</div>
 </div>

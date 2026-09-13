@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { api } from "../../api/client";
+	import { t } from "../../i18n";
 	import { workspace, workspacePath } from "../../stores/workspace";
 	import { activeCollection } from "../../stores/collectionTree";
 	import {
@@ -23,7 +24,7 @@
 			const active = await api.getActiveEnvironment(rootPath);
 			return { entries, activeId: active?.meta.id ?? null };
 		} catch (e) {
-			reportError("Не удалось загрузить окружения", e);
+			reportError($t("env.loadFailed"), e);
 			return { entries: [], activeId: null };
 		}
 	}
@@ -75,23 +76,23 @@
 </script>
 
 <div class="switcher">
-	<label for="global-env">Окружение:</label>
+	<label for="global-env">{$t("env.label")}</label>
 	<div class="group">
-		<label for="global-env">Глобальное</label>
+		<label for="global-env">{$t("env.global")}</label>
 		<select
 			id="global-env"
 			value={$activeGlobalEnvironmentId ?? ""}
 			onchange={(e) => selectGlobal((e.target as HTMLSelectElement).value)}
 		>
-			<option value="">—</option>
+			<option value="">{$t("env.none")}</option>
 			{#each $globalEnvironments as env (env.meta.id)}
 				<option value={env.meta.id}>{env.meta.name}</option>
 			{/each}
 		</select>
 		<button
 			class="icon"
-			title="Окружения пространства"
-			aria-label="Окружения пространства"
+			title={$t("env.workspaceEnvironments")}
+			aria-label={$t("env.workspaceEnvironments")}
 			disabled={!$workspacePath}
 			onclick={() =>
 				$workspacePath &&
@@ -107,21 +108,21 @@
 
 	{#if $activeCollection}
 		<div class="group">
-			<label for="collection-env">Коллекция: {$activeCollection.name}</label>
+			<label for="collection-env">{$t("env.collection", { name: $activeCollection.name })}</label>
 			<select
 				id="collection-env"
 				value={$activeCollectionEnvironmentId ?? ""}
 				onchange={(e) => selectCollection((e.target as HTMLSelectElement).value)}
 			>
-				<option value="">—</option>
+				<option value="">{$t("env.none")}</option>
 				{#each $collectionEnvironments as env (env.meta.id)}
 					<option value={env.meta.id}>{env.meta.name}</option>
 				{/each}
 			</select>
 			<button
 				class="icon"
-				title="Окружения коллекции"
-				aria-label="Окружения коллекции"
+				title={$t("env.collectionEnvironments")}
+				aria-label={$t("env.collectionEnvironments")}
 				onclick={() =>
 					$activeCollection &&
 					openEnvironmentsDialog({

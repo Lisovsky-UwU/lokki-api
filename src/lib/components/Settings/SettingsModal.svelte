@@ -3,21 +3,35 @@
 	import { api } from "../../api/client";
 	import type { AppInfo, RequestSettings } from "../../bindings/types";
 	import { copyText } from "../../ui/clipboard";
+	import { LOCALE_NAMES, t, type Locale } from "../../i18n";
+	import { languagePreference, setLanguagePreference, systemLocale } from "../../i18n/preference";
 	import { reportError } from "../../ui/notices";
 
 	let { onClose }: { onClose: () => void } = $props();
 
-	const DESCRIPTION = "Локальный, файловый клиент для тестирования API — лёгкая альтернатива Postman и Insomnia.";
-	const UNKNOWN = "неизвестно";
-
 	// Sections are listed in one place so adding the next one is a single
 	// entry plus a branch in the pane below.
-	const TABS = [
-		{ id: "requests", label: "Запросы" },
-		{ id: "about", label: "О программе" },
-	] as const;
-	type TabId = (typeof TABS)[number]["id"];
-	let tab = $state<TabId>("requests");
+	const TAB_IDS = ["interface", "requests", "about"] as const;
+	type TabId = (typeof TAB_IDS)[number];
+	let tabs = $derived(
+		TAB_IDS.map((id) => ({ id, label: $t(`settings.tab.${id}` as const) })),
+	);
+	let tab = $state<TabId>("interface");
+
+	/// "System language" names what it currently resolves to, so the choice
+	/// is not a guess. Read once: the OS language cannot change under a
+	/// running webview.
+	const systemLanguageName = LOCALE_NAMES[systemLocale()];
+
+	/// `null` is the "follow the OS" entry. The select needs a string, so it
+	/// travels as the empty one.
+	async function selectLanguage(value: string) {
+		try {
+			await setLanguagePreference(value === "" ? null : (value as Locale));
+		} catch (e) {
+			reportError($t("settings.languageSaveFailed"), e);
+		}
+	}
 
 	let info = $state<AppInfo | null>(null);
 	let copied = $state(false);
@@ -27,12 +41,12 @@
 		try {
 			info = await api.appInfo();
 		} catch (e) {
-			reportError("Не удалось получить сведения о сборке", e);
+			reportError($t("settings.loadInfoFailed"), e);
 		}
 		try {
 			settings = await api.getRequestSettings();
 		} catch (e) {
-			reportError("Не удалось загрузить настройки запросов", e);
+			reportError($t("settings.loadRequestSettingsFailed"), e);
 		}
 	}
 	load();
@@ -50,7 +64,7 @@
 		try {
 			settings = await api.saveRequestSettings($state.snapshot(settings));
 		} catch (e) {
-			reportError("Не удалось сохранить настройки", e);
+			reportError($t("settings.saveFailed"), e);
 		}
 	}
 
@@ -75,10 +89,10 @@
 	let rows = $derived<[string, string][]>(
 		info
 			? [
-					["Версия", info.version],
-					["Дата сборки", info.build_date],
-					["Коммит", info.commit],
-					["Операционная система", info.os ? `${osName(info.os)} (${info.arch})` : ""],
+					[$t("about.version"), info.version],
+					[$t("about.buildDate"), info.build_date],
+					[$t("about.commit"), info.commit],
+					[$t("about.os"), info.os ? `${osName(info.os)} (${info.arch})` : ""],
 					["Rust", info.rust_version],
 					["Tauri", info.tauri_version],
 					["Node.js", info.node_version],
@@ -89,7 +103,9 @@
 
 	async function copyAll() {
 		if (!info) return;
-		const text = [info.name, "", ...rows.map(([label, value]) => `${label}: ${value || UNKNOWN}`)].join("\n");
+		const text = [info.name, "", ...rows.map(([label, value]) => `${label}: ${value || $t("common.unknown")}`)].join(
+			"\n",
+		);
 		await copyText(text);
 		copied = true;
 		setTimeout(() => (copied = false), 1500);
@@ -107,32 +123,45 @@
 		if (e.target === e.currentTarget) onClose();
 	}}
 >
-	<div class="modal" role="dialog" tabindex="-1" aria-modal="true" aria-label="Настройки">
-		<h2>Настройки</h2>
+	<div class="modal" role="dialog" tabindex="-1" aria-modal="true" aria-label={$t("settings.title")}>
+		<h2>{$t("settings.title")}</h2>
 
 		<div class="layout">
 			<nav class="tabs">
-				{#each TABS as item (item.id)}
+				{#each tabs as item (item.id)}
 					<button class:selected={tab === item.id} onclick={() => (tab = item.id)}>{item.label}</button>
 				{/each}
 			</nav>
 
 			<section class="pane">
-				{#if tab === "requests"}
+				{#if tab === "interface"}
+					<div class="settings-form">
+						<label class="row">
+							<span>{$t("settings.language")}</span>
+							<select
+								value={$languagePreference ?? ""}
+								onchange={(e) => selectLanguage((e.target as HTMLSelectElement).value)}
+							>
+								<option value="">{$t("settings.languageAuto", { name: systemLanguageName })}</option>
+								{#each Object.entries(LOCALE_NAMES) as [code, name] (code)}
+									<option value={code}>{name}</option>
+								{/each}
+							</select>
+						</label>
+					</div>
+				{:else if tab === "requests"}
 					{#if settings}
 						<div class="settings-form">
 							<label class="row check">
 								<input type="checkbox" bind:checked={settings.verify_tls} onchange={persist} />
-								<span>Проверять TLS-сертификаты</span>
+								<span>{$t("settings.verifyTls")}</span>
 							</label>
 							{#if !settings.verify_tls}
-								<p class="warning">
-									Проверка отключена: принимается любой сертификат, включая подменённый. Только для тестовых стендов.
-								</p>
+								<p class="warning">{$t("settings.verifyTlsWarning")}</p>
 							{/if}
 
 							<label class="row">
-								<span>Таймаут подключения, с</span>
+								<span>{$t("settings.connectTimeout")}</span>
 								<input
 									type="number"
 									min="0"
@@ -142,7 +171,7 @@
 								/>
 							</label>
 							<label class="row">
-								<span>Таймаут чтения, с</span>
+								<span>{$t("settings.readTimeout")}</span>
 								<input
 									type="number"
 									min="0"
@@ -152,7 +181,7 @@
 								/>
 							</label>
 							<label class="row">
-								<span>Общий таймаут, с</span>
+								<span>{$t("settings.totalTimeout")}</span>
 								<input
 									type="number"
 									min="0"
@@ -161,17 +190,15 @@
 									onchange={(e) => setTimeoutSeconds("total_timeout_ms", (e.target as HTMLInputElement).value)}
 								/>
 							</label>
-							<p class="hint">
-								Таймаут чтения — ожидание между частями ответа, общий — на весь запрос. 0 — без ограничения.
-							</p>
+							<p class="hint">{$t("settings.timeoutHint")}</p>
 
 							<label class="row check">
 								<input type="checkbox" bind:checked={settings.follow_redirects} onchange={persist} />
-								<span>Следовать перенаправлениям</span>
+								<span>{$t("settings.followRedirects")}</span>
 							</label>
 							{#if settings.follow_redirects}
 								<label class="row">
-									<span>Максимум перенаправлений</span>
+									<span>{$t("settings.maxRedirects")}</span>
 									<input
 										type="number"
 										min="0"
@@ -191,26 +218,31 @@
 
 							<label class="row">
 								<span>User-Agent</span>
-								<input class="mono" placeholder="по умолчанию" bind:value={settings.user_agent} onchange={persist} />
+								<input
+									class="mono"
+									placeholder={$t("settings.userAgentPlaceholder")}
+									bind:value={settings.user_agent}
+									onchange={persist}
+								/>
 							</label>
-							<p class="hint">Настройки применяются со следующего запроса и хранятся на этом компьютере.</p>
+							<p class="hint">{$t("settings.requestsHint")}</p>
 						</div>
 					{:else}
-						<p class="hint">Загрузка…</p>
+						<p class="hint">{$t("common.loading")}</p>
 					{/if}
 				{:else}
 					<div class="identity">
 						<img class="logo" src="{base}/logo-256.png" alt="" />
 						<div>
 							<div class="app-name">{info?.name ?? "LokkiAPI"}</div>
-							<p class="description">{DESCRIPTION}</p>
+							<p class="description">{$t("about.description")}</p>
 						</div>
 					</div>
 
 					<div class="section-head">
-						<h3>Сборка</h3>
+						<h3>{$t("about.build")}</h3>
 						<button onclick={copyAll} disabled={!info} class:copied>
-							{copied ? "Скопировано" : "Скопировать"}
+							{copied ? $t("common.copied") : $t("common.copy")}
 						</button>
 					</div>
 
@@ -218,20 +250,20 @@
 						<dl class="facts">
 							{#each rows as [label, value] (label)}
 								<dt>{label}</dt>
-								<dd class:unknown={!value}>{value || UNKNOWN}</dd>
+								<dd class:unknown={!value}>{value || $t("common.unknown")}</dd>
 							{/each}
 						</dl>
 					{:else}
-						<p class="hint">Загрузка…</p>
+						<p class="hint">{$t("common.loading")}</p>
 					{/if}
 
 					<div class="section-head">
 						<h3>GitHub</h3>
 					</div>
 					<dl class="facts">
-						<dt>Автор</dt>
+						<dt>{$t("about.author")}</dt>
 						<dd><a href="https://github.com/Lisovsky-UwU" target="_blank" rel="noopener">Lisovsky-UwU</a></dd>
-						<dt>Репозиторий</dt>
+						<dt>{$t("about.repository")}</dt>
 						<dd><a href="https://github.com/Lisovsky-UwU/lokki-api" target="_blank" rel="noopener">lokki-api</a></dd>
 					</dl>
 				{/if}
@@ -239,7 +271,7 @@
 		</div>
 
 		<div class="actions">
-			<button onclick={onClose}>Закрыть</button>
+			<button onclick={onClose}>{$t("common.close")}</button>
 		</div>
 	</div>
 </div>

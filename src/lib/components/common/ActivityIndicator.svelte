@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from "../../i18n";
 	import type { SubtreeActivity } from "../../stores/response";
 
 	// `group` is a folder or collection row standing in for the requests
@@ -10,14 +11,15 @@
 	let failed = $derived(record != null && (record.error != null || (record.outcome?.status ?? 0) >= 400));
 	let doneTitle = $derived.by(() => {
 		if (!record) return "";
-		if (group) return failed ? "Внутри есть новый ответ с ошибкой" : "Внутри есть новый ответ";
-		if (record.outcome) return `Запрос выполнен: ${record.outcome.status} ${record.outcome.status_text}`;
-		return "Запрос завершился ошибкой";
+		if (group) return $t(failed ? "activity.groupUnseenFailed" : "activity.groupUnseen");
+		if (record.outcome)
+			return $t("activity.done", { status: record.outcome.status, statusText: record.outcome.status_text });
+		return $t("activity.failed");
 	});
 </script>
 
 {#if activity.running}
-	<span class="indicator spinner" title={group ? "Внутри выполняется запрос" : "Запрос выполняется"}></span>
+	<span class="indicator spinner" title={$t(group ? "activity.groupRunning" : "activity.running")}></span>
 {:else if record}
 	<span class="indicator dot" class:failed title={doneTitle}></span>
 {/if}

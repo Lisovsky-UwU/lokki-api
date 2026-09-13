@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
+import { translate } from "../i18n";
 import type {
 	AppInfo,
 	CollectionSummary,
@@ -10,6 +11,7 @@ import type {
 	ExecutionOutcome,
 	HttpMethod,
 	Id,
+	Language,
 	RequestAtPath,
 	RequestFile,
 	RequestSettings,
@@ -27,8 +29,19 @@ export const api = {
 	saveRequestSettings: (settings: RequestSettings) =>
 		invoke<RequestSettings>("save_request_settings", { settings }),
 
+	/// What the user picked, or null for "follow the OS" — only the webview
+	/// can resolve that, so the core hands the preference over unresolved.
+	getLanguagePreference: () => invoke<Language | null>("get_language_preference"),
+	/// Stores the preference and tells the core which language to word its
+	/// own error messages in. The two differ whenever the preference is
+	/// "follow the OS".
+	setLanguage: (preference: Language | null, effective: Language) =>
+		invoke<void>("set_language", { preference, effective }),
+
 	pickWorkspaceFolder: (): Promise<string | null> =>
-		openDialog({ directory: true, multiple: false, title: "Open workspace folder" }) as Promise<string | null>,
+		openDialog({ directory: true, multiple: false, title: translate("dialog.openWorkspaceFolder") }) as Promise<
+			string | null
+		>,
 
 	openWorkspace: (path: string) => invoke<OpenWorkspaceResult>("open_workspace", { path }),
 	createWorkspace: (path: string, name: string) =>
@@ -63,17 +76,17 @@ export const api = {
 		invoke<RequestFile>("export_request", { filePath, name, request }),
 	/// Picks any file from disk to send as a request body.
 	pickBodyFile: (): Promise<string | null> =>
-		openDialog({ multiple: false, title: "Файл для тела запроса" }) as Promise<string | null>,
+		openDialog({ multiple: false, title: translate("dialog.pickBodyFile") }) as Promise<string | null>,
 	/// Picks where to write a response body the user wants to keep.
 	pickDownloadTarget: (defaultName: string): Promise<string | null> =>
-		saveDialog({ title: "Сохранить ответ", defaultPath: defaultName }) as Promise<string | null>,
+		saveDialog({ title: translate("dialog.saveResponse"), defaultPath: defaultName }) as Promise<string | null>,
 	saveResponseBody: (filePath: string, bodyBase64: string) =>
 		invoke<void>("save_response_body", { filePath, bodyBase64 }),
 	pickRequestFile: (defaultName: string): Promise<string | null> =>
 		saveDialog({
-			title: "Сохранить запрос",
+			title: translate("dialog.saveRequest"),
 			defaultPath: `${defaultName}.lokki.toml`,
-			filters: [{ name: "Запрос LokkiAPI", extensions: ["toml"] }],
+			filters: [{ name: translate("dialog.requestFileFilter"), extensions: ["toml"] }],
 		}) as Promise<string | null>,
 	renameRequest: (requestPath: string, newName: string) =>
 		invoke<RequestAtPath>("rename_request", { requestPath, newName }),

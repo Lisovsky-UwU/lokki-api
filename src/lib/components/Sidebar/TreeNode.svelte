@@ -11,6 +11,7 @@
 	import { openContextMenu } from "../../ui/contextMenu";
 	import { reportError } from "../../ui/notices";
 	import { api } from "../../api/client";
+	import { t } from "../../i18n";
 	import { methodColor } from "../../ui/methods";
 
 	// `collection` travels down the tree so opening a request always points
@@ -51,8 +52,8 @@
 	async function openRequest(path: string) {
 		if ($activeRequest?.dirty && $activeRequest.path !== path) {
 			const proceed = await confirmAction(
-				"В текущем запросе есть несохранённые изменения. Они будут потеряны. Открыть другой запрос?",
-				{ title: "Несохранённые изменения", confirmLabel: "Открыть" },
+				$t("confirm.openOther"),
+				{ title: $t("common.unsavedChanges"), confirmLabel: $t("common.open") },
 			);
 			if (!proceed) return;
 		}
@@ -64,12 +65,12 @@
 			// elsewhere, so the sidebar marker has done its job.
 			markSeen(path);
 		} catch (e) {
-			reportError("Не удалось открыть запрос", e);
+			reportError($t("request.openFailed"), e);
 		}
 	}
 
 	async function addRequest() {
-		const name = await promptForText("Новый запрос", "Название запроса", "Новый запрос");
+		const name = await promptForText($t("prompt.newRequest"), $t("prompt.requestName"), $t("prompt.newRequest"));
 		if (!name) return;
 		await api.createRequest(node.path, name, "GET" as HttpMethod);
 		expanded = true;
@@ -77,7 +78,7 @@
 	}
 
 	async function addFolder() {
-		const name = await promptForText("Новая папка", "Название папки", "Новая папка");
+		const name = await promptForText($t("prompt.newFolder"), $t("prompt.folderName"), $t("prompt.newFolder"));
 		if (!name) return;
 		await api.createFolder(node.path, name);
 		expanded = true;
@@ -85,7 +86,7 @@
 	}
 
 	async function renameFolder() {
-		const name = await promptForText("Переименовать папку", "Название папки", node.name);
+		const name = await promptForText($t("prompt.renameFolder"), $t("prompt.folderName"), node.name);
 		if (!name || name === node.name) return;
 		const newPath = await api.renameFolder(node.path, name);
 		rebaseActiveRequest(node.path, newPath);
@@ -94,7 +95,7 @@
 	}
 
 	async function renameRequest() {
-		const name = await promptForText("Переименовать запрос", "Название запроса", node.name);
+		const name = await promptForText($t("prompt.renameRequest"), $t("prompt.requestName"), node.name);
 		if (!name || name === node.name) return;
 		const renamed = await api.renameRequest(node.path, name);
 		rebaseActiveRequest(node.path, renamed.path);
@@ -109,21 +110,25 @@
 	/// would be anyway. Opening goes through `openRequest`, so an unsaved
 	/// request on screen still gets its confirmation.
 	async function cloneRequest() {
-		const name = await promptForText("Клонировать запрос", "Название копии", `${node.name} (копия)`);
+		const name = await promptForText(
+			$t("prompt.cloneRequest"),
+			$t("prompt.copyName"),
+			$t("prompt.copySuffix", { name: node.name }),
+		);
 		if (!name) return;
 		try {
 			const clone = await api.cloneRequest(node.path, name);
 			requestTreeRefresh();
 			await openRequest(clone.path);
 		} catch (e) {
-			reportError("Не удалось клонировать запрос", e);
+			reportError($t("error.cloneRequest"), e);
 		}
 	}
 
 	async function removeFolder() {
-		const confirmed = await confirmAction(`Удалить папку «${node.name}» со всем содержимым?`, {
-			title: "Удаление папки",
-			confirmLabel: "Удалить",
+		const confirmed = await confirmAction($t("confirm.deleteFolder", { name: node.name }), {
+			title: $t("confirm.deleteFolderTitle"),
+			confirmLabel: $t("common.delete"),
 			danger: true,
 		});
 		if (!confirmed) return;
@@ -132,9 +137,9 @@
 	}
 
 	async function removeRequest() {
-		const confirmed = await confirmAction(`Удалить запрос «${node.name}»?`, {
-			title: "Удаление запроса",
-			confirmLabel: "Удалить",
+		const confirmed = await confirmAction($t("confirm.deleteRequest", { name: node.name }), {
+			title: $t("confirm.deleteRequestTitle"),
+			confirmLabel: $t("common.delete"),
 			danger: true,
 		});
 		if (!confirmed) return;
@@ -212,7 +217,7 @@
 				await api.reorderChildren(order);
 			}
 		} catch (err) {
-			reportError("Не удалось переместить", err);
+			reportError($t("error.move"), err);
 		} finally {
 			// Always resync: after a partially applied move the sidebar would
 			// otherwise keep showing the entry in its old place.
@@ -221,16 +226,16 @@
 	}
 
 	let folderMenu = $derived([
-		{ label: "Добавить запрос", action: addRequest },
-		{ label: "Добавить папку", action: addFolder },
-		{ label: "Переименовать папку", action: renameFolder },
-		{ label: "Удалить папку", action: removeFolder, danger: true },
+		{ label: $t("menu.addRequest"), action: addRequest },
+		{ label: $t("menu.addFolder"), action: addFolder },
+		{ label: $t("menu.renameFolder"), action: renameFolder },
+		{ label: $t("menu.deleteFolder"), action: removeFolder, danger: true },
 	]);
 
 	let requestMenu = $derived([
-		{ label: "Клонировать запрос", action: cloneRequest },
-		{ label: "Переименовать запрос", action: renameRequest },
-		{ label: "Удалить запрос", action: removeRequest, danger: true },
+		{ label: $t("menu.cloneRequest"), action: cloneRequest },
+		{ label: $t("menu.renameRequest"), action: renameRequest },
+		{ label: $t("menu.deleteRequest"), action: removeRequest, danger: true },
 	]);
 </script>
 
@@ -256,7 +261,7 @@
 				<span class="node-name">{node.name}</span>
 				<ActivityIndicator {activity} group />
 			</button>
-			<NodeMenu items={folderMenu} label="Действия с папкой" />
+			<NodeMenu items={folderMenu} label={$t("sidebar.folderActions")} />
 		</div>
 		{#if expanded}
 			<div class="children">
@@ -264,7 +269,7 @@
 					<TreeNode node={child} {collection} parentPath={node.path} siblings={node.children} />
 				{/each}
 				{#if node.children.length === 0}
-					<p class="empty">Пусто</p>
+					<p class="empty">{$t("common.empty")}</p>
 				{/if}
 			</div>
 		{/if}
@@ -290,7 +295,7 @@
 			<span class="node-name">{node.name}</span>
 			<ActivityIndicator {activity} />
 		</button>
-		<NodeMenu items={requestMenu} label="Действия с запросом" />
+		<NodeMenu items={requestMenu} label={$t("sidebar.requestActions")} />
 	</div>
 {/if}
 

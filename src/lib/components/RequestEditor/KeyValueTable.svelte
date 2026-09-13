@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { KeyValue } from "../../bindings/types";
 	import { newKeyValue } from "../../bindings/types";
+	import { t } from "../../i18n";
 	import VariableInput from "../common/VariableInput.svelte";
 
 	let { rows, onChange }: { rows: KeyValue[]; onChange: (rows: KeyValue[]) => void } = $props();
@@ -32,12 +33,17 @@
 			<input
 				type="checkbox"
 				checked={row.enabled}
-				title="Включить/выключить"
+				title={$t("kv.toggle")}
 				onchange={(e) => update(i, { enabled: (e.target as HTMLInputElement).checked })}
 			/>
-			<VariableInput mono placeholder="имя" value={row.key} onChange={(key) => update(i, { key })} />
-			<VariableInput mono placeholder="значение" value={row.value} onChange={(value) => update(i, { value })} />
-			<button class="remove" title="Удалить" onclick={() => remove(i)}>×</button>
+			<VariableInput mono placeholder={$t("kv.keyPlaceholder")} value={row.key} onChange={(key) => update(i, { key })} />
+			<VariableInput
+				mono
+				placeholder={$t("kv.valuePlaceholder")}
+				value={row.value}
+				onChange={(value) => update(i, { value })}
+			/>
+			<button class="remove" title={$t("kv.remove")} onclick={() => remove(i)}>×</button>
 		</div>
 	{/each}
 </div>

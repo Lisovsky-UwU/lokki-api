@@ -3,6 +3,7 @@
 	import { api } from "../../api/client";
 	import { workspace, workspacePath, collections } from "../../stores/workspace";
 	import type { OpenWorkspaceResult } from "../../api/client";
+	import { t } from "../../i18n";
 	import { promptForText } from "../../ui/dialogs";
 	import { startIncognito } from "../../stores/incognito";
 	import GhostIcon from "../common/GhostIcon.svelte";
@@ -24,8 +25,8 @@
 		try {
 			const folder = await api.pickWorkspaceFolder();
 			if (!folder) return;
-			const suggested = folder.split(/[\\/]+/).filter(Boolean).pop() ?? "Новое пространство";
-			const name = await promptForText("Новое пространство", "Название пространства", suggested);
+			const suggested = folder.split(/[\\/]+/).filter(Boolean).pop() ?? $t("picker.newWorkspace");
+			const name = await promptForText($t("picker.newWorkspace"), $t("prompt.workspaceName"), suggested);
 			if (!name) return;
 			busy = "create";
 			enter(folder, await api.createWorkspace(folder, name));
@@ -56,24 +57,24 @@
 <div class="picker">
 	<button
 		class="ghost"
-		title="Инкогнито-запрос — выполнить запрос, ничего не сохраняя"
-		aria-label="Инкогнито-запрос"
+		title={$t("incognito.pickerTitle")}
+		aria-label={$t("incognito.request")}
 		onclick={startIncognito}
 		disabled={busy !== null}
 	>
 		<GhostIcon size="1.3em" />
 	</button>
 	<img class="logo" src="{base}/logo-horizontal.png" alt="LokkiAPI" />
-	<p>Локальный, файловый клиент для тестирования API.</p>
+	<p>{$t("picker.tagline")}</p>
 	<div class="actions">
 		<button class="primary" onclick={createWorkspace} disabled={busy !== null}>
-			{busy === "create" ? "Создаём..." : "Создать пространство"}
+			{busy === "create" ? $t("picker.creating") : $t("picker.create")}
 		</button>
 		<button onclick={openWorkspace} disabled={busy !== null}>
-			{busy === "open" ? "Открываем..." : "Открыть существующее"}
+			{busy === "open" ? $t("picker.opening") : $t("picker.openExisting")}
 		</button>
 	</div>
-	<p class="hint">Пространство — это обычная папка на диске с коллекциями и окружениями.</p>
+	<p class="hint">{$t("picker.hint")}</p>
 	{#if error}
 		<p class="error">{error}</p>
 	{/if}

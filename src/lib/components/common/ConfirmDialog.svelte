@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from "../../i18n";
 	import { confirmRequest } from "../../ui/dialogs";
 
 	let confirmButton = $state<HTMLButtonElement>();
@@ -37,7 +38,7 @@
 			<h2>{$confirmRequest.title}</h2>
 			<p>{$confirmRequest.message}</p>
 			<div class="actions">
-				<button type="button" onclick={() => answer(false)}>Отмена</button>
+				<button type="button" onclick={() => answer(false)}>{$t("common.cancel")}</button>
 				<button
 					bind:this={confirmButton}
 					type="button"

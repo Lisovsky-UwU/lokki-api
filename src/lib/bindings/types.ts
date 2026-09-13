@@ -96,6 +96,10 @@ export interface RequestSettings {
 	user_agent: string;
 }
 
+/// A UI language the app ships. Mirrors domain::language::Language, which
+/// serializes to these exact strings in app_state.json.
+export type Language = "en" | "ru";
+
 /// Build- and run-time facts about the app itself, shown in Settings.
 /// Any field can come back empty when it couldn't be determined (no git
 /// checkout, no node on PATH at build time) — the UI words that case.

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from "../../i18n";
 	import { promptRequest } from "../../ui/dialogs";
 
 	let value = $state("");
@@ -54,7 +55,7 @@
 				<input bind:this={input} bind:value onkeydown={(e) => e.key === "Escape" && cancel()} />
 			</label>
 			<div class="actions">
-				<button type="button" onclick={cancel}>Отмена</button>
+				<button type="button" onclick={cancel}>{$t("common.cancel")}</button>
 				<button type="submit" class="primary">OK</button>
 			</div>
 		</form>

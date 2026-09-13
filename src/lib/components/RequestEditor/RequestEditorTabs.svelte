@@ -6,6 +6,7 @@
 	import { activeResponses, markSending, recordResponse } from "../../stores/response";
 	import { availableVariables } from "../../stores/environments";
 	import { api } from "../../api/client";
+	import { t } from "../../i18n";
 	import { notifyResult, type NoticeKind } from "../../ui/notices";
 	import { copyText } from "../../ui/clipboard";
 	import { newHttpRequestSpec, newId } from "../../bindings/types";
@@ -79,14 +80,14 @@
 			kind = outcome.status >= 400 ? "error" : "success";
 			inBackground = recordResponse(path, { outcome, error: null, at: Date.now() });
 		} catch (e) {
-			summary = "ошибка отправки";
+			summary = $t("request.sendFailedShort");
 			kind = "error";
 			inBackground = recordResponse(path, { outcome: null, error: String(e), at: Date.now() });
 		}
 		// The user moved on to another request while this one was in flight,
 		// so the response panel they are looking at won't show the result —
 		// the toast and the sidebar marker are the only way they learn of it.
-		if (inBackground) notifyResult(`Запрос «${name}» завершён: ${summary}`, kind);
+		if (inBackground) notifyResult($t("request.backgroundDone", { name, summary }), kind);
 	}
 
 	function onShortcut(e: KeyboardEvent) {
@@ -98,7 +99,8 @@
 		}
 		// `e.key` carries the character the layout produces — on a Russian
 		// layout the S key yields "ы", so the shortcut has to match the
-		// physical key instead.
+		// physical key instead. Unrelated to the UI language: it is the
+		// keyboard layout that decides this, not the setting.
 		if (e.code === "KeyS" || e.key.toLowerCase() === "s") {
 			e.preventDefault();
 			// In incognito there is nothing to compare against, so Ctrl+S
@@ -114,7 +116,7 @@
 		const request = $activeRequest;
 		const collection = $activeCollection;
 		if (!request) return [] as string[];
-		if ($incognito) return ["Инкогнито", request.request.meta.name];
+		if ($incognito) return [$t("incognito.badge"), request.request.meta.name];
 		if (!collection) return [request.request.meta.name];
 		const relative = request.path.startsWith(collection.path)
 			? request.path.slice(collection.path.length).replace(/^[\\/]+/, "")
@@ -166,9 +168,9 @@
 					<span class:name={i === breadcrumb.length - 1}>{part}</span>
 				{/each}
 			</span>
-			{#if $activeRequest.dirty}<span class="dirty" title="Есть несохранённые изменения">●</span>{/if}
+			{#if $activeRequest.dirty}<span class="dirty" title={$t("request.dirty")}>●</span>{/if}
 			{#if !canSend}
-				<span class="warn">Коллекция не определена — отправка недоступна</span>
+				<span class="warn">{$t("request.noCollection")}</span>
 			{/if}
 		</div>
 		<div class="url-bar">
@@ -176,12 +178,12 @@
 			<VariableInput
 				value={http.url}
 				mono
-				ariaLabel="Адрес запроса"
-				placeholder="https://api.example.com/pets или {'{{baseUrl}}'}/pets"
+				ariaLabel={$t("request.urlAria")}
+				placeholder={$t("request.urlPlaceholder")}
 				onChange={(url) => mutate({ url })}
 			/>
 			<button class="send" title="Ctrl+Enter" onclick={send} disabled={$activeResponses.loading || !canSend}>
-				{$activeResponses.loading ? "Отправка..." : "Отправить"}
+				{$activeResponses.loading ? $t("request.sending") : $t("request.send")}
 			</button>
 			<button
 				class="save"
@@ -189,19 +191,19 @@
 				onclick={save}
 				disabled={saving || (!$incognito && !$activeRequest.dirty)}
 			>
-				{#if saving}Сохранение...{:else if $incognito}Сохранить...{:else}Сохранить{/if}
+				{#if saving}{$t("common.saving")}{:else if $incognito}{$t("request.saveAs")}{:else}{$t("request.save")}{/if}
 			</button>
 		</div>
 
 		<div class="tabs">
 			<button class:active={tab === "params"} onclick={() => (tab = "params")}
-				>Параметры{#if paramCount}&nbsp;({paramCount}){/if}</button
+				>{$t("request.tab.params")}{#if paramCount}&nbsp;({paramCount}){/if}</button
 			>
 			<button class:active={tab === "headers"} onclick={() => (tab = "headers")}
-				>Заголовки{#if headerCount}&nbsp;({headerCount}){/if}</button
+				>{$t("request.tab.headers")}{#if headerCount}&nbsp;({headerCount}){/if}</button
 			>
-			<button class:active={tab === "body"} onclick={() => (tab = "body")}>Тело</button>
-			<button class:active={tab === "auth"} onclick={() => (tab = "auth")}>Авторизация</button>
+			<button class:active={tab === "body"} onclick={() => (tab = "body")}>{$t("request.tab.body")}</button>
+			<button class:active={tab === "auth"} onclick={() => (tab = "auth")}>{$t("request.tab.auth")}</button>
 		</div>
 
 		<div class="tab-content">
@@ -209,8 +211,8 @@
 				<div class="params-tab">
 					<div class="url-preview">
 						<div class="url-preview-header">
-							<span>Итоговый адрес</span>
-							<button onclick={copyUrl}>{copied ? "Скопировано" : "Копировать"}</button>
+							<span>{$t("request.finalUrl")}</span>
+							<button onclick={copyUrl}>{copied ? $t("common.copied") : $t("common.copy")}</button>
 						</div>
 						<code>{urlPreview || "—"}</code>
 					</div>
@@ -228,7 +230,7 @@
 {:else}
 	<div class="empty-state-outer">
 		<div class="empty-state">
-			<p>Выберите запрос слева или создайте новый.</p>
+			<p>{$t("request.emptyState")}</p>
 		</div>
 	</div>
 {/if}

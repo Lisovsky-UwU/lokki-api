@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { AuthSpec } from "../../bindings/types";
+	import { t } from "../../i18n";
 	import VariableInput from "../common/VariableInput.svelte";
 
 	let { auth, onChange }: { auth: AuthSpec; onChange: (auth: AuthSpec) => void } = $props();
@@ -13,19 +14,19 @@
 
 <div class="auth-editor">
 	<select value={auth.type} onchange={(e) => setType((e.target as HTMLSelectElement).value as AuthSpec["type"])}>
-		<option value="none">Без авторизации</option>
-		<option value="bearer">Bearer-токен</option>
-		<option value="basic">Basic-авторизация</option>
+		<option value="none">{$t("auth.none")}</option>
+		<option value="bearer">{$t("auth.bearer")}</option>
+		<option value="basic">{$t("auth.basic")}</option>
 	</select>
 
 	{#if auth.type === "bearer"}
 		<dl class="auth-params">
-			<dt>Токен</dt>
+			<dt>{$t("auth.token")}</dt>
 			<dd>
 				<VariableInput
 					mono
 					ariaLabel="Bearer token"
-					placeholder="{'{{token}}'} или значение токена"
+					placeholder={$t("auth.tokenPlaceholder")}
 					value={auth.token}
 					onChange={(token) => onChange({ type: "bearer", token })}
 				/>
@@ -33,7 +34,7 @@
 		</dl>
 	{:else if auth.type === "basic"}
 		<dl class="auth-params">
-			<dt>Логин</dt>
+			<dt>{$t("auth.login")}</dt>
 			<dd>
 				<VariableInput
 					placeholder="admin"
@@ -41,7 +42,7 @@
 					onChange={(username) => onChange({ type: "basic", username, password: auth.password })}
 				/>
 			</dd>
-			<dt>Пароль</dt>
+			<dt>{$t("auth.password")}</dt>
 			<dd>
 				<VariableInput
 					type="password"

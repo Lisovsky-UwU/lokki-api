@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { BodySpec, EditorLanguage, TextFormat } from "../../bindings/types";
 	import { api } from "../../api/client";
+	import { t } from "../../i18n";
 	import { reportError } from "../../ui/notices";
 	import KeyValueTable from "./KeyValueTable.svelte";
 	import CodeEditor from "../CodeEditor.svelte";
@@ -9,10 +10,12 @@
 
 	// The value in the picker is the body kind for the structural cases, and
 	// the text format for everything typed into the editor — from the user's
-	// side "JSON" and "форма" are one choice, not two.
+	// side "JSON" and "form" are one choice, not two.
 	type BodyChoice = "none" | TextFormat | "form" | "file";
 
-	const TEXT_FORMATS: { value: TextFormat; label: string; placeholder: string }[] = [
+	/// Only `plain` is worded rather than named: the rest are the formats'
+	/// own names and read the same in every language.
+	let textFormats = $derived<{ value: TextFormat; label: string; placeholder: string }[]>([
 		{ value: "json", label: "JSON", placeholder: '{"key": "{{value}}"}' },
 		{ value: "xml", label: "XML", placeholder: "<root>{{value}}</root>" },
 		{ value: "yaml", label: "YAML", placeholder: "key: {{value}}" },
@@ -20,8 +23,8 @@
 		{ value: "html", label: "HTML", placeholder: "<p>{{value}}</p>" },
 		{ value: "css", label: "CSS", placeholder: "body { color: #000 }" },
 		{ value: "javascript", label: "JavaScript", placeholder: "console.log(1)" },
-		{ value: "plain", label: "Текст", placeholder: "произвольный текст" },
-	];
+		{ value: "plain", label: $t("body.format.plain"), placeholder: $t("body.format.plainPlaceholder") },
+	]);
 
 	/// Bodies written before formats existed keep their own tags; they read
 	/// as the format they always were.
@@ -33,7 +36,7 @@
 		body.type === "none" || body.type === "form" || body.type === "file" ? body.type : format,
 	);
 	let language = $derived<EditorLanguage>(format === "plain" ? "text" : format);
-	let placeholder = $derived(TEXT_FORMATS.find((f) => f.value === format)?.placeholder ?? "");
+	let placeholder = $derived(textFormats.find((f) => f.value === format)?.placeholder ?? "");
 	let content = $derived(isText && body.type !== "form" && body.type !== "none" && body.type !== "file" ? body.content : "");
 
 	function select(value: BodyChoice) {
@@ -50,7 +53,7 @@
 			const path = await api.pickBodyFile();
 			if (path) onChange({ type: "file", path });
 		} catch (e) {
-			reportError("Не удалось выбрать файл", e);
+			reportError($t("body.pickFileFailed"), e);
 		}
 	}
 </script>
@@ -58,16 +61,16 @@
 <div class="body-editor">
 	<div class="toolbar">
 		<select value={choice} onchange={(e) => select((e.target as HTMLSelectElement).value as BodyChoice)}>
-			<option value="none">Без тела</option>
-			{#each TEXT_FORMATS as item (item.value)}
+			<option value="none">{$t("body.none")}</option>
+			{#each textFormats as item (item.value)}
 				<option value={item.value}>{item.label}</option>
 			{/each}
-			<option value="form">Форма (urlencoded)</option>
-			<option value="file">Файл с компьютера</option>
+			<option value="form">{$t("body.form")}</option>
+			<option value="file">{$t("body.file")}</option>
 		</select>
 
 		{#if body.type === "file"}
-			<button onclick={pickFile}>Выбрать файл...</button>
+			<button onclick={pickFile}>{$t("body.pickFile")}</button>
 		{/if}
 	</div>
 
@@ -85,12 +88,9 @@
 	{:else if body.type === "file"}
 		{#if body.path}
 			<p class="file-path" title={body.path}>{body.path}</p>
-			<p class="hint">
-				Файл читается в момент отправки, а не сохраняется в запрос. Тип содержимого определяется по расширению, если
-				заголовок Content-Type не задан вручную.
-			</p>
+			<p class="hint">{$t("body.fileHint")}</p>
 		{:else}
-			<p class="hint">Файл не выбран.</p>
+			<p class="hint">{$t("body.noFile")}</p>
 		{/if}
 	{/if}
 </div>

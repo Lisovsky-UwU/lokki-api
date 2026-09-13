@@ -3,6 +3,7 @@
 	import { newId } from "../../bindings/types";
 	import { isValidVariableName, requestEnvironmentsRefresh, sanitizeVariableName } from "../../stores/environments";
 	import { api } from "../../api/client";
+	import { t } from "../../i18n";
 	import { confirmAction, promptForText } from "../../ui/dialogs";
 	import { reportError } from "../../ui/notices";
 
@@ -56,7 +57,7 @@
 			const wanted = selectPath ?? draft?.path ?? entries[0]?.path;
 			await beginEdit(entries.find((e) => e.path === wanted) ?? entries[0] ?? null);
 		} catch (e) {
-			reportError("Не удалось загрузить окружения", e);
+			reportError($t("env.loadFailed"), e);
 		} finally {
 			loading = false;
 		}
@@ -86,8 +87,8 @@
 		if (entry.path === draft?.path) return;
 		if (dirty) {
 			const proceed = await confirmAction(
-				`В окружении «${draft?.meta.name}» есть несохранённые изменения. Они будут потеряны. Переключиться?`,
-				{ title: "Несохранённые изменения", confirmLabel: "Переключиться" },
+				$t("env.switchConfirm", { name: draft?.meta.name ?? "" }),
+				{ title: $t("common.unsavedChanges"), confirmLabel: $t("env.switchConfirmLabel") },
 			);
 			if (!proceed) return;
 		}
@@ -95,7 +96,7 @@
 	}
 
 	async function createEnvironment() {
-		const name = await promptForText("Новое окружение", "Название окружения", "Новое окружение");
+		const name = await promptForText($t("env.newEnvironment"), $t("env.namePlaceholder"), $t("env.newEnvironment"));
 		if (!name) return;
 		try {
 			const created = await api.createEnvironment(rootPath, name, scope);
@@ -108,7 +109,7 @@
 			requestEnvironmentsRefresh();
 			await load(created.path);
 		} catch (e) {
-			reportError("Не удалось создать окружение", e);
+			reportError($t("env.createFailed"), e);
 		}
 	}
 
@@ -116,8 +117,8 @@
 		const target = draft;
 		if (!target) return;
 		const confirmed = await confirmAction(
-			`Удалить окружение «${target.meta.name}»? Вместе с ним будут удалены его переменные и сохранённые значения секретов.`,
-			{ title: "Удаление окружения", confirmLabel: "Удалить", danger: true },
+			$t("env.deleteConfirm", { name: target.meta.name }),
+			{ title: $t("env.deleteConfirmTitle"), confirmLabel: $t("common.delete"), danger: true },
 		);
 		if (!confirmed) return;
 		try {
@@ -128,7 +129,7 @@
 			requestEnvironmentsRefresh();
 			await load();
 		} catch (e) {
-			reportError("Не удалось удалить окружение", e);
+			reportError($t("env.deleteFailed"), e);
 		}
 	}
 
@@ -165,7 +166,7 @@
 			baseline = JSON.stringify($state.snapshot(draft)) + JSON.stringify($state.snapshot(secretValues));
 			requestEnvironmentsRefresh();
 		} catch (e) {
-			reportError("Не удалось сохранить окружение", e);
+			reportError($t("env.saveFailed"), e);
 		} finally {
 			saving = false;
 		}
@@ -173,16 +174,18 @@
 
 	async function requestClose() {
 		if (dirty) {
-			const proceed = await confirmAction("Есть несохранённые изменения. Закрыть без сохранения?", {
-				title: "Несохранённые изменения",
-				confirmLabel: "Закрыть",
+			const proceed = await confirmAction($t("env.closeConfirm"), {
+				title: $t("common.unsavedChanges"),
+				confirmLabel: $t("common.close"),
 			});
 			if (!proceed) return;
 		}
 		onClose();
 	}
 
-	let heading = $derived(scope === "global" ? `Окружения пространства: ${title}` : `Окружения коллекции: ${title}`);
+	let heading = $derived(
+		scope === "global" ? $t("env.headingGlobal", { title }) : $t("env.headingCollection", { title }),
+	);
 </script>
 
 <svelte:window onkeydown={(e) => e.key === "Escape" && requestClose()} />
@@ -205,29 +208,29 @@
 					<button class="env" class:selected={entry.path === draft?.path} onclick={() => selectEnvironment(entry)}>
 						<span class="env-name">{entry.meta.name}</span>
 						{#if entry.meta.id === activeId}
-							<span class="active-mark" title="Активное окружение">✓</span>
+							<span class="active-mark" title={$t("env.active")}>✓</span>
 						{/if}
 						{#if entry.path === draft?.path && dirty}
-							<span class="dot" title="Есть несохранённые изменения">●</span>
+							<span class="dot" title={$t("env.unsaved")}>●</span>
 						{/if}
 					</button>
 				{/each}
 				{#if entries.length === 0 && !loading}
-					<p class="hint">Пусто</p>
+					<p class="hint">{$t("common.empty")}</p>
 				{/if}
-				<button class="add-env" onclick={createEnvironment}>+ Окружение</button>
+				<button class="add-env" onclick={createEnvironment}>{$t("env.add")}</button>
 			</aside>
 
 			<section class="editor">
 				{#if loading}
-					<p class="hint">Загрузка…</p>
+					<p class="hint">{$t("common.loading")}</p>
 				{:else if draft}
 					<div class="name-field">
 						<label>
-							<span>Название</span>
-							<input bind:value={draft.meta.name} placeholder="Название окружения" />
+							<span>{$t("common.name")}</span>
+							<input bind:value={draft.meta.name} placeholder={$t("env.namePlaceholder")} />
 						</label>
-						<button class="delete-env" onclick={deleteEnvironment}>Удалить окружение</button>
+						<button class="delete-env" onclick={deleteEnvironment}>{$t("env.deleteEnvironment")}</button>
 					</div>
 
 					<div class="variables">
@@ -241,8 +244,8 @@
 								<input
 									class="mono"
 									class:invalid={v.key !== "" && !isValidVariableName(v.key)}
-									placeholder="имя"
-									title="Латиница, цифры, точка, дефис и подчёркивание. Пробелы недопустимы — такая переменная не подставится."
+									placeholder={$t("kv.keyPlaceholder")}
+									title={$t("env.variableNameTitle")}
 									value={v.key}
 									oninput={(e) => {
 										// Names outside this set never resolve at send time, so
@@ -256,12 +259,12 @@
 									<input
 										class="mono"
 										type="password"
-										placeholder="секретное значение"
+										placeholder={$t("env.secretPlaceholder")}
 										value={secretValues[v.id] ?? ""}
 										oninput={(e) => (secretValues[v.id] = (e.target as HTMLInputElement).value)}
 									/>
 								{:else}
-									<input class="mono" placeholder="значение" bind:value={v.value} />
+									<input class="mono" placeholder={$t("kv.valuePlaceholder")} bind:value={v.value} />
 								{/if}
 								<label class="secret-toggle">
 									<input
@@ -274,23 +277,25 @@
 											v.secret = nowSecret;
 										}}
 									/>
-									секрет
+									{$t("env.secret")}
 								</label>
-								<button class="remove" title="Удалить переменную" onclick={() => removeVariable(i)}>×</button>
+								<button class="remove" title={$t("env.removeVariable")} onclick={() => removeVariable(i)}>×</button>
 							</div>
 						{/each}
-						<button class="add" onclick={addVariable}>+ переменная</button>
+						<button class="add" onclick={addVariable}>{$t("env.addVariable")}</button>
 					</div>
 				{:else}
-					<p class="hint">Окружений пока нет. Создайте первое.</p>
+					<p class="hint">{$t("env.noEnvironments")}</p>
 				{/if}
 			</section>
 		</div>
 
 		<div class="actions">
-			{#if dirty}<span class="unsaved">Есть несохранённые изменения</span>{/if}
-			<button onclick={requestClose}>Закрыть</button>
-			<button class="primary" onclick={save} disabled={!canSave}>{saving ? "Сохранение..." : "Сохранить"}</button>
+			{#if dirty}<span class="unsaved">{$t("env.unsaved")}</span>{/if}
+			<button onclick={requestClose}>{$t("common.close")}</button>
+			<button class="primary" onclick={save} disabled={!canSave}
+				>{saving ? $t("common.saving") : $t("common.save")}</button
+			>
 		</div>
 	</div>
 </div>

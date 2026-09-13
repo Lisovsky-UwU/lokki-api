@@ -3,6 +3,8 @@
 	import { workspace, workspacePath, collections } from "../lib/stores/workspace";
 	import { activeRequest } from "../lib/stores/activeRequest";
 	import { api } from "../lib/api/client";
+	import { t } from "../lib/i18n";
+	import { initLocale } from "../lib/i18n/preference";
 	import { installGlobalErrorReporting, reportError } from "../lib/ui/notices";
 	import { closeEnvironmentsDialog, environmentsDialog } from "../lib/ui/environmentsDialog";
 	import { closeSettings, openSettings, settingsOpen } from "../lib/ui/settingsDialog";
@@ -30,8 +32,8 @@
 	async function openIncognito() {
 		if ($activeRequest?.dirty) {
 			const proceed = await confirmAction(
-				"В текущем запросе есть несохранённые изменения. Они будут потеряны. Открыть инкогнито-запрос?",
-				{ title: "Несохранённые изменения", confirmLabel: "Открыть" },
+				$t("incognito.confirmOpen"),
+				{ title: $t("common.unsavedChanges"), confirmLabel: $t("common.open") },
 			);
 			if (!proceed) return;
 		}
@@ -41,8 +43,8 @@
 	async function leaveIncognito() {
 		if ($activeRequest?.dirty) {
 			const proceed = await confirmAction(
-				"Инкогнито-запрос нигде не сохранён и будет потерян. Выйти из режима?",
-				{ title: "Выход из инкогнито", confirmLabel: "Выйти", danger: true },
+				$t("incognito.confirmLeave"),
+				{ title: $t("incognito.confirmLeaveTitle"), confirmLabel: $t("incognito.exit"), danger: true },
 			);
 			if (!proceed) return;
 		}
@@ -53,6 +55,9 @@
 	// pick the same folder on every launch.
 	onMount(async () => {
 		installGlobalErrorReporting();
+		// Before anything that can fail: the core words its own errors, and
+		// restoring the workspace below is the first thing that can raise one.
+		await initLocale();
 		try {
 			const last = await api.getLastWorkspace();
 			if (last) {
@@ -62,7 +67,7 @@
 				collections.set(result.collections);
 			}
 		} catch (e) {
-			reportError("Не удалось открыть последний workspace", e);
+			reportError($t("app.restoreFailed"), e);
 		} finally {
 			restoring = false;
 		}
@@ -89,25 +94,27 @@
 {/if}
 
 {#if restoring}
-	<div class="restoring">Загрузка…</div>
+	<div class="restoring">{$t("common.loading")}</div>
 {:else if $incognito}
 	<!-- No sidebar on purpose: an incognito request belongs to no collection,
 	     so there is no tree to place it in. -->
 	<div class="app incognito">
 		<div class="main">
 			<header class="topbar">
-				<span class="incognito-badge" title="Запрос нигде не сохраняется">
+				<span class="incognito-badge" title={$t("incognito.badgeTitle")}>
 					<GhostIcon />
-					Инкогнито
+					{$t("incognito.badge")}
 				</span>
 				{#if $workspacePath}
 					<EnvironmentSwitcher />
 				{:else}
-					<span class="hint">Пространство не открыто — переменные недоступны</span>
+					<span class="hint">{$t("app.noWorkspaceHint")}</span>
 				{/if}
 				<div class="topbar-actions">
-					<button class="settings-btn" title="Настройки" aria-label="Настройки" onclick={openSettings}>⚙</button>
-					<button class="exit-incognito" onclick={leaveIncognito}>Выйти</button>
+					<button class="settings-btn" title={$t("app.settings")} aria-label={$t("app.settings")} onclick={openSettings}
+						>⚙</button
+					>
+					<button class="exit-incognito" onclick={leaveIncognito}>{$t("incognito.exit")}</button>
 				</div>
 			</header>
 			<RequestWorkbench />
@@ -125,7 +132,7 @@
 			value={$layout.sidebarWidth}
 			min={180}
 			max={640}
-			ariaLabel="Ширина дерева коллекций"
+			ariaLabel={$t("app.sidebarWidth")}
 			onResize={(v) => updateLayout({ sidebarWidth: v })}
 		/>
 		<div class="main">
@@ -134,19 +141,21 @@
 				<div class="topbar-actions">
 					<button
 						class="settings-btn"
-						title="Инкогнито-запрос"
-						aria-label="Инкогнито-запрос"
+						title={$t("incognito.request")}
+						aria-label={$t("incognito.request")}
 						onclick={openIncognito}
 					>
 						<GhostIcon />
 					</button>
-					<button class="settings-btn" title="Настройки" aria-label="Настройки" onclick={openSettings}>⚙</button>
+					<button class="settings-btn" title={$t("app.settings")} aria-label={$t("app.settings")} onclick={openSettings}
+						>⚙</button
+					>
 				</div>
 			</header>
 			{#if !$activeRequest}
 				<div class="empty-state-outer">
 					<div class="empty-state">
-						<p>Выберите запрос слева или создайте новый</p>
+						<p>{$t("app.emptyState")}</p>
 					</div>
 				</div>
 			{:else}

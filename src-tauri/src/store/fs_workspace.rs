@@ -2,6 +2,7 @@ use super::fs_collection::list_collections;
 use super::format::{read_toml, write_toml};
 use crate::domain::{CollectionSummary, WorkspaceFile};
 use crate::error::{AppError, AppResult};
+use crate::i18n::messages;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -29,9 +30,8 @@ pub fn is_workspace(workspace_path: &Path) -> bool {
 pub fn open_workspace(workspace_path: &Path) -> AppResult<(WorkspaceFile, Vec<CollectionSummary>)> {
     let marker = workspace_file_path(workspace_path);
     if !marker.is_file() {
-        return Err(AppError::Message(format!(
-            "В папке {} нет пространства LokkiAPI. Создайте новое.",
-            workspace_path.display()
+        return Err(AppError::Message(messages::no_workspace_in_folder(
+            &workspace_path.display().to_string(),
         )));
     }
     let workspace = read_toml(&marker)?;
@@ -44,9 +44,8 @@ pub fn open_workspace(workspace_path: &Path) -> AppResult<(WorkspaceFile, Vec<Co
 /// but must not already be one.
 pub fn create_workspace(workspace_path: &Path, name: &str) -> AppResult<WorkspaceFile> {
     if is_workspace(workspace_path) {
-        return Err(AppError::Message(format!(
-            "В папке {} уже есть пространство — откройте его.",
-            workspace_path.display()
+        return Err(AppError::Message(messages::workspace_already_exists(
+            &workspace_path.display().to_string(),
         )));
     }
     init_workspace(workspace_path, name)

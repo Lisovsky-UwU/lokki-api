@@ -3,6 +3,7 @@ use super::format::{read_toml, write_toml};
 use super::naming::unique_path;
 use crate::domain::{FolderFile, HttpMethod, RequestFile};
 use crate::error::{AppError, AppResult};
+use crate::i18n::messages;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -190,9 +191,7 @@ pub fn move_node(source_path: &Path, target_parent: &Path) -> AppResult<PathBuf>
     // Moving a folder inside itself (or its own descendant) would detach the
     // whole subtree from the workspace.
     if source_path.is_dir() && target_parent.starts_with(source_path) {
-        return Err(AppError::Message(
-            "Нельзя переместить папку внутрь самой себя.".to_string(),
-        ));
+        return Err(AppError::Message(messages::cannot_move_folder_into_itself()));
     }
     if parent_of(source_path)? == target_parent {
         return Ok(source_path.to_path_buf());

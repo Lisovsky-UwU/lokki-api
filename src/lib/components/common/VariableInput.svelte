@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from "../../i18n";
 	import { availableVariables } from "../../stores/environments";
 
 	let {
@@ -112,7 +113,9 @@
 					>
 						<span class="key">{match.key}</span>
 						<span class="value">{match.secret ? "••••" : match.value}</span>
-						<span class="scope">{match.scope === "collection" ? "коллекция" : "global"}</span>
+						<span class="scope"
+							>{$t(match.scope === "collection" ? "variables.scope.collection" : "variables.scope.global")}</span
+						>
 					</button>
 				</li>
 			{/each}

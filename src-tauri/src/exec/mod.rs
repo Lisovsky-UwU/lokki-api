@@ -5,6 +5,7 @@ pub use http::HttpExecutor;
 pub use trace::{ExecutionTrace, Phase, TraceEvent, TraceLevel, TraceRecorder};
 
 use crate::domain::{AuthSpec, BodySpec, HttpMethod, HttpRequestSpec, KeyValue, RequestSettings, TextFormat};
+use crate::i18n::messages;
 use crate::interpolate::Resolver;
 use async_trait::async_trait;
 use base64::Engine;
@@ -212,7 +213,7 @@ pub fn resolve_http_request(
         BodySpec::File { path } => {
             let path = interp(path);
             let bytes = std::fs::read(&path)
-                .map_err(|e| ExecutorError::Failed(format!("Не удалось прочитать файл {path}: {e}")))?;
+                .map_err(|e| ExecutorError::Failed(messages::read_body_file_failed(&path, &e.to_string())))?;
             default_content_type(&mut headers, content_type_for_file(&path));
             Some(bytes)
         }
@@ -250,6 +251,8 @@ mod tests {
 
     use super::*;
     use crate::domain::KeyValue as KV;
+    use crate::domain::Language;
+    use crate::i18n::with_language;
     use crate::interpolate::VariableScope;
     use std::collections::HashMap;
 
@@ -363,8 +366,10 @@ mod tests {
             },
         };
         let resolver = Resolver::new(VariableScope::default(), None);
-        let error = resolve_http_request(&spec, &resolver).unwrap_err();
-        assert!(error.to_string().contains("Не удалось прочитать файл"), "{error}");
+        // Pinned, because the message is translated and the language is a
+        // process-wide setting other tests move around.
+        let error = with_language(Language::En, || resolve_http_request(&spec, &resolver).unwrap_err());
+        assert!(error.to_string().contains("Could not read file"), "{error}");
     }
 
     #[test]

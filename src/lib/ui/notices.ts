@@ -1,4 +1,5 @@
 import { writable } from "svelte/store";
+import { translate } from "../i18n";
 
 export type NoticeKind = "error" | "success";
 
@@ -58,6 +59,8 @@ export function dismissNotice(id: number) {
 /// Catches anything that escapes a handler (a component that throws while
 /// rendering, a rejected promise nobody awaited) so it becomes visible too.
 export function installGlobalErrorReporting() {
-	window.addEventListener("error", (e) => reportError("Ошибка", e.error ?? e.message));
-	window.addEventListener("unhandledrejection", (e) => reportError("Ошибка", e.reason));
+	// Translated at throw time rather than captured once: the listeners are
+	// installed before the language is settled.
+	window.addEventListener("error", (e) => reportError(translate("common.error"), e.error ?? e.message));
+	window.addEventListener("unhandledrejection", (e) => reportError(translate("common.error"), e.reason));
 }

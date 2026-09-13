@@ -3,86 +3,91 @@
 </p>
 
 <p align="center">
-  Локальный, файловый клиент для тестирования API — лёгкая альтернатива Postman и Insomnia.
+  A local, file-based API client — a lightweight alternative to Postman and Insomnia.
+</p>
+
+<p align="center">
+  <a href="README.ru_RU.md">Русская версия</a>
 </p>
 
 ---
 
-## О проекте
+## About
 
-LokkiAPI решает три вещи, которые в существующих клиентах сделаны иначе.
+LokkiAPI does three things differently from the clients already out there.
 
-**Данные — обычные файлы, а не скрытая база.** Каждый запрос это отдельный TOML-файл в папке коллекции. Их можно читать глазами, класть в git, ревьюить в пул-реквестах, синхронизировать любым файловым способом. Никакого экспорта-импорта, чтобы поделиться коллекцией с командой.
+**Your data is plain files, not a hidden database.** Every request is its own TOML file inside a collection folder. You can read them, put them in git, review them in pull requests, sync them however you already sync files. No export/import dance to share a collection with your team.
 
-**Приложение лёгкое.** Tauri с системным WebView вместо Electron: бинарник 7.8 МБ, инсталлятор 2.7 МБ, потребление памяти на порядок ниже, чем у клиентов на встроенном Chromium.
+**The app is light.** Tauri with the system WebView instead of Electron: a 7.8 MB binary, a 2.7 MB installer, and an order of magnitude less memory than clients that ship their own Chromium.
 
-**Архитектура заложена на вырост.** У каждой сущности стабильный ULID и версия — будущий self-hosted сервер синхронизации подключается без миграции формата. Выполнение запросов скрыто за трейтом `ProtocolExecutor`, так что WebSocket, SSE и GraphQL добавляются рядом с HTTP, а не переписыванием ядра.
+**The architecture is built to grow.** Every entity carries a stable ULID and a version, so a future self-hosted sync server plugs in without migrating the format. Request execution sits behind a `ProtocolExecutor` trait, so WebSocket, SSE and GraphQL are added alongside HTTP rather than by rewriting the core.
 
-**Никаких подписок никогда и вечный OpenSource.** LokkiAPI подразумевает открытость кода и отсутствие каких-либо подписок. Никогда и ни в каком виде. Весь функционал любой человек и компания могут использовать на безвозмездной основе.
+**No subscriptions, ever, and open source forever.** LokkiAPI is built on open code and the absence of subscriptions of any kind. Never, in any form. Every feature is free to use for any person and any company.
 
-## Возможности
+## Features
 
-**Запросы**
-- Методы GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS
-- Параметры строки запроса и заголовки с включением и отключением строк
-- Тело: JSON, произвольный текст, форма (urlencoded)
-- Авторизация: без неё, Bearer-токен, Basic
-- Предпросмотр итогового адреса с подставленными переменными и кнопкой копирования
-- Отправка по Ctrl+Enter, сохранение по Ctrl+S
+**Requests**
+- GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS
+- Query parameters and headers, each row individually enabled or disabled
+- Body: JSON, arbitrary text, form (urlencoded)
+- Auth: none, Bearer token, Basic
+- Preview of the final URL with variables substituted, and a copy button
+- Ctrl+Enter to send, Ctrl+S to save
 
-**Коллекции**
-- Вложенные папки любой глубины
-- Перетаскивание для сортировки и переноса между папками и коллекциями
-- Переименование и удаление через меню ⋯
-- Порядок папок и запросов задаётся вручную и хранится в файлах
+**Collections**
+- Nested folders, any depth
+- Drag and drop to reorder and to move between folders and collections
+- Rename and delete from the ⋯ menu
+- The order of folders and requests is set by hand and stored in the files
 
-**Окружения и переменные**
-- Глобальные окружения и окружения коллекции, коллекция перекрывает глобальное
-- Подстановка `{{переменной}}` в адресе, параметрах, заголовках, теле и авторизации
-- Автодополнение переменных по `{{` с показом значения и области видимости
-- Предупреждение в ответе, если переменная не нашлась
-- Секретные переменные хранятся вне синхронизируемого дерева
+**Environments and variables**
+- Global environments and collection environments; the collection wins over the global one
+- `{{variable}}` substitution in the URL, query parameters, headers, body and auth
+- Variable completion on `{{`, showing the value and the scope
+- A warning on the response when a variable could not be resolved
+- Secret variables are stored outside the syncable tree
 
-**Ответ**
-- Статус, длительность, размер тела и время выполнения
-- Вкладки «Тело» и «Заголовки», заголовки в виде таблицы
-- Подсветка синтаксиса JSON в палитре GitHub, форматирование ответа
-- Последний ответ запоминается для каждого запроса отдельно
+**Response**
+- Status, duration, body size and the time it ran
+- Body and Headers tabs, headers as a table
+- JSON syntax highlighting in the GitHub palette, response formatting
+- The last response is remembered per request
 
-**Интерфейс**
-- Светлая и тёмная тема по системной настройке
-- Растягиваемые панели: ширина дерева коллекций и высота областей запроса и ответа
-- Последний открытый workspace восстанавливается при запуске
+**Interface**
+- English and Russian: picked from the OS language on first launch, falling back to English; switchable under Settings → Interface
+- Light and dark theme, following the system setting
+- Resizable panes: collection tree width, request and response heights
+- The last workspace reopens on launch
 
-## Установка
+## Installing
 
-Готовые инсталляторы под Windows x64 собираются в `src-tauri/target/release/bundle`:
+Ready-made Windows x64 installers are built into `src-tauri/target/release/bundle`:
 
-- `nsis/LokkiAPI_0.1.0_x64-setup.exe` — обычный установщик
-- `msi/LokkiAPI_0.1.0_x64_en-US.msi` — для развёртывания через групповые политики
+- `nsis/LokkiAPI_0.1.0_x64-setup.exe` — the ordinary installer
+- `msi/LokkiAPI_0.1.0_x64_en-US.msi` — for deployment through group policy
 
-## Как устроен workspace на диске
+## What a workspace looks like on disk
 
-Workspace — это обычная папка, которую вы выбираете при первом запуске.
+A workspace is an ordinary folder you pick on first launch.
 
 ```
 my-workspace/
   .lokki/
-    workspace.toml          # идентификатор воркспейса и версия схемы
-    secrets.local.toml      # значения секретных переменных (в .gitignore)
-    .gitignore              # создаётся автоматически
+    workspace.toml          # workspace identity and schema version
+    secrets.local.toml      # values of secret variables (gitignored)
+    .gitignore              # written automatically
   environments/
-    Global.env.toml         # глобальные окружения
-  Petstore/                 # коллекция
+    Global.env.toml         # global environments
+  Petstore/                 # a collection
     collection.toml
     environments/
-      Dev.env.toml          # окружения коллекции
-    Pets/                   # папка
-      folder.toml           # имя и позиция папки
-      List Pets.lokki.toml  # запрос
+      Dev.env.toml          # collection environments
+    Pets/                   # a folder
+      folder.toml           # the folder's name and position
+      List Pets.lokki.toml  # a request
 ```
 
-Пример файла запроса:
+A request file:
 
 ```toml
 [meta]
@@ -111,98 +116,99 @@ token = "{{authToken}}"
 type = "none"
 ```
 
-Формат выбран как TOML, а не YAML или JSON: он не страдает от неявного приведения типов и проблем с отступами при ручной правке, даёт построчные диффы на массивах таблиц и умеет многострочные литералы для тела запроса.
+TOML rather than YAML or JSON: it has no implicit type coercion and no indentation traps when edited by hand, it gives line-by-line diffs on arrays of tables, and it has multi-line literals for request bodies.
 
-### Секреты
+### Secrets
 
-У переменной есть флаг `secret`. Значение такой переменной **никогда** не пишется в файл окружения — в нём остаётся пустая строка, а само значение хранится в `.lokki/secrets.local.toml`, который автоматически добавляется в `.gitignore`. Поэтому папку workspace можно коммитить целиком, не опасаясь утечки токенов.
+A variable carries a `secret` flag. The value of such a variable is **never** written to the environment file — an empty string stays there instead, and the value itself lives in `.lokki/secrets.local.toml`, which is added to `.gitignore` automatically. That is what makes the whole workspace folder safe to commit without leaking tokens.
 
-Имена переменных ограничены набором `A-Z a-z 0-9 _ . -`. Символы вне набора не подставляются при отправке, поэтому поле ввода их не принимает.
+Variable names are limited to `A-Z a-z 0-9 _ . -`. Characters outside that set never resolve at send time, so the input field refuses them.
 
-## Разработка
+## Development
 
-Требуется Rust stable, Node.js LTS и системные зависимости Tauri (на Windows — WebView2, он есть в Windows 11 из коробки).
+You need Rust stable, Node.js LTS and Tauri's system dependencies (on Windows that is WebView2, which ships with Windows 11).
 
 ```bash
 npm install
-npm run tauri dev        # запуск в режиме разработки
-npm run check            # проверка типов фронтенда
-npm run tauri build      # сборка инсталляторов
-cd src-tauri && cargo test   # тесты ядра
+npm run tauri dev        # run in development mode
+npm run check            # frontend type check
+npm run tauri build      # build the installers
+cd src-tauri && cargo test   # core tests
 ```
 
-Вспомогательные примеры для проверки ядра без интерфейса:
+Helper examples for exercising the core without the UI:
 
 ```bash
 cd src-tauri
-cargo run --example smoke              # сквозной прогон с реальным HTTP-запросом
-cargo run --example fixture -- <путь>   # сгенерировать демонстрационный workspace
+cargo run --example smoke              # end-to-end run with a real HTTP request
+cargo run --example fixture -- <path>   # generate a demo workspace
 ```
 
-Иконки приложения перегенерируются из исходного изображения одной командой:
+The app icons are regenerated from the source image with one command:
 
 ```bash
 npx tauri icon lokki_api_logo.png
 ```
 
-## Архитектура
+## Architecture
 
-| Слой | Технология |
+| Layer | Technology |
 |---|---|
-| Оболочка | Tauri 2, системный WebView |
-| Ядро | Rust: домен, файловое хранилище, выполнение запросов, интерполяция |
-| Интерфейс | Svelte 5 + TypeScript, CodeMirror 6 |
-| Транспорт | reqwest с rustls, без зависимости от OpenSSL |
+| Shell | Tauri 2, system WebView |
+| Core | Rust: domain, file storage, request execution, interpolation |
+| Interface | Svelte 5 + TypeScript, CodeMirror 6 |
+| Transport | reqwest with rustls, no OpenSSL dependency |
 
-Модули ядра (`src-tauri/src`):
+Core modules (`src-tauri/src`):
 
-| Модуль | Назначение |
+| Module | Purpose |
 |---|---|
-| `domain/` | Модели: workspace, коллекция, папка, запрос, окружение, `SyncMeta` с идентификатором и версией |
-| `store/` | Чтение и запись TOML, обход дерева коллекций, перемещение и сортировка, локальное состояние интерфейса |
-| `exec/` | Трейт `ProtocolExecutor` и реализация HTTP, сборка запроса с подстановкой переменных |
-| `interpolate/` | Резолвер `{{переменных}}`: окружение коллекции перекрывает глобальное |
-| `secrets/` | Трейт `SecretStore` и локальная файловая реализация |
-| `commands/` | Слой команд Tauri — единственный путь изменений со стороны интерфейса |
+| `domain/` | Models: workspace, collection, folder, request, environment, `SyncMeta` with identity and version |
+| `store/` | Reading and writing TOML, walking the collection tree, moving and ordering, local UI state |
+| `exec/` | The `ProtocolExecutor` trait and the HTTP implementation, building a request with variables substituted |
+| `interpolate/` | The `{{variable}}` resolver: the collection environment wins over the global one |
+| `secrets/` | The `SecretStore` trait and its local-file implementation |
+| `i18n/` | Every sentence the core shows the user, in English and Russian |
+| `commands/` | The Tauri command layer — the only path by which the interface changes anything |
 
-Ключевое архитектурное правило: **интерфейс никогда не пишет файлы напрямую**, все изменения проходят через `store`. Это и есть точка, куда подключится будущий движок синхронизации, не затрагивая ни домен, ни компоненты.
+The key architectural rule: **the frontend never writes files**; every change goes through `store`. That is exactly where the future sync engine attaches, touching neither the domain nor the components.
 
-Фронтенд разделён на `stores` (реактивное состояние), `api/client.ts` (типизированная обёртка над командами), `components` и `ui` (диалоги, ошибки, общие утилиты). Типы в `bindings/types.ts` повторяют доменные структуры Rust с точностью до имён полей, поскольку те же структуры сериализуются и в файлы, и в IPC.
+The frontend is split into `stores` (reactive state), `api/client.ts` (a typed wrapper over the commands), `components`, `ui` (dialogs, errors, shared utilities) and `i18n` (the string catalogues). The types in `bindings/types.ts` mirror the Rust domain structs down to the field names, because those same structs serialize both to the files and to IPC.
 
 ## Roadmap
 
-- [x] Инкогнито запросы - быстрый запрос без создания его в пространстве
-- [ ] Импорт коллекций из разных форматов:
+- [x] Incognito requests — a quick request without creating it in a workspace
+- [ ] Importing collections from other formats:
     - [ ] OpenAPI
     - [ ] Insomnia
     - [ ] Postman
     - [ ] Hoppscotch
-- [ ] Расширение протоколов:
+- [ ] More protocols:
     - [ ] SSE
     - [ ] WebSocket
     - [ ] GraphQL
     - [ ] gRPC
     - [ ] Raw TCP
-- [ ] Настройки:
-    - [x] Включение/Отключений верификации TLS
-    - [ ] Добавление собственных доверенных сертификатов
-    - [x] Настройка таймаутов на подключение, ожидание, чтение
-    - [ ] Поддержка разных языков интерфейса
-    - [ ] Прокси для запросов
-- [ ] Управление cookies
-- [ ] Документация к запросам и коллекциям внутри приложения на MarkDown
-- [ ] Скрипты для запросов
-- [ ] Создание тестов
-- [ ] Self-hosted сервер синхронизации между устройствами
-- [ ] История ответов (хранилище уже устроено как список записей, ограничение стоит на одной)
-- [ ] Хранение секретов в системном хранилище ключей вместо локального файла
-- [ ] (?) Мобильные клиенты — потребуют абстракции хранилища поверх песочниц iOS и Android
+- [ ] Settings:
+    - [x] Turning TLS verification on and off
+    - [ ] Adding your own trusted certificates
+    - [x] Connect, read and total timeouts
+    - [x] Interface language
+    - [ ] Proxy for requests
+- [ ] Cookie management
+- [ ] Markdown documentation for requests and collections inside the app
+- [ ] Request scripts
+- [ ] Writing tests
+- [ ] Self-hosted sync server between devices
+- [ ] Response history (the store is already shaped as a list of records; the cap is set to one)
+- [ ] Keeping secrets in the system keychain instead of a local file
+- [ ] (?) Mobile clients — would need a storage abstraction over the iOS and Android sandboxes
 
-## Лицензия
+## License
 
 [Apache License 2.0](LICENSE).
 
-Проект можно свободно использовать, изменять и включать в закрытые продукты,
-в том числе коммерческие. Лицензия включает явную патентную лицензию от
-участников и защиту от патентных исков. Название «LokkiAPI» и логотип под
-лицензию не подпадают — см. `NOTICE` и раздел 6 лицензии.
+The project is free to use, modify and include in closed products, commercial
+ones included. The license carries an explicit patent grant from contributors
+and protection against patent litigation. The name "LokkiAPI" and the logo are
+not covered by it — see `NOTICE` and section 6 of the license.

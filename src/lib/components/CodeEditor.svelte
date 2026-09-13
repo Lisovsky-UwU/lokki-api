@@ -29,6 +29,9 @@
 	import { tags } from "@lezer/highlight";
 	import { get } from "svelte/store";
 	import { availableVariables } from "../stores/environments";
+	// Not `$t`: completions are built inside CodeMirror's own callback, which
+	// is outside Svelte's reactive graph.
+	import { translate } from "../i18n";
 	import type { EditorLanguage } from "../bindings/types";
 
 	let {
@@ -184,7 +187,7 @@
 			options: get(availableVariables).map((v) => ({
 				label: `{{${v.key}}}`,
 				detail: v.secret ? "secret" : v.value,
-				info: v.scope === "collection" ? "окружение коллекции" : "глобальное окружение",
+				info: translate(v.scope === "collection" ? "variables.completion.collection" : "variables.completion.global"),
 				type: "variable",
 				apply: `{{${v.key}}}`,
 			})),
