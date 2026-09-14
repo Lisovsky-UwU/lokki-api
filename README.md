@@ -63,10 +63,24 @@ LokkiAPI does three things differently from the clients already out there.
 
 ## Installing
 
-Ready-made Windows x64 installers are built into `src-tauri/target/release/bundle`:
+Builds for all three platforms are attached to every release — take them from the [latest one](https://github.com/Lisovsky-UwU/lokki-api/releases/latest). Nothing has to be installed alongside the app: it draws its interface through the WebView the system already ships, and keeps your data in a workspace folder you pick yourself.
 
-- `nsis/LokkiAPI_0.1.0_x64-setup.exe` — the ordinary installer
-- `msi/LokkiAPI_0.1.0_x64_en-US.msi` — for deployment through group policy
+**Windows x64**
+- `…_x64-setup.exe` — the ordinary installer
+- `…_x64_en-US.msi` — for deployment through group policy
+
+**Linux x86_64**
+- `.deb` — Debian, Ubuntu, Mint: `sudo apt install ./<the downloaded file>`
+- `.rpm` — Fedora, openSUSE: `sudo dnf install ./<the downloaded file>`
+- `.AppImage` — any distribution, Arch included: make it executable and run it
+
+**macOS**
+- the `aarch64` `.dmg` — Apple Silicon
+- the `x64` `.dmg` — Intel
+
+The builds are not code-signed yet. Windows SmartScreen hides "Run anyway" behind "More info", and macOS calls the app damaged until the quarantine flag is cleared with `xattr -cr /Applications/LokkiAPI.app`.
+
+Building it yourself instead is two commands — see [Development](#development).
 
 ## What a workspace looks like on disk
 
