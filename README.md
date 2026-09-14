@@ -18,7 +18,7 @@ LokkiAPI does three things differently from the clients already out there.
 
 **Your data is plain files, not a hidden database.** Every request is its own TOML file inside a collection folder. You can read them, put them in git, review them in pull requests, sync them however you already sync files. No export/import dance to share a collection with your team.
 
-**The app is light.** Tauri with the system WebView instead of Electron: a 7.8 MB binary, a 2.7 MB installer, and an order of magnitude less memory than clients that ship their own Chromium.
+**The app is light.** Tauri with the system WebView instead of Electron: less space disk, and an order of magnitude less memory than clients that ship their own Chromium.
 
 **The architecture is built to grow.** Every entity carries a stable ULID and a version, so a future self-hosted sync server plugs in without migrating the format. Request execution sits behind a `ProtocolExecutor` trait, so WebSocket, SSE and GraphQL are added alongside HTTP rather than by rewriting the core.
 
