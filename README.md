@@ -166,6 +166,8 @@ The app icons are regenerated from the source image with one command:
 npx tauri icon lokki_api_logo.png
 ```
 
+Before opening a pull request, read [CONTRIBUTING.md](CONTRIBUTING.md) — it covers branches, commit messages, the checks that have to pass and how a release is cut.
+
 ## Architecture
 
 | Layer | Technology |
