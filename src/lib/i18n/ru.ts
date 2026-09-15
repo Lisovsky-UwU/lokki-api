@@ -7,6 +7,7 @@ export const ru: Record<keyof typeof en, string> = {
 	"common.cancel": "Отмена",
 	"common.confirmTitle": "Подтверждение",
 	"common.yes": "Да",
+	"common.ok": "OK",
 	"common.close": "Закрыть",
 	"common.open": "Открыть",
 	"common.save": "Сохранить",
@@ -90,7 +91,6 @@ export const ru: Record<keyof typeof en, string> = {
 	"auth.password": "Пароль",
 
 	// --- workspace picker --------------------------------------------------
-	"picker.tagline": "Локальный, файловый клиент для тестирования API.",
 	"picker.create": "Создать пространство",
 	"picker.creating": "Создаём…",
 	"picker.openExisting": "Открыть существующее",
@@ -99,6 +99,13 @@ export const ru: Record<keyof typeof en, string> = {
 	"picker.newWorkspace": "Новое пространство",
 	"picker.createFailed": "Не удалось создать пространство",
 	"picker.openFailed": "Не удалось открыть пространство",
+	"picker.recent": "Недавние пространства",
+	"picker.recentActions": "Действия с недавним пространством",
+	"picker.recentRemove": "Убрать из списка",
+	"picker.recentReveal": "Показать в проводнике",
+	"picker.recentRemoveFailed": "Не удалось убрать пространство из списка",
+	"picker.recentRevealFailed": "Не удалось открыть папку",
+	"picker.recentLoadFailed": "Не удалось прочитать список недавних пространств",
 
 	// --- request editor ----------------------------------------------------
 	"request.urlAria": "Адрес запроса",
@@ -288,6 +295,11 @@ export const ru: Record<keyof typeof en, string> = {
 	"settings.paneLayout": "Расположение запроса и ответа",
 	"settings.paneLayoutVertical": "Вертикально",
 	"settings.paneLayoutHorizontal": "Горизонтально",
+	"settings.startup": "При запуске открывать",
+	"settings.startupLastWorkspace": "Последнее пространство",
+	"settings.startupWelcome": "Приветственный экран",
+	"settings.startupLoadFailed": "Не удалось загрузить настройку запуска",
+	"settings.startupSaveFailed": "Не удалось сохранить настройку запуска",
 
 	"settings.verifyTls": "Проверять TLS-сертификаты",
 	"settings.verifyTlsWarning":

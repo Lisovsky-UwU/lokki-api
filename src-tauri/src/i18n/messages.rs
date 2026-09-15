@@ -190,6 +190,13 @@ pub fn workspace_already_exists(path: &str) -> String {
     )
 }
 
+pub fn workspace_folder_not_empty(path: &str) -> String {
+    tr!(
+        "Folder {path} is not empty. Pick an empty one - a workspace fills the folder with its own files.",
+        "Папка {path} не пуста. Выберите пустую - пространство размещает в папке свои файлы.",
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

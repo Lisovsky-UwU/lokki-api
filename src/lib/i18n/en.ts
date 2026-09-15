@@ -8,6 +8,7 @@ export const en = {
 	"common.cancel": "Cancel",
 	"common.confirmTitle": "Confirm",
 	"common.yes": "Yes",
+	"common.ok": "OK",
 	"common.close": "Close",
 	"common.open": "Open",
 	"common.save": "Save",
@@ -90,7 +91,6 @@ export const en = {
 	"auth.password": "Password",
 
 	// --- workspace picker --------------------------------------------------
-	"picker.tagline": "A local, file-based client for testing APIs.",
 	"picker.create": "Create a workspace",
 	"picker.creating": "Creating…",
 	"picker.openExisting": "Open an existing one",
@@ -99,6 +99,13 @@ export const en = {
 	"picker.newWorkspace": "New workspace",
 	"picker.createFailed": "Could not create the workspace",
 	"picker.openFailed": "Could not open the workspace",
+	"picker.recent": "Recent workspaces",
+	"picker.recentActions": "Recent workspace actions",
+	"picker.recentRemove": "Remove from the list",
+	"picker.recentReveal": "Show in file manager",
+	"picker.recentRemoveFailed": "Could not remove the workspace from the list",
+	"picker.recentRevealFailed": "Could not open the folder",
+	"picker.recentLoadFailed": "Could not read the list of recent workspaces",
 
 	// --- request editor ----------------------------------------------------
 	"request.urlAria": "Request URL",
@@ -287,6 +294,11 @@ export const en = {
 	"settings.paneLayout": "Request and response layout",
 	"settings.paneLayoutVertical": "Vertical",
 	"settings.paneLayoutHorizontal": "Horizontal",
+	"settings.startup": "On start-up open",
+	"settings.startupLastWorkspace": "Last workspace",
+	"settings.startupWelcome": "Welcome screen",
+	"settings.startupLoadFailed": "Could not load the start-up setting",
+	"settings.startupSaveFailed": "Could not save the start-up setting",
 
 	"settings.verifyTls": "Verify TLS certificates",
 	"settings.verifyTlsWarning":

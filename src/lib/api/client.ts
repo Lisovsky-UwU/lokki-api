@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { translate } from "../i18n";
 import type {
 	AppInfo,
@@ -12,9 +13,11 @@ import type {
 	HttpMethod,
 	Id,
 	Language,
+	RecentWorkspace,
 	RequestAtPath,
 	RequestFile,
 	RequestSettings,
+	StartupBehavior,
 	WorkspaceFile,
 } from "../bindings/types";
 
@@ -28,6 +31,10 @@ export const api = {
 	getRequestSettings: () => invoke<RequestSettings>("get_request_settings"),
 	saveRequestSettings: (settings: RequestSettings) =>
 		invoke<RequestSettings>("save_request_settings", { settings }),
+
+	getStartupBehavior: () => invoke<StartupBehavior>("get_startup_behavior"),
+	setStartupBehavior: (behavior: StartupBehavior) =>
+		invoke<void>("set_startup_behavior", { behavior }),
 
 	/// What the user picked, or null for "follow the OS" - only the webview
 	/// can resolve that, so the core hands the preference over unresolved.
@@ -44,11 +51,25 @@ export const api = {
 		>,
 
 	openWorkspace: (path: string) => invoke<OpenWorkspaceResult>("open_workspace", { path }),
+	/// Rejects a folder that cannot become a workspace. Asked as soon as one
+	/// is picked, so the name prompt never comes up for a doomed folder.
+	checkNewWorkspaceFolder: (path: string) => invoke<void>("check_new_workspace_folder", { path }),
 	createWorkspace: (path: string, name: string) =>
 		invoke<OpenWorkspaceResult>("create_workspace", { path, name }),
 	renameWorkspace: (path: string, newName: string) =>
 		invoke<WorkspaceFile>("rename_workspace", { path, newName }),
-	getLastWorkspace: () => invoke<string | null>("get_last_workspace"),
+	/// The workspace to restore on launch, already filtered by the start-up
+	/// setting and by whether the folder is still there - null means the
+	/// welcome screen.
+	getStartupWorkspace: () => invoke<string | null>("get_startup_workspace"),
+	listRecentWorkspaces: () => invoke<RecentWorkspace[]>("list_recent_workspaces"),
+	/// Returns the list as it now stands, so the caller never has to guess at
+	/// what the removal left behind.
+	forgetRecentWorkspace: (path: string) =>
+		invoke<RecentWorkspace[]>("forget_recent_workspace", { path }),
+	/// Shows the folder in Explorer/Finder/the desktop file manager. Reading
+	/// only - the "frontend never writes files" rule is untouched.
+	revealWorkspace: (path: string) => revealItemInDir(path),
 	listCollections: (workspacePath: string) =>
 		invoke<CollectionSummary[]>("list_collections", { workspacePath }),
 	createCollection: (workspacePath: string, name: string) =>

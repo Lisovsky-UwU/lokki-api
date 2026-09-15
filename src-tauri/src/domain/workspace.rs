@@ -23,3 +23,13 @@ impl WorkspaceFile {
         }
     }
 }
+
+/// An entry in the "recent workspaces" list on the welcome screen. The name
+/// is stored alongside the path rather than read from the folder each time:
+/// the list has to render before - and even when - the workspaces on it can
+/// be opened, and a folder on an unplugged drive would otherwise be nameless.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RecentWorkspace {
+    pub path: String,
+    pub name: String,
+}

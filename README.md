@@ -59,7 +59,8 @@ LokkiAPI does three things differently from the clients already out there.
 - Request and response either one above the other or side by side, chosen under Settings → Interface
 - Resizable panes: collection tree width, and the split between request and response
 - The tree remembers which collections and folders were open
-- The last workspace reopens on launch
+- The last workspace reopens on launch, or the welcome screen does — chosen under Settings → Interface
+- The welcome screen lists the last 10 workspaces by name and path; each can be removed from the list or shown in the file manager
 
 ## Installing
 
@@ -84,7 +85,10 @@ Building it yourself instead is two commands — see [Development](#development)
 
 ## What a workspace looks like on disk
 
-A workspace is an ordinary folder you pick on first launch.
+A workspace is an ordinary folder you pick on first launch. A new one has to
+go into an empty folder — a workspace takes the whole folder over, so the
+picker refuses anything that already holds files. Opening an existing
+workspace has no such restriction.
 
 ```
 my-workspace/
@@ -208,6 +212,7 @@ The frontend is split into `stores` (reactive state), `api/client.ts` (a typed w
     - [ ] gRPC
     - [ ] Raw TCP
 - [ ] Settings:
+    - [x] What opens on start-up — the last workspace or the welcome screen
     - [x] Turning TLS verification on and off
     - [ ] Adding your own trusted certificates
     - [x] Connect, read and total timeouts

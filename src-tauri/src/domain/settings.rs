@@ -45,3 +45,17 @@ impl Default for RequestSettings {
 pub fn optional_duration(millis: u64) -> Option<Duration> {
     (millis > 0).then(|| Duration::from_millis(millis))
 }
+
+/// What the app shows when it starts. Per-device, next to `RequestSettings`
+/// and for the same reason: which folder a given machine drops you into is
+/// not something a workspace should carry to a teammate.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StartupBehavior {
+    /// Reopen whatever was open last - the behaviour the app has always had,
+    /// and still the default: most launches continue yesterday's work.
+    #[default]
+    LastWorkspace,
+    /// Always start on the welcome screen, recent workspaces included.
+    Welcome,
+}

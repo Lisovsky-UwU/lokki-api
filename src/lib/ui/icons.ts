@@ -25,7 +25,15 @@ export const ICONS = {
 	/// Folding the tree.
 	"expand-all": ["M7 6l5 5 5-5", "M7 13l5 5 5-5"],
 	"collapse-all": ["M17 11l-5-5-5 5", "M17 18l-5-5-5 5"],
+	/// Leaving the app for the desktop file manager.
+	"folder-open": [
+		"M4 20h13.2a2 2 0 0 0 1.9-1.4l1.8-5.6H8.5a2 2 0 0 0-1.9 1.4L4 20z",
+		"M4 20V6a2 2 0 0 1 2-2h3.6a2 2 0 0 1 1.7.9l.8 1.2a2 2 0 0 0 1.7.9H18a2 2 0 0 1 2 2v2",
+	],
 	/// Destructive.
+	/// Taking an entry out of a list, as opposed to `delete`, which destroys
+	/// what it points at - the welcome screen leans on that difference.
+	remove: ["M18 6L6 18", "M6 6l12 12"],
 	delete: ["M3 6h18", "M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2", "M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6", "M10 11v6", "M14 11v6"],
 	/// Chrome: the "+" in the sidebar header and the "⋯" that opens a menu.
 	/// The dots are zero-length segments with round caps, so they follow the
