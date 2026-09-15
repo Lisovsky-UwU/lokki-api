@@ -83,6 +83,7 @@
 	.header {
 		grid-column: 1 / -1;
 		min-width: 0;
+		padding-bottom: 0.6em;
 	}
 	.pane {
 		min-height: 0;

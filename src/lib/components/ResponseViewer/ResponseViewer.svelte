@@ -202,8 +202,8 @@
 			<span class="meta time" title={$t("response.sentAt")}
 				>{new Date(latest.at).toLocaleTimeString($locale)}</span
 			>
-			<button class="save-body" onclick={saveBody} disabled={saving} title={$t("response.saveBody")}>
-				{saving ? $t("common.saving") : $t("common.save")}
+			<button class="save-body" onclick={saveBody} disabled={saving} title={$t("response.saveBodyHint")}>
+				{saving ? $t("common.saving") : $t("response.saveBodyButton")}
 			</button>
 		</div>
 
