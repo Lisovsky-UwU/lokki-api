@@ -32,6 +32,10 @@
 
 	let trees = $state<Record<string, CollectionTreeNode | null>>({});
 	let dropTarget = $state<string | null>(null);
+	/// Where a dragged collection would land. One at a time, so it is held
+	/// here rather than per row: unlike the tree, every collection is
+	/// rendered by this one component.
+	let collectionDrop = $state<{ path: string; zone: "before" | "after" } | null>(null);
 
 	function collectionExpanded(path: string): boolean {
 		return isExpanded($expandedPaths, path, COLLECTION_DEFAULT_EXPANDED);
@@ -41,7 +45,10 @@
 	// own drop/dragleave never fires and its highlight would stay on. Clear
 	// it whenever the drag itself is over, wherever it ended.
 	$effect(() => {
-		if (!$dragging) dropTarget = null;
+		if (!$dragging) {
+			dropTarget = null;
+			collectionDrop = null;
+		}
 	});
 
 	// Plain Map (not reactive): only used to tell stale responses apart.
@@ -86,9 +93,7 @@
 			rebaseActiveRequest(collection.path, renamed.path);
 			rekeyResponses(collection.path, renamed.path);
 			if ($activeCollection?.path === collection.path) activeCollection.set(renamed);
-			collections.update((list) =>
-				list.map((c) => (c.path === collection.path ? renamed : c)).sort((a, b) => a.name.localeCompare(b.name)),
-			);
+			await reloadCollections();
 			rebaseExpanded(collection.path, renamed.path);
 			trees = rekeyByPath(trees, collection.path, renamed.path);
 			requestTreeRefresh();
@@ -140,13 +145,70 @@
 		});
 	});
 
+	/// Re-reads the list instead of re-sorting it here: the order of
+	/// collections lives in their files now, so after a create, a rename or a
+	/// drag the core is the one that knows where everything goes.
+	async function reloadCollections() {
+		const path = $workspacePath;
+		if (!path) return;
+		try {
+			collections.set(await api.listCollections(path));
+		} catch (e) {
+			reportError($t("error.loadCollection"), e);
+		}
+	}
+
 	async function createCollection() {
 		const path = $workspacePath;
 		const name = await promptForText($t("prompt.newCollection"), $t("prompt.collectionName"), $t("prompt.newCollection"));
 		if (!path || !name) return;
 		const summary = await api.createCollection(path, name);
-		collections.update((list) => [...list, summary].sort((a, b) => a.name.localeCompare(b.name)));
+		await reloadCollections();
 		setExpanded(summary.path, true);
+	}
+
+	function onCollectionDragStart(e: DragEvent, collection: CollectionSummary) {
+		const path = $workspacePath;
+		if (!path) return;
+		dragging.set({ path: collection.path, parentPath: path, kind: "Collection" });
+		e.dataTransfer?.setData("text/plain", collection.path);
+		if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+	}
+
+	/// Collections sit side by side with nothing to drop into, so the whole
+	/// row is an insertion point: above it or below it.
+	function onCollectionDragOver(e: DragEvent, collection: CollectionSummary) {
+		const payload = $dragging;
+		// A request or a folder dragged up here is heading into a collection,
+		// which the tree area below handles - the header is not a target for
+		// it.
+		if (payload?.kind !== "Collection" || payload.path === collection.path) return;
+		e.preventDefault();
+		if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+		const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		const zone = (e.clientY - rect.top) / rect.height < 0.5 ? "before" : "after";
+		collectionDrop = { path: collection.path, zone };
+	}
+
+	async function onCollectionDrop(collection: CollectionSummary) {
+		const payload = $dragging;
+		const drop = collectionDrop;
+		collectionDrop = null;
+		dragging.set(null);
+		if (payload?.kind !== "Collection" || !drop || payload.path === collection.path) return;
+
+		const order = $collections.map((c) => c.path).filter((p) => p !== payload.path);
+		const anchor = order.indexOf(collection.path);
+		order.splice(drop.zone === "before" ? anchor : anchor + 1, 0, payload.path);
+		try {
+			await api.reorderCollections(order);
+		} catch (e) {
+			reportError($t("error.move"), e);
+		} finally {
+			// Always resync: after a partially applied reorder the sidebar
+			// would otherwise show an order nothing on disk agrees with.
+			await reloadCollections();
+		}
 	}
 
 	async function addRequest(collection: CollectionSummary) {
@@ -259,7 +321,9 @@
 		const payload = $dragging;
 		dropTarget = null;
 		dragging.set(null);
-		if (!payload) return;
+		// A collection cannot be filed inside another one; it only moves
+		// among its peers, which the headers handle.
+		if (!payload || payload.kind === "Collection") return;
 		try {
 			let sourcePath = payload.path;
 			if (payload.parentPath !== collection.path) {
@@ -351,12 +415,30 @@
 	</div>
 
 	{#each $collections as collection (collection.path)}
-		<div class="collection">
+		<div
+			class="collection"
+			class:drop-before={collectionDrop?.path === collection.path && collectionDrop.zone === "before"}
+			class:drop-after={collectionDrop?.path === collection.path && collectionDrop.zone === "after"}
+			class:dragged={$dragging?.kind === "Collection" && $dragging.path === collection.path}
+		>
 			<div
 				class="collection-header"
 				class:active={$activeCollection?.path === collection.path}
 				role="presentation"
 				oncontextmenu={(e) => openContextMenu(e, collectionMenu(collection))}
+				draggable="true"
+				ondragstart={(e) => onCollectionDragStart(e, collection)}
+				ondragend={() => {
+					dragging.set(null);
+					collectionDrop = null;
+				}}
+				ondragover={(e) => onCollectionDragOver(e, collection)}
+				ondragleave={() => (collectionDrop = null)}
+				ondrop={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					onCollectionDrop(collection);
+				}}
 			>
 				<button class="collection-label" onclick={() => toggleCollection(collection)}>
 					<span class="chevron" class:collapsed={!collectionExpanded(collection.path)}>▾</span>
@@ -374,7 +456,10 @@
 					class:drop-root={dropTarget === collection.path}
 					role="presentation"
 					ondragover={(e) => {
-						if (!$dragging) return;
+						// Same rule as the header, from the other side: a
+						// collection dropped in here would be moved inside its
+						// neighbour.
+						if (!$dragging || $dragging.kind === "Collection") return;
 						e.preventDefault();
 						dropTarget = collection.path;
 					}}
@@ -478,6 +563,18 @@
 		border-radius: 6px;
 		padding: 0.15em;
 		margin-bottom: 0.4em;
+	}
+	/* The insertion line is drawn inside the card rather than as a thicker
+	   border: a border that grows from 1px to 2px shifts everything below it
+	   by a pixel while the drag is in flight. */
+	.collection.drop-before {
+		box-shadow: inset 0 2px 0 #396cd8;
+	}
+	.collection.drop-after {
+		box-shadow: inset 0 -2px 0 #396cd8;
+	}
+	.collection.dragged {
+		opacity: 0.4;
 	}
 	.collection-header {
 		display: flex;

@@ -11,13 +11,20 @@ pub struct CollectionFile {
     #[serde(flatten)]
     pub sync: SyncMeta,
     pub name: String,
+    /// Position among the workspace's collections, 1-based, rewritten by
+    /// `reorder_collections`. Zero means "never arranged by hand": every
+    /// collection written before they could be dragged carries that, and
+    /// those fall back to name order the way they always did.
+    #[serde(default)]
+    pub seq: u32,
 }
 
 impl CollectionFile {
-    pub fn new(name: impl Into<String>) -> Self {
+    pub fn new(name: impl Into<String>, seq: u32) -> Self {
         CollectionFile {
             sync: SyncMeta::new(),
             name: name.into(),
+            seq,
         }
     }
 }

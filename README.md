@@ -36,7 +36,7 @@ LokkiAPI does three things differently from the clients already out there.
 
 **Collections**
 - Nested folders, any depth
-- Drag and drop to reorder and to move between folders and collections
+- Drag and drop to reorder and to move between folders and collections; the collections themselves are reordered the same way
 - Rename and delete from the ⋯ menu, and expand or collapse a whole collection from it
 - The order of folders and requests is set by hand and stored in the files
 

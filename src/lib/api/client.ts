@@ -80,6 +80,10 @@ export const api = {
 	renameCollection: (collectionPath: string, newName: string) =>
 		invoke<CollectionSummary>("rename_collection", { collectionPath, newName }),
 	deleteCollection: (collectionPath: string) => invoke<void>("delete_collection", { collectionPath }),
+	/// The order the sidebar was dragged into. Stored on the collections
+	/// themselves, so it travels with the workspace like every other one.
+	reorderCollections: (orderedPaths: string[]) =>
+		invoke<void>("reorder_collections", { orderedPaths }),
 
 	pickSpecFile: (): Promise<string | null> =>
 		openDialog({

@@ -33,7 +33,9 @@
 				source === "file"
 					? await api.importOpenApiFile(workspacePath, filePath!)
 					: await api.importOpenApiUrl(workspacePath, url.trim());
-			collections.update((list) => [...list, imported.collection].sort((a, b) => a.name.localeCompare(b.name)));
+			// Re-read rather than appended: the order of collections lives in
+			// their files, and the name may have gained a suffix on the way in.
+			collections.set(await api.listCollections(workspacePath));
 			setExpanded(imported.collection.path, true);
 			requestTreeRefresh();
 			notifyResult($t("import.done", { name: imported.collection.name }));
