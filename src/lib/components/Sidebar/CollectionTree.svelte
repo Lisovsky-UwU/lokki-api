@@ -274,9 +274,6 @@
 					openEnvironmentsDialog({ rootPath: $workspacePath, scope: "global", title: $workspace?.name ?? "" }),
 			},
 		],
-		// Leaving this workspace is not an edit of it - it belongs on the
-		// other side of a rule, the way a delete does elsewhere.
-		[{ label: $t("menu.switchWorkspace"), icon: "switch", action: closeWorkspace }],
 	]);
 
 	function closeWorkspace() {
@@ -297,6 +294,9 @@
 		<div class="empty">{$t("sidebar.noWorkspace")}</div>
 	{:else}
 		<div class="workspace-name-outer">
+			<button class="icon-btn" title={$t("menu.switchWorkspace")} aria-label={$t("menu.switchWorkspace")} onclick={closeWorkspace}>
+				<Icon name="switch" size="1.1em" />
+			</button>
 			<NodeMenu menu={workspaceMenu} label={$t("sidebar.workspaceMenu")} align="left">
 				{#snippet trigger()}
 					<span class="workspace-name">{$workspace?.name}</span>
@@ -473,6 +473,7 @@
 		display: flex;
 		align-items: center;
 		padding: 0.5em 0.2em;
+		gap: 0.2em;
 	}
 	/* The menu component owns the button; these rules dress its trigger. */
 	.workspace-name-outer :global(.node-menu) {

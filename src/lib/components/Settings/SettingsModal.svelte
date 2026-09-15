@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { base } from "$app/paths";
 	import { api } from "../../api/client";
-	import type { AppInfo, RequestSettings } from "../../bindings/types";
+	import type { AppInfo, RequestSettings, StartupBehavior } from "../../bindings/types";
 	import { copyText } from "../../ui/clipboard";
 	import { LOCALE_NAMES, t, type Locale } from "../../i18n";
 	import { languagePreference, setLanguagePreference, systemLocale } from "../../i18n/preference";
@@ -52,6 +52,26 @@
 		}
 	}
 
+	let startupOptions = $derived<{ value: StartupBehavior; label: string }[]>([
+		{ value: "last_workspace", label: $t("settings.startupLastWorkspace") },
+		{ value: "welcome", label: $t("settings.startupWelcome") },
+	]);
+
+	/// Null only until the first read comes back; the select is held out of
+	/// the form until then rather than showing a default that may be wrong.
+	let startup = $state<StartupBehavior | null>(null);
+
+	async function selectStartup(value: StartupBehavior) {
+		const previous = startup;
+		startup = value;
+		try {
+			await api.setStartupBehavior(value);
+		} catch (e) {
+			startup = previous;
+			reportError($t("settings.startupSaveFailed"), e);
+		}
+	}
+
 	let info = $state<AppInfo | null>(null);
 	let copied = $state(false);
 	let settings = $state<RequestSettings | null>(null);
@@ -66,6 +86,11 @@
 			settings = await api.getRequestSettings();
 		} catch (e) {
 			reportError($t("settings.loadRequestSettingsFailed"), e);
+		}
+		try {
+			startup = await api.getStartupBehavior();
+		} catch (e) {
+			reportError($t("settings.startupLoadFailed"), e);
 		}
 	}
 	load();
@@ -167,6 +192,20 @@
 								{/each}
 							</select>
 						</label>
+
+						{#if startup}
+							<label class="row">
+								<span>{$t("settings.startup")}</span>
+								<select
+									value={startup}
+									onchange={(e) => selectStartup((e.target as HTMLSelectElement).value as StartupBehavior)}
+								>
+									{#each startupOptions as option (option.value)}
+										<option value={option.value}>{option.label}</option>
+									{/each}
+								</select>
+							</label>
+						{/if}
 
 						<label class="row">
 							<span>{$t("settings.paneLayout")}</span>

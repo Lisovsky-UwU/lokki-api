@@ -16,6 +16,7 @@
 	import SettingsModal from "../lib/components/Settings/SettingsModal.svelte";
 	import EnvironmentsModal from "../lib/components/EnvironmentSwitcher/EnvironmentsModal.svelte";
 	import ConfirmDialog from "../lib/components/common/ConfirmDialog.svelte";
+	import AlertDialog from "../lib/components/common/AlertDialog.svelte";
 	import PromptDialog from "../lib/components/common/PromptDialog.svelte";
 	import Splitter from "../lib/components/common/Splitter.svelte";
 	import WorkspacePicker from "../lib/components/WorkspacePicker/WorkspacePicker.svelte";
@@ -52,8 +53,10 @@
 		exitIncognito();
 	}
 
-	// Reopen whatever workspace was last used instead of making the user
-	// pick the same folder on every launch.
+	// Whether the last workspace is reopened or the welcome screen shows is
+	// the core's call (`get_startup_workspace`): it owns the setting and the
+	// "is that folder still there" check, so neither can be applied here and
+	// forgotten elsewhere.
 	onMount(async () => {
 		installGlobalErrorReporting();
 		// The attribute is already on <html> (app.html sets it before the
@@ -64,7 +67,7 @@
 		// restoring the workspace below is the first thing that can raise one.
 		await initLocale();
 		try {
-			const last = await api.getLastWorkspace();
+			const last = await api.getStartupWorkspace();
 			if (last) {
 				const result = await api.openWorkspace(last);
 				workspacePath.set(last);
@@ -81,6 +84,7 @@
 
 <PromptDialog />
 <ConfirmDialog />
+<AlertDialog />
 <Toasts />
 <ContextMenu />
 {#if $settingsOpen}

@@ -10,6 +10,9 @@ const LOKKI_DIR: &str = ".lokki";
 const WORKSPACE_FILE: &str = "workspace.toml";
 const GITIGNORE_FILE: &str = ".gitignore";
 const SECRETS_FILE: &str = "secrets.local.toml";
+/// A file manager writes these by itself, just from the folder having been
+/// looked at. Refusing to create a workspace over one would read as a bug.
+const IGNORED_WHEN_EMPTY: [&str; 3] = [".DS_Store", "Thumbs.db", "desktop.ini"];
 
 fn lokki_dir(workspace_path: &Path) -> PathBuf {
     workspace_path.join(LOKKI_DIR)
@@ -39,16 +42,54 @@ pub fn open_workspace(workspace_path: &Path) -> AppResult<(WorkspaceFile, Vec<Co
     Ok((workspace, collections))
 }
 
-/// Initializes `workspace_path` as a workspace named `name`. The folder may
-/// already hold files (a git checkout of someone else's workspace tree, say)
-/// but must not already be one.
-pub fn create_workspace(workspace_path: &Path, name: &str) -> AppResult<WorkspaceFile> {
+/// Whether a workspace may be created in this folder. Split out of
+/// `create_workspace` so the picker can ask the moment a folder is chosen,
+/// rather than making the user name a workspace that was never going to be
+/// created. `create_workspace` still calls it: the two run at different
+/// times, and the folder can gain files in between.
+///
+/// The folder has to be empty because a workspace takes it over whole
+/// (collections become directories in it, `.lokki` sits at its root), and
+/// the folder picker makes an unrelated folder - Documents, a source tree,
+/// the home directory - one mis-click away. "Already a workspace" is checked
+/// first, because "open it instead" is the useful thing to say about that
+/// folder.
+pub fn check_new_workspace_folder(workspace_path: &Path) -> AppResult<()> {
     if is_workspace(workspace_path) {
         return Err(AppError::Message(messages::workspace_already_exists(
             &workspace_path.display().to_string(),
         )));
     }
+    if !is_effectively_empty(workspace_path)? {
+        return Err(AppError::Message(messages::workspace_folder_not_empty(
+            &workspace_path.display().to_string(),
+        )));
+    }
+    Ok(())
+}
+
+/// Initializes `workspace_path` as a workspace named `name`.
+pub fn create_workspace(workspace_path: &Path, name: &str) -> AppResult<WorkspaceFile> {
+    check_new_workspace_folder(workspace_path)?;
     init_workspace(workspace_path, name)
+}
+
+fn is_effectively_empty(dir: &Path) -> AppResult<bool> {
+    let entries = fs::read_dir(dir).map_err(|source| AppError::Io {
+        path: dir.display().to_string(),
+        source,
+    })?;
+    for entry in entries {
+        let entry = entry.map_err(|source| AppError::Io {
+            path: dir.display().to_string(),
+            source,
+        })?;
+        let name = entry.file_name();
+        if !IGNORED_WHEN_EMPTY.iter().any(|ignored| name.eq_ignore_ascii_case(ignored)) {
+            return Ok(false);
+        }
+    }
+    Ok(true)
 }
 
 /// The workspace name is metadata, not the folder name - renaming it leaves
@@ -99,6 +140,50 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         create_workspace(dir.path(), "First").unwrap();
         assert!(create_workspace(dir.path(), "Second").is_err());
+        // The first workspace is left intact rather than half-overwritten.
+        assert_eq!(open_workspace(dir.path()).unwrap().0.name, "First");
+    }
+
+    #[test]
+    fn create_workspace_refuses_a_folder_that_already_holds_files() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join("notes.txt"), "unrelated").unwrap();
+        assert!(create_workspace(dir.path(), "Demo").is_err());
+        assert!(!is_workspace(dir.path()));
+    }
+
+    #[test]
+    fn create_workspace_refuses_a_folder_holding_only_a_subdirectory() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::create_dir(dir.path().join("src")).unwrap();
+        assert!(create_workspace(dir.path(), "Demo").is_err());
+    }
+
+    /// The picker asks before prompting for a name, so the two have to agree
+    /// on every folder - a check that passed and a create that then failed
+    /// would put the refusal back after the name prompt.
+    #[test]
+    fn the_pre_check_and_create_agree() {
+        let empty = tempfile::tempdir().unwrap();
+        assert!(check_new_workspace_folder(empty.path()).is_ok());
+        assert!(create_workspace(empty.path(), "Demo").is_ok());
+        // Now occupied by the workspace just made.
+        assert!(check_new_workspace_folder(empty.path()).is_err());
+
+        let occupied = tempfile::tempdir().unwrap();
+        fs::write(occupied.path().join("notes.txt"), "unrelated").unwrap();
+        assert!(check_new_workspace_folder(occupied.path()).is_err());
+        assert!(create_workspace(occupied.path(), "Demo").is_err());
+    }
+
+    /// Opening the folder in Explorer or Finder before picking it must not
+    /// be enough to make it look occupied.
+    #[test]
+    fn os_metadata_files_do_not_count_as_content() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join(".DS_Store"), "").unwrap();
+        fs::write(dir.path().join("desktop.ini"), "").unwrap();
+        assert!(create_workspace(dir.path(), "Demo").is_ok());
     }
 
     #[test]

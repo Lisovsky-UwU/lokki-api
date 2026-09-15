@@ -66,6 +66,14 @@ export interface WorkspaceFile extends SyncMeta {
 	schema_version: number;
 }
 
+/// An entry in the welcome screen's recent list. The name is stored with the
+/// path rather than read from the folder, so an entry still renders when the
+/// folder behind it cannot be reached.
+export interface RecentWorkspace {
+	path: string;
+	name: string;
+}
+
 export interface CollectionSummary {
 	name: string;
 	path: string;
@@ -99,6 +107,9 @@ export interface RequestSettings {
 /// A UI language the app ships. Mirrors domain::language::Language, which
 /// serializes to these exact strings in app_state.json.
 export type Language = "en" | "ru";
+
+/// What the app opens on launch. Mirrors domain::settings::StartupBehavior.
+export type StartupBehavior = "last_workspace" | "welcome";
 
 /// Build- and run-time facts about the app itself, shown in Settings.
 /// Any field can come back empty when it couldn't be determined (no git

@@ -1,4 +1,4 @@
-use crate::domain::{Language, RequestSettings};
+use crate::domain::{Language, RequestSettings, StartupBehavior};
 use crate::error::{AppError, AppResult};
 use crate::i18n;
 use crate::store::fs_app_state;
@@ -25,6 +25,20 @@ pub fn save_request_settings(app: AppHandle, settings: RequestSettings) -> AppRe
     state.request_settings = settings;
     fs_app_state::save(&dir, &state)?;
     Ok(state.request_settings)
+}
+
+#[tauri::command]
+pub fn get_startup_behavior(app: AppHandle) -> AppResult<StartupBehavior> {
+    Ok(fs_app_state::load(&app_local_data_dir(&app)?).startup)
+}
+
+/// Read back on the next launch only - `get_startup_workspace` is what asks.
+#[tauri::command]
+pub fn set_startup_behavior(app: AppHandle, behavior: StartupBehavior) -> AppResult<()> {
+    let dir = app_local_data_dir(&app)?;
+    let mut state = fs_app_state::load(&dir);
+    state.startup = behavior;
+    fs_app_state::save(&dir, &state)
 }
 
 /// What the user picked in settings, or `None` for "follow the OS". Only the

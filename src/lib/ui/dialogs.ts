@@ -22,6 +22,24 @@ export function promptForText(title: string, label: string, initial = ""): Promi
 	});
 }
 
+export interface AlertRequest {
+	title: string;
+	message: string;
+	resolve: () => void;
+}
+
+export const alertRequest = writable<AlertRequest | null>(null);
+
+/// Reports a failure the user has to acknowledge before the flow they
+/// started carries on. Unlike `reportError`, which toasts off to one side
+/// while they do something else, this one blocks - use it where the failure
+/// *is* the answer to what they just asked for.
+export function alertMessage(message: string, title?: string): Promise<void> {
+	return new Promise((resolve) => {
+		alertRequest.set({ title: title ?? translate("common.error"), message, resolve });
+	});
+}
+
 export interface ConfirmRequest {
 	title: string;
 	message: string;
