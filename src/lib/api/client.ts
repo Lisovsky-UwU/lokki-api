@@ -12,6 +12,7 @@ import type {
 	ExecutionOutcome,
 	HttpMethod,
 	Id,
+	ImportResult,
 	Language,
 	RecentWorkspace,
 	RequestAtPath,
@@ -79,6 +80,23 @@ export const api = {
 	renameCollection: (collectionPath: string, newName: string) =>
 		invoke<CollectionSummary>("rename_collection", { collectionPath, newName }),
 	deleteCollection: (collectionPath: string) => invoke<void>("delete_collection", { collectionPath }),
+
+	pickSpecFile: (): Promise<string | null> =>
+		openDialog({
+			multiple: false,
+			title: translate("dialog.pickSpecFile"),
+			filters: [{ name: translate("dialog.specFileFilter"), extensions: ["json", "yaml", "yml"] }],
+		}) as Promise<string | null>,
+	/// Both import commands land in a new collection of their own and
+	/// report what they built - counts for the summary, warnings for what
+	/// the specification asked for and the collection could not reproduce.
+	importOpenApiFile: (workspacePath: string, filePath: string) =>
+		invoke<ImportResult>("import_openapi_file", { workspacePath, filePath }),
+	/// The specification is fetched by the core, not the webview: it goes
+	/// out through the same client as a send, so the TLS setting and the
+	/// timeouts are the ones the user already configured.
+	importOpenApiUrl: (workspacePath: string, url: string) =>
+		invoke<ImportResult>("import_openapi_url", { workspacePath, url }),
 
 	loadRequest: (requestPath: string) => invoke<RequestFile>("load_request", { requestPath }),
 	saveRequest: (requestPath: string, request: RequestFile) =>

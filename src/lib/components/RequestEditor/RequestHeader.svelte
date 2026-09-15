@@ -1,27 +1,24 @@
 <script lang="ts">
-	import { activeRequest } from "../../stores/activeRequest";
+	// What the request is and how to fire it: the breadcrumb, the method, the
+	// URL and the two buttons. Kept apart from the tabs below because the
+	// workbench lays it across the full width - in the side-by-side layout
+	// the editor pane is only half the window, which is not much of a URL
+	// field.
+	import { activeRequest, mutateHttp } from "../../stores/activeRequest";
 	import { activeCollection, requestTreeRefresh } from "../../stores/collectionTree";
 	import { incognito } from "../../stores/incognito";
 	import { workspacePath } from "../../stores/workspace";
 	import { activeResponses, markSending, recordResponse } from "../../stores/response";
-	import { availableVariables } from "../../stores/environments";
 	import { api } from "../../api/client";
 	import { t } from "../../i18n";
 	import { notifyResult, type NoticeKind } from "../../ui/notices";
-	import { copyText } from "../../ui/clipboard";
 	import { newHttpRequestSpec, newId } from "../../bindings/types";
-	import type { HttpMethod, HttpRequestSpec } from "../../bindings/types";
+	import type { HttpMethod } from "../../bindings/types";
 	import VariableInput from "../common/VariableInput.svelte";
 	import MethodSelect from "./MethodSelect.svelte";
-	import KeyValueTable from "./KeyValueTable.svelte";
-	import AuthEditor from "./AuthEditor.svelte";
-	import BodyEditor from "./BodyEditor.svelte";
 	import SaveIncognitoModal from "./SaveIncognitoModal.svelte";
 
-	type Tab = "params" | "headers" | "body" | "auth";
-	let tab = $state<Tab>("params");
 	let saving = $state(false);
-	let copied = $state(false);
 	// An incognito request has nowhere to be saved to yet, so saving means
 	// choosing a destination first.
 	let saveIncognito = $state(false);
@@ -32,15 +29,6 @@
 	let canSend = $derived($incognito || $activeCollection != null);
 
 	let http = $derived($activeRequest?.request.http ?? newHttpRequestSpec());
-
-	function mutate(patch: Partial<HttpRequestSpec>) {
-		if (!$activeRequest) return;
-		activeRequest.set({
-			...$activeRequest,
-			request: { ...$activeRequest.request, http: { ...http, ...patch } },
-			dirty: true,
-		});
-	}
 
 	async function save() {
 		if (!$activeRequest) return;
@@ -126,30 +114,6 @@
 			.filter(Boolean);
 		return [collection.name, ...folders, request.request.meta.name];
 	});
-
-	/// The URL as it will actually be sent: variables substituted and enabled
-	/// query parameters appended, mirroring what the core does at send time.
-	let urlPreview = $derived.by(() => {
-		const values = new Map($availableVariables.map((v) => [v.key, v.secret ? "••••" : v.value]));
-		const substitute = (text: string) =>
-			text.replace(/\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}/g, (whole, key) => values.get(key) ?? whole);
-
-		let url = substitute(http.url);
-		const pairs = http.query
-			.filter((q) => q.enabled && q.key.trim() !== "")
-			.map((q) => `${encodeURIComponent(substitute(q.key))}=${encodeURIComponent(substitute(q.value))}`);
-		if (pairs.length > 0) url += (url.includes("?") ? "&" : "?") + pairs.join("&");
-		return url;
-	});
-
-	async function copyUrl() {
-		await copyText(urlPreview);
-		copied = true;
-		setTimeout(() => (copied = false), 1500);
-	}
-
-	let paramCount = $derived(http.query.filter((q) => q.key).length);
-	let headerCount = $derived(http.headers.filter((h) => h.key).length);
 </script>
 
 <svelte:window onkeydown={onShortcut} />
@@ -159,7 +123,7 @@
 {/if}
 
 {#if $activeRequest}
-	<div class="editor">
+	<div class="request-header">
 		<div class="request-title">
 			<span class="path">
 				{#each breadcrumb as part, i (i)}
@@ -173,13 +137,13 @@
 			{/if}
 		</div>
 		<div class="url-bar">
-			<MethodSelect value={http.method} onChange={(method: HttpMethod) => mutate({ method })} />
+			<MethodSelect value={http.method} onChange={(method: HttpMethod) => mutateHttp({ method })} />
 			<VariableInput
 				value={http.url}
 				mono
 				ariaLabel={$t("request.urlAria")}
 				placeholder={$t("request.urlPlaceholder")}
-				onChange={(url) => mutate({ url })}
+				onChange={(url) => mutateHttp({ url })}
 			/>
 			<button class="send" title="Ctrl+Enter" onclick={send} disabled={$activeResponses.loading || !canSend}>
 				{$activeResponses.loading ? $t("request.sending") : $t("request.send")}
@@ -193,57 +157,19 @@
 				{#if saving}{$t("common.saving")}{:else if $incognito}{$t("request.saveAs")}{:else}{$t("request.save")}{/if}
 			</button>
 		</div>
-
-		<div class="tabs">
-			<button class:active={tab === "params"} onclick={() => (tab = "params")}
-				>{$t("request.tab.params")}{#if paramCount}&nbsp;({paramCount}){/if}</button
-			>
-			<button class:active={tab === "body"} onclick={() => (tab = "body")}>{$t("request.tab.body")}</button>
-			<button class:active={tab === "headers"} onclick={() => (tab = "headers")}
-				>{$t("request.tab.headers")}{#if headerCount}&nbsp;({headerCount}){/if}</button
-			>
-			<button class:active={tab === "auth"} onclick={() => (tab = "auth")}>{$t("request.tab.auth")}</button>
-		</div>
-
-		<div class="tab-content">
-			{#if tab === "params"}
-				<div class="params-tab">
-					<div class="url-preview">
-						<div class="url-preview-header">
-							<span>{$t("request.finalUrl")}</span>
-							<button onclick={copyUrl}>{copied ? $t("common.copied") : $t("common.copy")}</button>
-						</div>
-						<code>{urlPreview || "-"}</code>
-					</div>
-					<KeyValueTable rows={http.query} onChange={(query) => mutate({ query })} />
-				</div>
-			{:else if tab === "headers"}
-				<KeyValueTable rows={http.headers} onChange={(headers) => mutate({ headers })} />
-			{:else if tab === "body"}
-				<BodyEditor body={http.body} onChange={(body) => mutate({ body })} />
-			{:else if tab === "auth"}
-				<AuthEditor auth={http.auth} onChange={(auth) => mutate({ auth })} />
-			{/if}
-		</div>
-	</div>
-{:else}
-	<div class="empty-state-outer">
-		<div class="empty-state">
-			<p>{$t("request.emptyState")}</p>
-		</div>
 	</div>
 {/if}
 
 <style>
-	.editor {
+	/* The gap below the header is the component's own rather than a grid gap
+	   in the workbench: with no request open this renders nothing at all, and
+	   a grid gap would leave a blank stripe where the header would have
+	   been. */
+	.request-header {
 		display: flex;
 		flex-direction: column;
-		height: 100%;
-		/* Fill the pane instead of collapsing to content width, so the
-		   request settings use the full available width. */
-		flex: 1;
-		min-width: 0;
 		gap: 0.6em;
+		padding-bottom: 0.6em;
 	}
 	.url-bar {
 		display: flex;
@@ -303,73 +229,5 @@
 	.save:disabled {
 		opacity: 0.5;
 		cursor: default;
-	}
-	.tabs {
-		display: flex;
-		gap: 0.2em;
-		border-bottom: 1px solid rgba(127, 127, 127, 0.25);
-	}
-	.tabs button {
-		background: none;
-		border: none;
-		padding: 0.4em 0.8em;
-		cursor: pointer;
-		color: inherit;
-		opacity: 0.6;
-		border-bottom: 2px solid transparent;
-	}
-	.tabs button.active {
-		opacity: 1;
-		border-bottom-color: #396cd8;
-	}
-	.tab-content {
-		flex: 1;
-		overflow: auto;
-	}
-	.params-tab {
-		display: flex;
-		flex-direction: column;
-		gap: 0.8em;
-	}
-	.url-preview {
-		border: 1px solid rgba(127, 127, 127, 0.35);
-		border-radius: 8px;
-		padding: 0.6em 0.7em;
-		background: rgba(127, 127, 127, 0.08);
-		display: flex;
-		flex-direction: column;
-		gap: 0.4em;
-	}
-	.url-preview-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.6em;
-		font-size: 0.8em;
-		opacity: 0.7;
-	}
-	.url-preview-header button {
-		padding: 0.2em 0.7em;
-		font-size: 0.95em;
-	}
-	.url-preview code {
-		font-family: ui-monospace, monospace;
-		font-size: 0.85em;
-		word-break: break-all;
-	}
-	.empty-state-outer {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-	.empty-state {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex: 1;
-		min-width: 0;
-		height: 100%;
-		opacity: 0.5;
 	}
 </style>

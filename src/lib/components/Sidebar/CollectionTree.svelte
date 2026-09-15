@@ -26,6 +26,7 @@
 	import { confirmAction, promptForText } from "../../ui/dialogs";
 	import { openEnvironmentsDialog } from "../../ui/environmentsDialog";
 	import { openContextMenu, type Menu } from "../../ui/contextMenu";
+	import { openImportDialog } from "../../ui/importDialog";
 	import { reportError } from "../../ui/notices";
 
 	let trees = $state<Record<string, CollectionTreeNode | null>>({});
@@ -307,9 +308,19 @@
 	{/if}
 	<div class="sidebar-header sidebar-header-collections">
 		<span>{$t("sidebar.collections")}</span>
-		<button class="icon-btn" title={$t("sidebar.newCollection")} aria-label={$t("sidebar.newCollection")} onclick={createCollection}>
-			<Icon name="plus" size="1.1em" />
-		</button>
+		<div class="header-actions">
+			<button
+				class="icon-btn"
+				title={$t("sidebar.importCollection")}
+				aria-label={$t("sidebar.importCollection")}
+				onclick={openImportDialog}
+			>
+				<Icon name="import" size="1.1em" />
+			</button>
+			<button class="icon-btn" title={$t("sidebar.newCollection")} aria-label={$t("sidebar.newCollection")} onclick={createCollection}>
+				<Icon name="plus" size="1.1em" />
+			</button>
+		</div>
 	</div>
 
 	{#each $collections as collection (collection.path)}
@@ -384,6 +395,11 @@
 	}
 	.sidebar-header-collections {
 		margin-bottom: 0.8em;
+	}
+	.header-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.1em;
 	}
 	.icon-btn {
 		display: flex;

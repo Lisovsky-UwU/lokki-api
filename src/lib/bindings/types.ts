@@ -79,6 +79,17 @@ export interface CollectionSummary {
 	path: string;
 }
 
+/// What an import created. `warnings` is the part worth reading: each entry
+/// is something the specification asked for that the collection could not
+/// reproduce.
+export interface ImportResult {
+	collection: CollectionSummary;
+	requests: number;
+	folders: number;
+	environments: number;
+	warnings: string[];
+}
+
 export type CollectionTreeNode =
 	| { kind: "Folder"; name: string; path: string; seq: number; children: CollectionTreeNode[] }
 	| {

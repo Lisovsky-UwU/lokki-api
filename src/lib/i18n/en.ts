@@ -40,6 +40,8 @@ export const en = {
 	"dialog.saveResponse": "Save response",
 	"dialog.saveRequest": "Save request",
 	"dialog.requestFileFilter": "LokkiAPI request",
+	"dialog.pickSpecFile": "OpenAPI specification",
+	"dialog.specFileFilter": "Specification (JSON, YAML)",
 
 	// --- app shell ---------------------------------------------------------
 	"app.settings": "Settings",
@@ -198,6 +200,24 @@ export const en = {
 	"error.move": "Could not move the item",
 	"error.renameWorkspace": "Could not rename the workspace",
 	"error.cloneRequest": "Could not clone the request",
+
+	// --- importing a collection --------------------------------------------
+	"sidebar.importCollection": "Import a collection",
+	"import.title": "Importing a collection",
+	"import.formatHint": "OpenAPI 3.x or Swagger 2.0, in JSON or YAML.",
+	"import.fromFile": "From a file",
+	"import.fromUrl": "By link",
+	"import.chooseFile": "Choose a file…",
+	"import.noFileChosen": "No file chosen",
+	"import.urlPlaceholder": "https://example.com/openapi.yaml",
+	"import.structureHint":
+		"Operations are grouped into folders by tag, and every server in the specification becomes an environment of the new collection.",
+	"import.run": "Import",
+	"import.running": "Importing…",
+	"import.failed": "Could not import the specification",
+	"import.done": "Collection “{name}” imported",
+	"import.summary": "Requests: {requests}, folders: {folders}, environments: {environments}",
+	"import.warnings": "Worth a look",
 
 	// --- environments ------------------------------------------------------
 	"env.label": "Environment:",

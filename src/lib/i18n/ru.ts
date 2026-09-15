@@ -39,6 +39,8 @@ export const ru: Record<keyof typeof en, string> = {
 	"dialog.saveResponse": "Сохранить ответ",
 	"dialog.saveRequest": "Сохранить запрос",
 	"dialog.requestFileFilter": "Запрос LokkiAPI",
+	"dialog.pickSpecFile": "Спецификация OpenAPI",
+	"dialog.specFileFilter": "Спецификация (JSON, YAML)",
 
 	// --- app shell ---------------------------------------------------------
 	"app.settings": "Настройки",
@@ -198,6 +200,24 @@ export const ru: Record<keyof typeof en, string> = {
 	"error.move": "Не удалось переместить",
 	"error.renameWorkspace": "Не удалось переименовать пространство",
 	"error.cloneRequest": "Не удалось клонировать запрос",
+
+	// --- импорт коллекции --------------------------------------------------
+	"sidebar.importCollection": "Импортировать коллекцию",
+	"import.title": "Импорт коллекции",
+	"import.formatHint": "OpenAPI 3.x или Swagger 2.0, в JSON или YAML.",
+	"import.fromFile": "Из файла",
+	"import.fromUrl": "По ссылке",
+	"import.chooseFile": "Выбрать файл…",
+	"import.noFileChosen": "Файл не выбран",
+	"import.urlPlaceholder": "https://example.com/openapi.yaml",
+	"import.structureHint":
+		"Операции раскладываются по папкам согласно тегам, а каждый сервер из спецификации становится окружением новой коллекции.",
+	"import.run": "Импортировать",
+	"import.running": "Импортируем…",
+	"import.failed": "Не удалось импортировать спецификацию",
+	"import.done": "Коллекция «{name}» импортирована",
+	"import.summary": "Запросов: {requests}, папок: {folders}, окружений: {environments}",
+	"import.warnings": "Стоит проверить",
 
 	// --- environments ------------------------------------------------------
 	"env.label": "Окружение:",

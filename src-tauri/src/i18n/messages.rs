@@ -197,6 +197,130 @@ pub fn workspace_folder_not_empty(path: &str) -> String {
     )
 }
 
+// --- importing a collection ----------------------------------------------
+
+pub fn read_spec_failed(path: &str, error: &str) -> String {
+    tr!(
+        "Could not read the specification file {path}: {error}",
+        "Не удалось прочитать файл спецификации {path}: {error}",
+    )
+}
+
+pub fn download_spec_failed(url: &str, detail: &str) -> String {
+    tr!(
+        "Could not download the specification from {url}. {detail}",
+        "Не удалось скачать спецификацию с {url}. {detail}",
+    )
+}
+
+pub fn download_spec_status(url: &str, status: u16) -> String {
+    tr!(
+        "{url} answered {status}, so the specification could not be downloaded.",
+        "{url} ответил {status}, спецификацию скачать не удалось.",
+    )
+}
+
+pub fn spec_not_text() -> String {
+    tr!(
+        "What was downloaded is not text: a specification is JSON or YAML.",
+        "Скачано не текстовое содержимое: спецификация - это JSON или YAML.",
+    )
+}
+
+pub fn spec_parse_failed(error: &str) -> String {
+    tr!(
+        "Could not parse the specification: {error}",
+        "Не удалось разобрать спецификацию: {error}",
+    )
+}
+
+pub fn not_an_openapi_spec() -> String {
+    tr!(
+        "This is not an OpenAPI specification: it has neither an `openapi` field nor a `swagger` one.",
+        "Это не спецификация OpenAPI: в файле нет ни поля `openapi`, ни поля `swagger`.",
+    )
+}
+
+pub fn spec_has_no_operations() -> String {
+    tr!(
+        "The specification describes no operations, so there is nothing to import.",
+        "В спецификации нет ни одной операции, импортировать нечего.",
+    )
+}
+
+/// Used when the specification has no `info.title` to name the collection
+/// after.
+pub fn imported_collection_name() -> String {
+    tr!("Imported API", "Импортированный API")
+}
+
+/// Used when a server entry has no description and no host to name its
+/// environment after.
+pub fn imported_environment_name() -> String {
+    tr!("Imported", "Импорт")
+}
+
+// --- import warnings -----------------------------------------------------
+//
+// Each one is something the user may have to finish by hand, so they are
+// collected during the import and shown when it is done.
+
+pub fn import_skipped_method(method: &str, path: &str) -> String {
+    tr!(
+        "{method} {path}: this HTTP method is not supported, the operation was skipped.",
+        "{method} {path}: этот HTTP-метод не поддерживается, операция пропущена.",
+    )
+}
+
+pub fn import_skipped_body(name: &str, media_type: &str) -> String {
+    tr!(
+        "“{name}”: a {media_type} body cannot be built, the request was imported without one.",
+        "«{name}»: тело {media_type} собрать нельзя, запрос импортирован без тела.",
+    )
+}
+
+pub fn import_multipart_body(name: &str) -> String {
+    tr!(
+        "“{name}”: a multipart body was imported as form fields - attach the files by hand.",
+        "«{name}»: multipart-тело импортировано как поля формы - файлы приложите вручную.",
+    )
+}
+
+pub fn import_oauth_as_bearer(scheme: &str) -> String {
+    tr!(
+        "Authorization scheme “{scheme}” is OAuth2: requests are sent with a bearer token, put it in the {{{{token}}}} variable.",
+        "Схема авторизации «{scheme}» - OAuth2: запросы отправляются с bearer-токеном, впишите его в переменную {{{{token}}}}.",
+    )
+}
+
+pub fn import_server_variable_without_default(name: &str) -> String {
+    tr!(
+        "Server variable {{{name}}} has no default value and was left in the address as it is.",
+        "У серверной переменной {{{name}}} нет значения по умолчанию, она осталась в адресе как есть.",
+    )
+}
+
+pub fn import_relative_server(url: &str) -> String {
+    tr!(
+        "The specification gives a relative server address ({url}) - write the full one into the baseUrl variable.",
+        "В спецификации указан относительный адрес сервера ({url}) - впишите полный в переменную baseUrl.",
+    )
+}
+
+pub fn import_no_server() -> String {
+    tr!(
+        "The specification does not say where the API lives - write its address into the baseUrl variable.",
+        "В спецификации не указан адрес API - впишите его в переменную baseUrl.",
+    )
+}
+
+pub fn import_path_parameters_kept() -> String {
+    tr!(
+        "Path parameters are left as the specification writes them ({{petId}} and the like) - substitute values before sending.",
+        "Параметры пути оставлены как в спецификации (вида {{petId}}) - подставьте значения перед отправкой.",
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
