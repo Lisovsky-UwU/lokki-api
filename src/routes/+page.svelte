@@ -9,12 +9,14 @@
 	import { installGlobalErrorReporting, reportError } from "../lib/ui/notices";
 	import { closeEnvironmentsDialog, environmentsDialog } from "../lib/ui/environmentsDialog";
 	import { closeSettings, openSettings, settingsOpen } from "../lib/ui/settingsDialog";
+	import { closeImportDialog, importDialogOpen } from "../lib/ui/importDialog";
 	import { exitIncognito, incognito, startIncognito } from "../lib/stores/incognito";
 	import { confirmAction } from "../lib/ui/dialogs";
 	import { layout, updateLayout } from "../lib/stores/layout";
 	import Toasts from "../lib/components/common/Toasts.svelte";
 	import SettingsModal from "../lib/components/Settings/SettingsModal.svelte";
 	import EnvironmentsModal from "../lib/components/EnvironmentSwitcher/EnvironmentsModal.svelte";
+	import ImportModal from "../lib/components/Import/ImportModal.svelte";
 	import ConfirmDialog from "../lib/components/common/ConfirmDialog.svelte";
 	import AlertDialog from "../lib/components/common/AlertDialog.svelte";
 	import PromptDialog from "../lib/components/common/PromptDialog.svelte";
@@ -100,6 +102,11 @@
 		workspacePath={$workspacePath}
 		onClose={closeEnvironmentsDialog}
 	/>
+{/if}
+<!-- Raised from the sidebar header, which is replaced by the tree it adds a
+     collection to as soon as the import lands. -->
+{#if $importDialogOpen && $workspacePath}
+	<ImportModal workspacePath={$workspacePath} onClose={closeImportDialog} />
 {/if}
 
 {#if restoring}

@@ -200,7 +200,10 @@
 
 	function onDragOver(e: DragEvent) {
 		const payload = $dragging;
-		if (!payload || payload.path === node.path) return;
+		// A collection has no place inside the tree - it only moves among the
+		// other collections - so this row never offers itself as a target for
+		// one.
+		if (!payload || payload.kind === "Collection" || payload.path === node.path) return;
 		e.preventDefault();
 		if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
 		dropZone = zoneFor(e);

@@ -30,6 +30,9 @@ chrono = { version = "0.4", features = ["serde"] }
 ulid = { version = "1", features = ["serde"] }
 thiserror = "2"
 regex = "1"
+# OpenAPI specs are written in YAML far more often than in JSON; serde_json
+# handles the JSON half.
+serde_yaml_ng = "0.10"
 async-trait = "0.1"
 base64 = "0.22"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }

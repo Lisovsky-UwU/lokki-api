@@ -3,6 +3,7 @@ pub mod domain;
 pub mod error;
 pub mod exec;
 pub mod i18n;
+pub mod import;
 pub mod interpolate;
 pub mod secrets;
 pub mod store;
@@ -36,8 +37,11 @@ pub fn run() {
             commands::workspace_commands::list_collections,
             commands::collection_commands::create_collection,
             commands::collection_commands::load_collection_tree,
+            commands::collection_commands::reorder_collections,
             commands::collection_commands::rename_collection,
             commands::collection_commands::delete_collection,
+            commands::import_commands::import_openapi_file,
+            commands::import_commands::import_openapi_url,
             commands::request_commands::load_request,
             commands::request_commands::save_request,
             commands::request_commands::create_request,

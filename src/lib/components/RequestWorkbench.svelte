@@ -3,6 +3,7 @@
 	// incognito mode reuses the exact same working area as a workspace does
 	// - the two must not drift apart.
 	import Splitter from "./common/Splitter.svelte";
+	import RequestHeader from "./RequestEditor/RequestHeader.svelte";
 	import RequestEditorTabs from "./RequestEditor/RequestEditorTabs.svelte";
 	import ResponseViewer from "./ResponseViewer/ResponseViewer.svelte";
 	import { t } from "../i18n";
@@ -10,16 +11,22 @@
 
 	let panesHeight = $state(0);
 	let panesWidth = $state(0);
+	let headerHeight = $state(0);
 
 	let horizontal = $derived($layout.orientation === "horizontal");
 
 	// One grid either way: the orientation only decides which axis the three
 	// tracks (pane, splitter, pane) are laid on, so the markup below stays a
 	// single copy rather than two branches that can drift apart.
+	//
+	// The header sits above them in a row of its own, spanning every column.
+	// That is the whole reason it is not part of the editor pane: side by
+	// side, that pane is half a window wide, and an address bar wants the
+	// whole one.
 	let tracks = $derived(
 		horizontal
-			? `grid-template-columns: ${$layout.editorWidth}px auto 1fr`
-			: `grid-template-rows: ${$layout.editorHeight}px auto 1fr`,
+			? `grid-template-columns: ${$layout.editorWidth}px auto 1fr; grid-template-rows: auto 1fr`
+			: `grid-template-rows: auto ${$layout.editorHeight}px auto 1fr`,
 	);
 
 	let splitter = $derived(
@@ -34,7 +41,10 @@
 			: {
 					direction: "horizontal" as const,
 					value: $layout.editorHeight,
-					max: Math.max(200, panesHeight - 160),
+					// The header is above the split and keeps its height
+					// whatever the divider does, so the room left to share is
+					// what remains under it.
+					max: Math.max(200, panesHeight - headerHeight - 160),
 					label: $t("app.requestPaneHeight"),
 					apply: (v: number) => updateLayout({ editorHeight: v }),
 				},
@@ -42,6 +52,9 @@
 </script>
 
 <div class="panes" class:horizontal bind:clientHeight={panesHeight} bind:clientWidth={panesWidth} style={tracks}>
+	<div class="header" bind:clientHeight={headerHeight}>
+		<RequestHeader />
+	</div>
 	<section class="pane editor-pane">
 		<RequestEditorTabs />
 	</section>
@@ -64,6 +77,13 @@
 		display: grid;
 		min-height: 0;
 		padding: 0.8em;
+	}
+	/* Full width in both layouts: with one column that is simply the column,
+	   with three it is all of them. */
+	.header {
+		grid-column: 1 / -1;
+		min-width: 0;
+		padding-bottom: 0.6em;
 	}
 	.pane {
 		min-height: 0;

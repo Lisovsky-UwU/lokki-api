@@ -39,6 +39,8 @@ export const ru: Record<keyof typeof en, string> = {
 	"dialog.saveResponse": "Сохранить ответ",
 	"dialog.saveRequest": "Сохранить запрос",
 	"dialog.requestFileFilter": "Запрос LokkiAPI",
+	"dialog.pickSpecFile": "Спецификация OpenAPI",
+	"dialog.specFileFilter": "Спецификация (JSON, YAML)",
 
 	// --- app shell ---------------------------------------------------------
 	"app.settings": "Настройки",
@@ -145,6 +147,7 @@ export const ru: Record<keyof typeof en, string> = {
 	"sidebar.workspaceMenu": "Меню пространства",
 	"sidebar.noWorkspace": "Нет открытого пространства. Создайте или откройте существующее",
 	"sidebar.collections": "Коллекции",
+	"sidebar.collectionsMenu": "Меню коллекций",
 	"sidebar.newCollection": "Новая коллекция",
 	"sidebar.collectionActions": "Действия с коллекцией",
 	"sidebar.folderActions": "Действия с папкой",
@@ -198,6 +201,24 @@ export const ru: Record<keyof typeof en, string> = {
 	"error.move": "Не удалось переместить",
 	"error.renameWorkspace": "Не удалось переименовать пространство",
 	"error.cloneRequest": "Не удалось клонировать запрос",
+
+	// --- импорт коллекции --------------------------------------------------
+	"sidebar.importCollection": "Импортировать коллекцию",
+	"import.title": "Импорт коллекции",
+	"import.formatHint": "OpenAPI 3.x или Swagger 2.0, в JSON или YAML.",
+	"import.fromFile": "Из файла",
+	"import.fromUrl": "По ссылке",
+	"import.chooseFile": "Выбрать файл…",
+	"import.noFileChosen": "Файл не выбран",
+	"import.urlPlaceholder": "https://example.com/openapi.yaml",
+	"import.structureHint":
+		"Операции раскладываются по папкам согласно тегам, а каждый сервер из спецификации становится окружением новой коллекции.",
+	"import.run": "Импортировать",
+	"import.running": "Импортируем…",
+	"import.failed": "Не удалось импортировать спецификацию",
+	"import.done": "Коллекция «{name}» импортирована",
+	"import.summary": "Запросов: {requests}, папок: {folders}, окружений: {environments}",
+	"import.warnings": "Стоит проверить",
 
 	// --- environments ------------------------------------------------------
 	"env.label": "Окружение:",
@@ -259,7 +280,8 @@ export const ru: Record<keyof typeof en, string> = {
 	"response.sentAt": "Когда был отправлен запрос",
 	"response.bodySize": "Размер тела ответа",
 	"response.contentType": "Content-Type ответа",
-	"response.saveBody": "Сохранить тело ответа в файл",
+	"response.saveBodyButton": "Сохранить тело",
+	"response.saveBodyHint": "Сохранить тело ответа в файл",
 	"response.saveFailed": "Не удалось сохранить ответ",
 	"response.unresolved": "Не найдено значение для: {names} — проверьте активное окружение.",
 	"response.tab.preview": "Просмотр",

@@ -1,5 +1,6 @@
 import { get, writable } from "svelte/store";
-import type { RequestFile } from "../bindings/types";
+import { newHttpRequestSpec } from "../bindings/types";
+import type { HttpRequestSpec, RequestFile } from "../bindings/types";
 
 export interface ActiveRequestState {
 	path: string;
@@ -8,6 +9,22 @@ export interface ActiveRequestState {
 }
 
 export const activeRequest = writable<ActiveRequestState | null>(null);
+
+/// Edits the open request's HTTP spec and marks it unsaved.
+///
+/// It lives here rather than in a component because two of them edit the
+/// same request: the header owns the method and the URL, the tabs below own
+/// the parameters, headers, body and auth.
+export function mutateHttp(patch: Partial<HttpRequestSpec>) {
+	const current = get(activeRequest);
+	if (!current) return;
+	const http = current.request.http ?? newHttpRequestSpec();
+	activeRequest.set({
+		...current,
+		request: { ...current.request, http: { ...http, ...patch } },
+		dirty: true,
+	});
+}
 
 /// Whether `path` is `prefix` itself or sits inside it. Paths come from the
 /// Rust side as native (Windows) paths, so both separators are accepted.

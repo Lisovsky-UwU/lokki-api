@@ -77,18 +77,26 @@ export function expandAll(paths: string[]) {
 	});
 }
 
-/// Closes `rootPath` itself and everything under it. Path-prefix matching
-/// rather than a tree walk, so it reaches folders whose parent is collapsed
-/// and therefore never rendered.
-export function collapseAllUnder(rootPath: string) {
+/// Closes each root and everything under it. Path-prefix matching rather
+/// than a tree walk, so it reaches folders whose parent is collapsed and
+/// therefore never rendered.
+///
+/// Several roots in one pass because the sidebar folds a whole workspace by
+/// naming its collections: one call per collection would rewrite and persist
+/// the map once per collection, and the tree would fold a step at a time.
+export function collapseAll(rootPaths: string[]) {
 	write((current) => {
 		const next = { ...current };
 		for (const path of Object.keys(next)) {
-			if (isUnder(path, rootPath)) next[path] = false;
+			if (rootPaths.some((root) => isUnder(path, root))) next[path] = false;
 		}
-		next[rootPath] = false;
+		for (const root of rootPaths) next[root] = false;
 		return next;
 	});
+}
+
+export function collapseAllUnder(rootPath: string) {
+	collapseAll([rootPath]);
 }
 
 /// Moves the state of a renamed or moved subtree to its new paths. Without

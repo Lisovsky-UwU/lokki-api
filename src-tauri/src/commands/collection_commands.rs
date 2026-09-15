@@ -15,6 +15,14 @@ pub fn load_collection_tree(collection_path: String) -> AppResult<CollectionTree
     fs_collection::load_collection_tree(Path::new(&collection_path))
 }
 
+/// Writes the order the sidebar was dragged into onto the collections
+/// themselves, so it travels with the workspace like every other ordering.
+#[tauri::command]
+pub fn reorder_collections(ordered_paths: Vec<String>) -> AppResult<()> {
+    let paths: Vec<PathBuf> = ordered_paths.into_iter().map(PathBuf::from).collect();
+    fs_collection::reorder_collections(&paths)
+}
+
 fn app_local_data_dir(app: &AppHandle) -> AppResult<PathBuf> {
     app.path()
         .app_local_data_dir()

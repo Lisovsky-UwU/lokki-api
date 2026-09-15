@@ -14,6 +14,8 @@ export const ICONS = {
 		"M9 13h6",
 		"M12 10v6",
 	],
+	/// Bringing a collection in from somebody else's format.
+	import: ["M12 3v11", "M8 10l4 4 4-4", "M4 21h16"],
 	/// Acting on what is already there.
 	clone: [
 		"M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2z",

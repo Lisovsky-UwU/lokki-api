@@ -13,6 +13,7 @@
 	import { activeRequest, isUnder, rebaseActiveRequest, rebasePath } from "../../stores/activeRequest";
 	import {
 		COLLECTION_DEFAULT_EXPANDED,
+		collapseAll,
 		collapseAllUnder,
 		expandAll,
 		expandedPaths,
@@ -26,10 +27,15 @@
 	import { confirmAction, promptForText } from "../../ui/dialogs";
 	import { openEnvironmentsDialog } from "../../ui/environmentsDialog";
 	import { openContextMenu, type Menu } from "../../ui/contextMenu";
+	import { openImportDialog } from "../../ui/importDialog";
 	import { reportError } from "../../ui/notices";
 
 	let trees = $state<Record<string, CollectionTreeNode | null>>({});
 	let dropTarget = $state<string | null>(null);
+	/// Where a dragged collection would land. One at a time, so it is held
+	/// here rather than per row: unlike the tree, every collection is
+	/// rendered by this one component.
+	let collectionDrop = $state<{ path: string; zone: "before" | "after" } | null>(null);
 
 	function collectionExpanded(path: string): boolean {
 		return isExpanded($expandedPaths, path, COLLECTION_DEFAULT_EXPANDED);
@@ -39,7 +45,10 @@
 	// own drop/dragleave never fires and its highlight would stay on. Clear
 	// it whenever the drag itself is over, wherever it ended.
 	$effect(() => {
-		if (!$dragging) dropTarget = null;
+		if (!$dragging) {
+			dropTarget = null;
+			collectionDrop = null;
+		}
 	});
 
 	// Plain Map (not reactive): only used to tell stale responses apart.
@@ -84,9 +93,7 @@
 			rebaseActiveRequest(collection.path, renamed.path);
 			rekeyResponses(collection.path, renamed.path);
 			if ($activeCollection?.path === collection.path) activeCollection.set(renamed);
-			collections.update((list) =>
-				list.map((c) => (c.path === collection.path ? renamed : c)).sort((a, b) => a.name.localeCompare(b.name)),
-			);
+			await reloadCollections();
 			rebaseExpanded(collection.path, renamed.path);
 			trees = rekeyByPath(trees, collection.path, renamed.path);
 			requestTreeRefresh();
@@ -138,13 +145,70 @@
 		});
 	});
 
+	/// Re-reads the list instead of re-sorting it here: the order of
+	/// collections lives in their files now, so after a create, a rename or a
+	/// drag the core is the one that knows where everything goes.
+	async function reloadCollections() {
+		const path = $workspacePath;
+		if (!path) return;
+		try {
+			collections.set(await api.listCollections(path));
+		} catch (e) {
+			reportError($t("error.loadCollection"), e);
+		}
+	}
+
 	async function createCollection() {
 		const path = $workspacePath;
 		const name = await promptForText($t("prompt.newCollection"), $t("prompt.collectionName"), $t("prompt.newCollection"));
 		if (!path || !name) return;
 		const summary = await api.createCollection(path, name);
-		collections.update((list) => [...list, summary].sort((a, b) => a.name.localeCompare(b.name)));
+		await reloadCollections();
 		setExpanded(summary.path, true);
+	}
+
+	function onCollectionDragStart(e: DragEvent, collection: CollectionSummary) {
+		const path = $workspacePath;
+		if (!path) return;
+		dragging.set({ path: collection.path, parentPath: path, kind: "Collection" });
+		e.dataTransfer?.setData("text/plain", collection.path);
+		if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+	}
+
+	/// Collections sit side by side with nothing to drop into, so the whole
+	/// row is an insertion point: above it or below it.
+	function onCollectionDragOver(e: DragEvent, collection: CollectionSummary) {
+		const payload = $dragging;
+		// A request or a folder dragged up here is heading into a collection,
+		// which the tree area below handles - the header is not a target for
+		// it.
+		if (payload?.kind !== "Collection" || payload.path === collection.path) return;
+		e.preventDefault();
+		if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+		const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		const zone = (e.clientY - rect.top) / rect.height < 0.5 ? "before" : "after";
+		collectionDrop = { path: collection.path, zone };
+	}
+
+	async function onCollectionDrop(collection: CollectionSummary) {
+		const payload = $dragging;
+		const drop = collectionDrop;
+		collectionDrop = null;
+		dragging.set(null);
+		if (payload?.kind !== "Collection" || !drop || payload.path === collection.path) return;
+
+		const order = $collections.map((c) => c.path).filter((p) => p !== payload.path);
+		const anchor = order.indexOf(collection.path);
+		order.splice(drop.zone === "before" ? anchor : anchor + 1, 0, payload.path);
+		try {
+			await api.reorderCollections(order);
+		} catch (e) {
+			reportError($t("error.move"), e);
+		} finally {
+			// Always resync: after a partially applied reorder the sidebar
+			// would otherwise show an order nothing on disk agrees with.
+			await reloadCollections();
+		}
 	}
 
 	async function addRequest(collection: CollectionSummary) {
@@ -173,16 +237,50 @@
 		}
 	}
 
-	/// Opens the collection and every folder in it. The tree has to be on
-	/// hand to know what those folders are, so a collapsed collection - which
-	/// may never have loaded one - fetches it first.
-	async function expandAllIn(collection: CollectionSummary) {
-		if (!trees[collection.path]) await refreshCollection(collection);
-		const tree = trees[collection.path];
+	/// Every path that can be opened in `list`: the collections themselves and
+	/// the folders inside them. The tree has to be on hand to know what those
+	/// folders are, so a collapsed collection - which may never have loaded
+	/// one - fetches it first.
+	async function expandablePaths(list: CollectionSummary[]): Promise<string[]> {
+		await Promise.all(list.filter((c) => !trees[c.path]).map((c) => refreshCollection(c)));
 		const paths: string[] = [];
-		if (tree) folderPaths(tree, paths);
-		expandAll([collection.path, ...paths]);
+		for (const collection of list) {
+			paths.push(collection.path);
+			const tree = trees[collection.path];
+			if (tree) folderPaths(tree, paths);
+		}
+		return paths;
 	}
+
+	async function expandAllIn(collection: CollectionSummary) {
+		expandAll(await expandablePaths([collection]));
+	}
+
+	/// The same two actions across the whole workspace. Collapsing names the
+	/// collections rather than the workspace folder: the map is keyed by
+	/// absolute path and outlives a workspace switch, so the workspace it is
+	/// applied to has to be spelled out.
+	async function expandEverything() {
+		expandAll(await expandablePaths($collections));
+	}
+
+	function collapseEverything() {
+		collapseAll($collections.map((c) => c.path));
+	}
+
+	/// The "Collections" heading is itself the menu: filling the list, and
+	/// folding all of it at once. Two icon buttons used to sit there instead,
+	/// which had no room left for a third and a fourth action.
+	let collectionsMenu: Menu = $derived([
+		[
+			{ label: $t("sidebar.newCollection"), icon: "plus", action: createCollection },
+			{ label: $t("sidebar.importCollection"), icon: "import", action: openImportDialog },
+		],
+		[
+			{ label: $t("menu.expandAll"), icon: "expand-all", action: expandEverything },
+			{ label: $t("menu.collapseAll"), icon: "collapse-all", action: collapseEverything },
+		],
+	]);
 
 	/// Four groups, in the order a collection is usually worked with: fill
 	/// it, look through it, change what it is, then get rid of it.
@@ -223,7 +321,9 @@
 		const payload = $dragging;
 		dropTarget = null;
 		dragging.set(null);
-		if (!payload) return;
+		// A collection cannot be filed inside another one; it only moves
+		// among its peers, which the headers handle.
+		if (!payload || payload.kind === "Collection") return;
 		try {
 			let sourcePath = payload.path;
 			if (payload.parentPath !== collection.path) {
@@ -288,7 +388,7 @@
 
 <div class="sidebar">
 	<div class="sidebar-header">
-		<span>{$t("sidebar.workspace")}</span>
+		<span class="heading">{$t("sidebar.workspace")}</span>
 	</div>
 	{#if $workspace === null}
 		<div class="empty">{$t("sidebar.noWorkspace")}</div>
@@ -300,25 +400,45 @@
 			<NodeMenu menu={workspaceMenu} label={$t("sidebar.workspaceMenu")} align="left">
 				{#snippet trigger()}
 					<span class="workspace-name">{$workspace?.name}</span>
-					<span class="switch-hint">▾</span>
+					<span class="menu-hint">▾</span>
 				{/snippet}
 			</NodeMenu>
 		</div>
 	{/if}
 	<div class="sidebar-header sidebar-header-collections">
-		<span>{$t("sidebar.collections")}</span>
-		<button class="icon-btn" title={$t("sidebar.newCollection")} aria-label={$t("sidebar.newCollection")} onclick={createCollection}>
-			<Icon name="plus" size="1.1em" />
-		</button>
+		<NodeMenu menu={collectionsMenu} label={$t("sidebar.collectionsMenu")} align="left">
+			{#snippet trigger()}
+				<span class="heading">{$t("sidebar.collections")}</span>
+				<span class="menu-hint">▾</span>
+			{/snippet}
+		</NodeMenu>
 	</div>
 
 	{#each $collections as collection (collection.path)}
-		<div class="collection">
+		<div
+			class="collection"
+			class:drop-before={collectionDrop?.path === collection.path && collectionDrop.zone === "before"}
+			class:drop-after={collectionDrop?.path === collection.path && collectionDrop.zone === "after"}
+			class:dragged={$dragging?.kind === "Collection" && $dragging.path === collection.path}
+		>
 			<div
 				class="collection-header"
 				class:active={$activeCollection?.path === collection.path}
 				role="presentation"
 				oncontextmenu={(e) => openContextMenu(e, collectionMenu(collection))}
+				draggable="true"
+				ondragstart={(e) => onCollectionDragStart(e, collection)}
+				ondragend={() => {
+					dragging.set(null);
+					collectionDrop = null;
+				}}
+				ondragover={(e) => onCollectionDragOver(e, collection)}
+				ondragleave={() => (collectionDrop = null)}
+				ondrop={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					onCollectionDrop(collection);
+				}}
 			>
 				<button class="collection-label" onclick={() => toggleCollection(collection)}>
 					<span class="chevron" class:collapsed={!collectionExpanded(collection.path)}>▾</span>
@@ -336,7 +456,10 @@
 					class:drop-root={dropTarget === collection.path}
 					role="presentation"
 					ondragover={(e) => {
-						if (!$dragging) return;
+						// Same rule as the header, from the other side: a
+						// collection dropped in here would be moved inside its
+						// neighbour.
+						if (!$dragging || $dragging.kind === "Collection") return;
 						e.preventDefault();
 						dropTarget = collection.path;
 					}}
@@ -375,8 +498,15 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		font-weight: 600;
 		padding: 0.3em 0.4em;
+	}
+	/* The small caps sit on the label, not on the row. The collections
+	   heading is a menu button and the menu is rendered inside that row, so
+	   anything typographic here would land on every item - and `opacity`
+	   worst of all, since it makes the whole subtree translucent and no
+	   child can undo it. */
+	.heading {
+		font-weight: 600;
 		text-transform: uppercase;
 		font-size: 0.75em;
 		letter-spacing: 0.04em;
@@ -384,6 +514,26 @@
 	}
 	.sidebar-header-collections {
 		margin-bottom: 0.8em;
+		/* The heading is the menu button now, so it carries the padding
+		   itself - on the container the hover highlight would sit inset from
+		   the row. */
+		padding: 0;
+	}
+	.sidebar-header-collections :global(.node-menu) {
+		flex: 1;
+		min-width: 0;
+	}
+	.sidebar-header-collections :global(.trigger.custom) {
+		padding: 0.3em 0.4em;
+		border-radius: 4px;
+	}
+	.sidebar-header-collections :global(.trigger.custom:hover) {
+		background: rgba(127, 127, 127, 0.15);
+	}
+	/* The row is at normal size now, so the marker follows the small-caps
+	   label beside it rather than the row it sits in. */
+	.sidebar-header-collections .menu-hint {
+		font-size: 0.75em;
 	}
 	.icon-btn {
 		display: flex;
@@ -413,6 +563,18 @@
 		border-radius: 6px;
 		padding: 0.15em;
 		margin-bottom: 0.4em;
+	}
+	/* The insertion line is drawn inside the card rather than as a thicker
+	   border: a border that grows from 1px to 2px shifts everything below it
+	   by a pixel while the drag is in flight. */
+	.collection.drop-before {
+		box-shadow: inset 0 2px 0 #396cd8;
+	}
+	.collection.drop-after {
+		box-shadow: inset 0 -2px 0 #396cd8;
+	}
+	.collection.dragged {
+		opacity: 0.4;
 	}
 	.collection-header {
 		display: flex;
@@ -496,7 +658,9 @@
 		text-overflow: ellipsis;
 		text-align: left;
 	}
-	.switch-hint {
+	/* One marker for "this opens a menu": the workspace name and the
+	   collections heading carry the same one. */
+	.menu-hint {
 		opacity: 0.5;
 		font-size: 0.85em;
 	}

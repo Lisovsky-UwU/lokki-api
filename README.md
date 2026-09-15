@@ -36,9 +36,15 @@ LokkiAPI does three things differently from the clients already out there.
 
 **Collections**
 - Nested folders, any depth
-- Drag and drop to reorder and to move between folders and collections
+- Drag and drop to reorder and to move between folders and collections; the collections themselves are reordered the same way
 - Rename and delete from the ⋯ menu, and expand or collapse a whole collection from it
 - The order of folders and requests is set by hand and stored in the files
+
+**Importing**
+- OpenAPI 3.x and Swagger 2.0, JSON or YAML, from a file or by link
+- Operations become requests grouped into folders by tag; every server in the specification becomes an environment of its own, and the first is made active
+- Parameters, headers, an example body built from the schema and the authorization scheme all come across; whatever could not be reproduced is listed when the import is done
+- The import always creates a new collection, so nothing you already have can be overwritten
 
 **Environments and variables**
 - Global environments and collection environments; the collection wins over the global one
@@ -162,6 +168,7 @@ Helper examples for exercising the core without the UI:
 cd src-tauri
 cargo run --example smoke              # end-to-end run with a real HTTP request
 cargo run --example fixture -- <path>   # generate a demo workspace
+cargo run --example import_spec -- <spec>  # print what an OpenAPI import would build
 ```
 
 The app icons are regenerated from the source image with one command:
@@ -189,6 +196,7 @@ Core modules (`src-tauri/src`):
 | `store/` | Reading and writing TOML, walking the collection tree, moving and ordering, local UI state |
 | `exec/` | The `ProtocolExecutor` trait and the HTTP implementation, building a request with variables substituted |
 | `interpolate/` | The `{{variable}}` resolver: the collection environment wins over the global one |
+| `import/` | Reading somebody else's format (OpenAPI today) into a plan the store writes out |
 | `secrets/` | The `SecretStore` trait and its local-file implementation |
 | `i18n/` | Every sentence the core shows the user, in English and Russian |
 | `commands/` | The Tauri command layer — the only path by which the interface changes anything |
@@ -201,7 +209,7 @@ The frontend is split into `stores` (reactive state), `api/client.ts` (a typed w
 
 - [x] Incognito requests — a quick request without creating it in a workspace
 - [ ] Importing collections from other formats:
-    - [ ] OpenAPI
+    - [x] OpenAPI (3.x and Swagger 2.0)
     - [ ] Insomnia
     - [ ] Postman
     - [ ] Hoppscotch

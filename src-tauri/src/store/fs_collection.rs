@@ -4,7 +4,7 @@ use crate::error::{AppError, AppResult};
 use crate::i18n::messages;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub const COLLECTION_FILE: &str = "collection.toml";
 pub const FOLDER_FILE: &str = "folder.toml";
@@ -35,13 +35,30 @@ fn is_excluded_dir(name: &str) -> bool {
     name == ENVIRONMENTS_DIR || name.starts_with('.')
 }
 
+/// The position a newly created collection takes.
+///
+/// Zero for as long as nothing has been arranged by hand: collections
+/// written before ordering existed all carry zero and sort by name, and a
+/// new one joining them has to do the same - given a real position it would
+/// sort ahead of every one of them, which reads as jumping to the top for
+/// no reason.
+fn next_seq(workspace_path: &Path) -> AppResult<u32> {
+    let max = read_collections(workspace_path)?
+        .iter()
+        .map(|(_, file)| file.seq)
+        .max()
+        .unwrap_or(0);
+    Ok(if max == 0 { 0 } else { max + 1 })
+}
+
 pub fn create_collection(workspace_path: &Path, name: &str) -> AppResult<CollectionSummary> {
+    let seq = next_seq(workspace_path)?;
     let dir = super::naming::unique_path(workspace_path, name, "");
     fs::create_dir_all(&dir).map_err(|source| AppError::Io {
         path: dir.display().to_string(),
         source,
     })?;
-    let file = CollectionFile::new(name);
+    let file = CollectionFile::new(name, seq);
     write_toml(&dir.join(COLLECTION_FILE), &file)?;
     Ok(CollectionSummary {
         name: name.to_string(),
@@ -100,7 +117,8 @@ pub fn delete_collection(collection_path: &Path) -> AppResult<()> {
     })
 }
 
-pub fn list_collections(workspace_path: &Path) -> AppResult<Vec<CollectionSummary>> {
+/// Every collection in the workspace with the file behind it, unordered.
+fn read_collections(workspace_path: &Path) -> AppResult<Vec<(PathBuf, CollectionFile)>> {
     let mut out = Vec::new();
     if !workspace_path.is_dir() {
         return Ok(out);
@@ -117,15 +135,51 @@ pub fn list_collections(workspace_path: &Path) -> AppResult<Vec<CollectionSummar
         let path = entry.path();
         let marker = path.join(COLLECTION_FILE);
         if path.is_dir() && marker.is_file() {
-            let file: CollectionFile = read_toml(&marker)?;
-            out.push(CollectionSummary {
-                name: file.name,
-                path: path.display().to_string(),
-            });
+            out.push((path, read_toml(&marker)?));
         }
     }
-    out.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
     Ok(out)
+}
+
+pub fn list_collections(workspace_path: &Path) -> AppResult<Vec<CollectionSummary>> {
+    let mut collections = read_collections(workspace_path)?;
+    // The same ordering space folders and requests share inside a
+    // collection: an explicit position, with the name breaking ties - which
+    // is every collection at once in a workspace nobody has dragged
+    // anything in yet.
+    collections.sort_by(|a, b| (a.1.seq, a.1.name.to_lowercase()).cmp(&(b.1.seq, b.1.name.to_lowercase())));
+    Ok(collections
+        .into_iter()
+        .map(|(path, file)| CollectionSummary {
+            name: file.name,
+            path: path.display().to_string(),
+        })
+        .collect())
+}
+
+/// Writes an explicit order onto the workspace's collections: each entry's
+/// `seq` becomes its position in `ordered_paths`.
+///
+/// Paths that are no longer there are skipped rather than failing the whole
+/// call, for the same reason `reorder_children` skips them: the caller
+/// builds the order from the sidebar it has rendered, which can legitimately
+/// lag behind disk.
+pub fn reorder_collections(ordered_paths: &[PathBuf]) -> AppResult<()> {
+    for (index, path) in ordered_paths.iter().enumerate() {
+        let seq = index as u32 + 1;
+        let marker = path.join(COLLECTION_FILE);
+        if !marker.is_file() {
+            continue;
+        }
+        let mut file: CollectionFile = read_toml(&marker)?;
+        if file.seq == seq {
+            continue;
+        }
+        file.seq = seq;
+        file.sync.touch();
+        write_toml(&marker, &file)?;
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -225,6 +279,77 @@ fn tree_sort_key(node: &CollectionTreeNode) -> (u32, String) {
 mod tests {
     use super::*;
     use crate::domain::HttpMethod;
+
+    #[test]
+    fn collections_keep_the_order_they_were_dragged_into() {
+        let dir = tempfile::tempdir().unwrap();
+        for name in ["Zoo", "Petstore", "Billing"] {
+            create_collection(dir.path(), name).unwrap();
+        }
+        // Nothing has been arranged yet, so they read alphabetically.
+        let names: Vec<String> = list_collections(dir.path()).unwrap().into_iter().map(|c| c.name).collect();
+        assert_eq!(names, vec!["Billing", "Petstore", "Zoo"]);
+
+        let ordered: Vec<PathBuf> = ["Zoo", "Billing", "Petstore"].iter().map(|n| dir.path().join(n)).collect();
+        reorder_collections(&ordered).unwrap();
+
+        let names: Vec<String> = list_collections(dir.path()).unwrap().into_iter().map(|c| c.name).collect();
+        assert_eq!(names, vec!["Zoo", "Billing", "Petstore"]);
+        // The order lives in the files, so it travels with the workspace.
+        let file: CollectionFile = read_toml(&dir.path().join("Billing").join(COLLECTION_FILE)).unwrap();
+        assert_eq!(file.seq, 2);
+    }
+
+    #[test]
+    fn reorder_skips_a_collection_that_is_no_longer_there() {
+        let dir = tempfile::tempdir().unwrap();
+        create_collection(dir.path(), "Kept").unwrap();
+        let vanished = dir.path().join("Deleted elsewhere");
+
+        reorder_collections(&[vanished, dir.path().join("Kept")]).unwrap();
+
+        let file: CollectionFile = read_toml(&dir.path().join("Kept").join(COLLECTION_FILE)).unwrap();
+        assert_eq!(file.seq, 2);
+    }
+
+    /// A collection written before ordering existed has no `seq` field at
+    /// all; it has to keep loading, and keep sorting by name.
+    #[test]
+    fn a_collection_file_without_a_position_still_loads() {
+        let dir = tempfile::tempdir().unwrap();
+        let legacy = dir.path().join("Legacy");
+        fs::create_dir_all(&legacy).unwrap();
+        fs::write(
+            legacy.join(COLLECTION_FILE),
+            "id = \"01J8XA1B2C3D4E5F6G7H8J9K0M\"\nname = \"Legacy\"\ncreated_at = \"2026-08-01T10:05:00Z\"\nupdated_at = \"2026-08-01T10:05:00Z\"\nversion = 1\n",
+        )
+        .unwrap();
+
+        let listed = list_collections(dir.path()).unwrap();
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].name, "Legacy");
+
+        // And a collection created next to it joins the same nameless order
+        // instead of jumping ahead of it.
+        create_collection(dir.path(), "Added").unwrap();
+        let names: Vec<String> = list_collections(dir.path()).unwrap().into_iter().map(|c| c.name).collect();
+        assert_eq!(names, vec!["Added", "Legacy"]);
+    }
+
+    /// Once an order exists, a new collection lands after it rather than in
+    /// the middle of it.
+    #[test]
+    fn a_collection_created_after_a_reorder_goes_last() {
+        let dir = tempfile::tempdir().unwrap();
+        create_collection(dir.path(), "Zoo").unwrap();
+        create_collection(dir.path(), "Billing").unwrap();
+        reorder_collections(&[dir.path().join("Zoo"), dir.path().join("Billing")]).unwrap();
+
+        create_collection(dir.path(), "Aardvark").unwrap();
+
+        let names: Vec<String> = list_collections(dir.path()).unwrap().into_iter().map(|c| c.name).collect();
+        assert_eq!(names, vec!["Zoo", "Billing", "Aardvark"]);
+    }
 
     #[test]
     fn create_and_list_collections_round_trips() {
