@@ -13,6 +13,7 @@
 	import { activeRequest, isUnder, rebaseActiveRequest, rebasePath } from "../../stores/activeRequest";
 	import {
 		COLLECTION_DEFAULT_EXPANDED,
+		collapseAll,
 		collapseAllUnder,
 		expandAll,
 		expandedPaths,
@@ -174,16 +175,50 @@
 		}
 	}
 
-	/// Opens the collection and every folder in it. The tree has to be on
-	/// hand to know what those folders are, so a collapsed collection - which
-	/// may never have loaded one - fetches it first.
-	async function expandAllIn(collection: CollectionSummary) {
-		if (!trees[collection.path]) await refreshCollection(collection);
-		const tree = trees[collection.path];
+	/// Every path that can be opened in `list`: the collections themselves and
+	/// the folders inside them. The tree has to be on hand to know what those
+	/// folders are, so a collapsed collection - which may never have loaded
+	/// one - fetches it first.
+	async function expandablePaths(list: CollectionSummary[]): Promise<string[]> {
+		await Promise.all(list.filter((c) => !trees[c.path]).map((c) => refreshCollection(c)));
 		const paths: string[] = [];
-		if (tree) folderPaths(tree, paths);
-		expandAll([collection.path, ...paths]);
+		for (const collection of list) {
+			paths.push(collection.path);
+			const tree = trees[collection.path];
+			if (tree) folderPaths(tree, paths);
+		}
+		return paths;
 	}
+
+	async function expandAllIn(collection: CollectionSummary) {
+		expandAll(await expandablePaths([collection]));
+	}
+
+	/// The same two actions across the whole workspace. Collapsing names the
+	/// collections rather than the workspace folder: the map is keyed by
+	/// absolute path and outlives a workspace switch, so the workspace it is
+	/// applied to has to be spelled out.
+	async function expandEverything() {
+		expandAll(await expandablePaths($collections));
+	}
+
+	function collapseEverything() {
+		collapseAll($collections.map((c) => c.path));
+	}
+
+	/// The "Collections" heading is itself the menu: filling the list, and
+	/// folding all of it at once. Two icon buttons used to sit there instead,
+	/// which had no room left for a third and a fourth action.
+	let collectionsMenu: Menu = $derived([
+		[
+			{ label: $t("sidebar.newCollection"), icon: "plus", action: createCollection },
+			{ label: $t("sidebar.importCollection"), icon: "import", action: openImportDialog },
+		],
+		[
+			{ label: $t("menu.expandAll"), icon: "expand-all", action: expandEverything },
+			{ label: $t("menu.collapseAll"), icon: "collapse-all", action: collapseEverything },
+		],
+	]);
 
 	/// Four groups, in the order a collection is usually worked with: fill
 	/// it, look through it, change what it is, then get rid of it.
@@ -289,7 +324,7 @@
 
 <div class="sidebar">
 	<div class="sidebar-header">
-		<span>{$t("sidebar.workspace")}</span>
+		<span class="heading">{$t("sidebar.workspace")}</span>
 	</div>
 	{#if $workspace === null}
 		<div class="empty">{$t("sidebar.noWorkspace")}</div>
@@ -301,26 +336,18 @@
 			<NodeMenu menu={workspaceMenu} label={$t("sidebar.workspaceMenu")} align="left">
 				{#snippet trigger()}
 					<span class="workspace-name">{$workspace?.name}</span>
-					<span class="switch-hint">▾</span>
+					<span class="menu-hint">▾</span>
 				{/snippet}
 			</NodeMenu>
 		</div>
 	{/if}
 	<div class="sidebar-header sidebar-header-collections">
-		<span>{$t("sidebar.collections")}</span>
-		<div class="header-actions">
-			<button
-				class="icon-btn"
-				title={$t("sidebar.importCollection")}
-				aria-label={$t("sidebar.importCollection")}
-				onclick={openImportDialog}
-			>
-				<Icon name="import" size="1.1em" />
-			</button>
-			<button class="icon-btn" title={$t("sidebar.newCollection")} aria-label={$t("sidebar.newCollection")} onclick={createCollection}>
-				<Icon name="plus" size="1.1em" />
-			</button>
-		</div>
+		<NodeMenu menu={collectionsMenu} label={$t("sidebar.collectionsMenu")} align="left">
+			{#snippet trigger()}
+				<span class="heading">{$t("sidebar.collections")}</span>
+				<span class="menu-hint">▾</span>
+			{/snippet}
+		</NodeMenu>
 	</div>
 
 	{#each $collections as collection (collection.path)}
@@ -386,8 +413,15 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		font-weight: 600;
 		padding: 0.3em 0.4em;
+	}
+	/* The small caps sit on the label, not on the row. The collections
+	   heading is a menu button and the menu is rendered inside that row, so
+	   anything typographic here would land on every item - and `opacity`
+	   worst of all, since it makes the whole subtree translucent and no
+	   child can undo it. */
+	.heading {
+		font-weight: 600;
 		text-transform: uppercase;
 		font-size: 0.75em;
 		letter-spacing: 0.04em;
@@ -395,11 +429,26 @@
 	}
 	.sidebar-header-collections {
 		margin-bottom: 0.8em;
+		/* The heading is the menu button now, so it carries the padding
+		   itself - on the container the hover highlight would sit inset from
+		   the row. */
+		padding: 0;
 	}
-	.header-actions {
-		display: flex;
-		align-items: center;
-		gap: 0.1em;
+	.sidebar-header-collections :global(.node-menu) {
+		flex: 1;
+		min-width: 0;
+	}
+	.sidebar-header-collections :global(.trigger.custom) {
+		padding: 0.3em 0.4em;
+		border-radius: 4px;
+	}
+	.sidebar-header-collections :global(.trigger.custom:hover) {
+		background: rgba(127, 127, 127, 0.15);
+	}
+	/* The row is at normal size now, so the marker follows the small-caps
+	   label beside it rather than the row it sits in. */
+	.sidebar-header-collections .menu-hint {
+		font-size: 0.75em;
 	}
 	.icon-btn {
 		display: flex;
@@ -512,7 +561,9 @@
 		text-overflow: ellipsis;
 		text-align: left;
 	}
-	.switch-hint {
+	/* One marker for "this opens a menu": the workspace name and the
+	   collections heading carry the same one. */
+	.menu-hint {
 		opacity: 0.5;
 		font-size: 0.85em;
 	}

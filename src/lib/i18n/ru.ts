@@ -147,6 +147,7 @@ export const ru: Record<keyof typeof en, string> = {
 	"sidebar.workspaceMenu": "Меню пространства",
 	"sidebar.noWorkspace": "Нет открытого пространства. Создайте или откройте существующее",
 	"sidebar.collections": "Коллекции",
+	"sidebar.collectionsMenu": "Меню коллекций",
 	"sidebar.newCollection": "Новая коллекция",
 	"sidebar.collectionActions": "Действия с коллекцией",
 	"sidebar.folderActions": "Действия с папкой",

@@ -147,6 +147,7 @@ export const en = {
 	"sidebar.workspaceMenu": "Workspace menu",
 	"sidebar.noWorkspace": "No workspace is open. Create one or open an existing one",
 	"sidebar.collections": "Collections",
+	"sidebar.collectionsMenu": "Collections menu",
 	"sidebar.newCollection": "New collection",
 	"sidebar.collectionActions": "Collection actions",
 	"sidebar.folderActions": "Folder actions",
