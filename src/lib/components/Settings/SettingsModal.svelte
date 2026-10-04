@@ -303,7 +303,7 @@
 								<span>User-Agent</span>
 								<input
 									class="mono"
-									placeholder={$t("settings.userAgentPlaceholder")}
+									placeholder={info?.default_user_agent ?? ""}
 									bind:value={settings.user_agent}
 									onchange={persist}
 								/>

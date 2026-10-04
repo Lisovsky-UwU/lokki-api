@@ -1,7 +1,7 @@
 use super::{
     ExecutionContext, ExecutionOutcome, ExecutorError, Phase, ProtocolExecutor, ResolvedHttpRequest, TraceRecorder,
 };
-use crate::domain::{optional_duration, HttpMethod, KeyValue, RequestSettings};
+use crate::domain::{effective_user_agent, optional_duration, HttpMethod, KeyValue, RequestSettings};
 use crate::i18n::messages;
 use async_trait::async_trait;
 use base64::Engine;
@@ -75,9 +75,7 @@ fn build_client(settings: &RequestSettings) -> Result<reqwest::Client, ExecutorE
     if let Some(read) = optional_duration(settings.read_timeout_ms) {
         builder = builder.read_timeout(read);
     }
-    if !settings.user_agent.trim().is_empty() {
-        builder = builder.user_agent(settings.user_agent.trim());
-    }
+    builder = builder.user_agent(effective_user_agent(settings));
 
     builder
         .build()
@@ -277,6 +275,62 @@ mod tests {
         let defaults = RequestSettings::default();
         executor.clients.client_for(&defaults).unwrap();
         assert_eq!(executor.clients.cached_settings().as_ref(), Some(&defaults));
+    }
+
+    /// Serves one response on a loopback port and hands back the raw request
+    /// it received.
+    fn capture_request() -> (String, std::sync::mpsc::Receiver<String>) {
+        use std::io::{Read, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}/", listener.local_addr().unwrap());
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let (mut socket, _) = listener.accept().unwrap();
+            let mut buffer = [0u8; 4096];
+            let read = socket.read(&mut buffer).unwrap();
+            let _ = tx.send(String::from_utf8_lossy(&buffer[..read]).to_lowercase());
+            let _ = socket.write_all(b"HTTP/1.1 204 No Content\r\nConnection: close\r\n\r\n");
+        });
+        (url, rx)
+    }
+
+    async fn sent_user_agent(settings: RequestSettings, headers: Vec<KeyValue>) -> String {
+        let (url, received) = capture_request();
+        let request = ResolvedHttpRequest {
+            method: HttpMethod::Get,
+            url,
+            headers,
+            body: None,
+        };
+        let ctx = ExecutionContext { settings };
+        HttpExecutor::new()
+            .execute(&request, &ctx, &mut TraceRecorder::start())
+            .await
+            .unwrap();
+        let raw = received.recv().unwrap();
+        raw.lines()
+            .find_map(|line| line.strip_prefix("user-agent: ").map(str::to_string))
+            .unwrap_or_default()
+    }
+
+    #[tokio::test]
+    async fn an_empty_setting_still_sends_the_apps_own_user_agent() {
+        let sent = sent_user_agent(RequestSettings::default(), vec![]).await;
+        assert_eq!(sent, crate::domain::default_user_agent().to_lowercase());
+
+        let custom = RequestSettings {
+            user_agent: "  probe/1.0 ".to_string(),
+            ..RequestSettings::default()
+        };
+        assert_eq!(sent_user_agent(custom, vec![]).await, "probe/1.0");
+
+        // A header written on the request itself wins over the setting.
+        let header = KeyValue {
+            key: "User-Agent".to_string(),
+            value: "mine".to_string(),
+            enabled: true,
+        };
+        assert_eq!(sent_user_agent(RequestSettings::default(), vec![header]).await, "mine");
     }
 
     /// Both languages, because the classification and the wording are

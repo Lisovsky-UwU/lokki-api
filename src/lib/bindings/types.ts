@@ -138,6 +138,8 @@ export interface AppInfo {
 	tauri_version: string;
 	node_version: string;
 	webview_version: string;
+	/// Sent as `User-Agent` while the setting is left empty.
+	default_user_agent: string;
 }
 
 /// A request together with the path it lives at (renaming moves the file).

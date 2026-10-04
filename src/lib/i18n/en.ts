@@ -362,7 +362,6 @@ export const en = {
 		"The read timeout caps the wait between chunks of the response, the total one the whole request. 0 means no limit.",
 	"settings.followRedirects": "Follow redirects",
 	"settings.maxRedirects": "Maximum redirects",
-	"settings.userAgentPlaceholder": "default",
 	"settings.requestsHint": "Settings apply from the next request on and are stored on this computer.",
 	"settings.loadInfoFailed": "Could not read the build information",
 	"settings.loadRequestSettingsFailed": "Could not load the request settings",

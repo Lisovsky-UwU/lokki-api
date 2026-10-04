@@ -362,7 +362,6 @@ export const ru: Record<keyof typeof en, string> = {
 	"settings.timeoutHint": "Таймаут чтения — ожидание между частями ответа, общий — на весь запрос. 0 — без ограничения.",
 	"settings.followRedirects": "Следовать перенаправлениям",
 	"settings.maxRedirects": "Максимум перенаправлений",
-	"settings.userAgentPlaceholder": "по умолчанию",
 	"settings.requestsHint": "Настройки применяются со следующего запроса и хранятся на этом компьютере.",
 	"settings.loadInfoFailed": "Не удалось получить сведения о сборке",
 	"settings.loadRequestSettingsFailed": "Не удалось загрузить настройки запросов",
