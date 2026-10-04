@@ -34,5 +34,12 @@ fn main() {
     fs_request::save_request(&req_path, req).unwrap();
     assert_eq!(created.meta.seq, 1);
 
+    fs_request::create_request(collection_path, "Live Updates", HttpMethod::Get, Protocol::WebSocket).unwrap();
+    let socket_path = collection_path.join("Live Updates.lokki.toml");
+    let mut socket = fs_request::load_request(&socket_path).unwrap();
+    socket.http.as_mut().unwrap().url = "{{wsUrl}}/updates".to_string();
+    socket.websocket.as_mut().unwrap().message = "{\n  \"type\": \"subscribe\",\n  \"channel\": \"pets\"\n}".to_string();
+    fs_request::save_request(&socket_path, socket).unwrap();
+
     println!("fixture written to {}", dir.display());
 }

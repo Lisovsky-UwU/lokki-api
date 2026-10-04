@@ -1,9 +1,13 @@
 // Manual end-to-end smoke test of the non-Tauri-specific pipeline (store +
 // interpolate + exec), exercising the same functions the IPC commands call.
-// Hits the real network (httpbin.org) - not part of `cargo test`, run
+// Hits the real network (httpbin.org, echo.websocket.org) - not part of `cargo test`, run
 // manually via `cargo run --example smoke`.
 use lokki_api_lib::domain::{EnvironmentScope, HttpMethod, Protocol};
-use lokki_api_lib::exec::{resolve_http_request, ExecutionContext, HttpExecutor, ProtocolExecutor, TraceRecorder};
+use lokki_api_lib::exec::ws::Direction;
+use lokki_api_lib::exec::{
+    resolve_http_request, ExecutionContext, HttpExecutor, OutgoingMessage, ProtocolExecutor, ResolvedHttpRequest, SocketEnd,
+    TraceRecorder, WsExecutor, WsMessage,
+};
 use lokki_api_lib::interpolate::{Resolver, VariableScope};
 use lokki_api_lib::store::{fs_collection, fs_environment, fs_request, fs_workspace};
 use std::collections::HashMap;
@@ -65,5 +69,58 @@ async fn main() {
     println!("body (first 300 chars): {}", &body[..body.len().min(300)]);
 
     assert_eq!(outcome.status, 200);
+
+    // A WebSocket over TLS against a public echo server: the one path the
+    // loopback tests in exec::ws can't reach is the real root store.
+    let (tx, mut outgoing) = tokio::sync::mpsc::unbounded_channel();
+    let (stop_tx, stop_rx) = tokio::sync::oneshot::channel::<()>();
+    let mut stop_tx = Some(stop_tx);
+    let mut recorder = TraceRecorder::start();
+    let socket_request = ResolvedHttpRequest {
+        method: HttpMethod::Get,
+        url: "https://echo.websocket.org/".to_string(),
+        headers: vec![],
+        body: None,
+    };
+    let socket = WsExecutor::new()
+        .connect(
+            &socket_request,
+            &ExecutionContext::default(),
+            &mut recorder,
+            async {
+                let _ = stop_rx.await;
+            },
+            &mut outgoing,
+            &mut |message| match message {
+                WsMessage::Open { .. } => {
+                    let _ = tx.send(OutgoingMessage {
+                        text: "smoke".to_string(),
+                        unresolved_variables: vec![],
+                    });
+                }
+                // Disconnect once the echo of our own message is back.
+                WsMessage::Frame { ref data, direction: Direction::Received, .. } if data == "smoke" => {
+                    if let Some(stop) = stop_tx.take() {
+                        let _ = stop.send(());
+                    }
+                }
+                _ => {}
+            },
+        )
+        .await
+        .expect("websocket should open");
+    let trace = recorder.finish();
+    println!("\nwebsocket: {} {}, end: {:?}", socket.status, socket.status_text, socket.end);
+    println!(
+        "dns: {:?}, connect: {:?}, tls: {:?}, handshake: {:?}",
+        trace.dns_ms, trace.connect_ms, trace.tls_ms, trace.wait_ms
+    );
+    for event in &trace.events {
+        println!("  [{:>5} ms] {:?} {}", event.at_ms, event.level, event.message);
+    }
+    assert_eq!(socket.status, 101);
+    assert_eq!(socket.end, SocketEnd::Cancelled);
+    assert_eq!(socket.sent, 1);
+
     println!("\nSMOKE TEST PASSED");
 }
