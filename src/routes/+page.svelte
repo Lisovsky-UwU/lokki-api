@@ -484,6 +484,9 @@
 		background: var(--hover);
 	}
 	.topbar {
+		/* The environment pickers drop their scope labels when the bar gets
+		   narrow; see EnvironmentSwitcher. */
+		container: topbar / inline-size;
 		display: flex;
 		align-items: center;
 		gap: 12px;
