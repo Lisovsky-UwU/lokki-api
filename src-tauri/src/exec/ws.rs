@@ -38,7 +38,7 @@ use tokio_tungstenite::tungstenite::{Error as WsError, Message};
 /// After the user disconnects, how long the server gets to answer the close
 /// frame before the connection is dropped anyway. A well-behaved server
 /// replies at once; one that doesn't must not keep the button spinning.
-const CLOSE_GRACE: Duration = Duration::from_secs(2);
+const CLOSE_GRACE: Duration = Duration::from_secs(1);
 
 /// Headers the handshake is made of. tungstenite writes them itself and
 /// checks the server's answer against the key it generated, so a value from
