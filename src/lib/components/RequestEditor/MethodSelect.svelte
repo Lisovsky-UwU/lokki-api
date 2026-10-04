@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { HttpMethod } from "../../bindings/types";
+	import Icon from "../common/Icon.svelte";
 	import { HTTP_METHODS, methodColor } from "../../ui/methods";
 
 	let { value, onChange }: { value: HttpMethod; onChange: (method: HttpMethod) => void } = $props();
@@ -40,7 +41,7 @@
 		onclick={() => (open = !open)}
 	>
 		{value}
-		<span class="caret">▾</span>
+		<span class="caret"><Icon name="chevron" size="14px" /></span>
 	</button>
 	{#if open}
 		<ul class="options" role="listbox">

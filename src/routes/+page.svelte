@@ -29,6 +29,7 @@
 	import CollectionTree from "../lib/components/Sidebar/CollectionTree.svelte";
 	import RequestWorkbench from "../lib/components/RequestWorkbench.svelte";
 	import GhostIcon from "../lib/components/common/GhostIcon.svelte";
+	import Icon from "../lib/components/common/Icon.svelte";
 	import ContextMenu from "../lib/components/common/ContextMenu.svelte";
 	import EnvironmentSwitcher from "../lib/components/EnvironmentSwitcher/EnvironmentSwitcher.svelte";
 
@@ -132,7 +133,7 @@
 				{/if}
 				<div class="topbar-actions">
 					<button class="settings-btn" title={$t("app.settings")} aria-label={$t("app.settings")} onclick={openSettings}
-						>⚙</button
+						><Icon name="settings" size="16px" /></button
 					>
 					<button class="exit-incognito" onclick={leaveIncognito}>{$t("incognito.exit")}</button>
 				</div>
@@ -168,7 +169,7 @@
 						<GhostIcon />
 					</button>
 					<button class="settings-btn" title={$t("app.settings")} aria-label={$t("app.settings")} onclick={openSettings}
-						>⚙</button
+						><Icon name="settings" size="16px" /></button
 					>
 				</div>
 			</header>
@@ -301,6 +302,18 @@
 	}
 	:global(button) {
 		cursor: pointer;
+	}
+	/* One ring for every control. Plenty of them drop their border and
+	   background, which left the webview's own focus ring as the only cue,
+	   and that one all but disappears on a filled button. */
+	:global(:focus-visible) {
+		outline: 2px solid var(--accent-text);
+		outline-offset: 1px;
+	}
+	/* Inside the border on fields, so the ring doesn't grow a field into
+	   its neighbour in a tight row. */
+	:global(:is(input, select, textarea):focus-visible) {
+		outline-offset: -1px;
 	}
 	:global(*) {
 		scrollbar-width: thin;

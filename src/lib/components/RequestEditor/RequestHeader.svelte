@@ -104,7 +104,7 @@
 					<span class:name={i === breadcrumb.length - 1}>{part}</span>
 				{/each}
 			</span>
-			{#if $activeRequest.dirty}<span class="dirty" title={$t("request.dirty")}>●</span>{/if}
+			{#if $activeRequest.dirty}<span class="dirty" title={$t("request.dirty")}></span>{/if}
 			{#if !canSend}
 				<span class="warn">{$t("request.noCollection")}</span>
 			{/if}
@@ -186,8 +186,11 @@
 		color: var(--text-muted);
 	}
 	.request-title .dirty {
-		color: var(--warn);
-		font-size: var(--fs-sm);
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		flex-shrink: 0;
+		background: var(--warn);
 	}
 	.request-title .warn {
 		font-weight: 400;

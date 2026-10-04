@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { CollectionSummary, CollectionTreeNode, HttpMethod, Protocol } from "../../bindings/types";
+	import Icon from "../common/Icon.svelte";
 	import TreeNode from "./TreeNode.svelte";
 	import NodeMenu from "../common/NodeMenu.svelte";
 	import ActivityIndicator from "../common/ActivityIndicator.svelte";
@@ -283,7 +284,7 @@
 			ondrop={onDrop}
 		>
 			<button class="folder-label" onclick={() => toggleExpanded(node.path, FOLDER_DEFAULT_EXPANDED)}>
-				<span class="chevron" class:collapsed={!expanded}>▾</span>
+				<span class="chevron" class:collapsed={!expanded}><Icon name="chevron" size="14px" /></span>
 				<span class="node-name">{node.name}</span>
 				<ActivityIndicator {activity} group />
 			</button>
@@ -374,7 +375,8 @@
 		white-space: nowrap;
 	}
 	.chevron {
-		display: inline-block;
+		display: inline-flex;
+		color: var(--text-muted);
 		transition: transform 0.15s;
 	}
 	.chevron.collapsed {

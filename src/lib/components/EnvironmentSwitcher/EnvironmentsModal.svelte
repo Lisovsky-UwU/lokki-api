@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { EnvironmentEntry, EnvironmentScope } from "../../bindings/types";
+	import Icon from "../common/Icon.svelte";
 	import { newId } from "../../bindings/types";
 	import { isValidVariableName, requestEnvironmentsRefresh, sanitizeVariableName } from "../../stores/environments";
 	import { api } from "../../api/client";
@@ -208,10 +209,10 @@
 					<button class="env" class:selected={entry.path === draft?.path} onclick={() => selectEnvironment(entry)}>
 						<span class="env-name">{entry.meta.name}</span>
 						{#if entry.meta.id === activeId}
-							<span class="active-mark" title={$t("env.active")}>✓</span>
+							<span class="active-mark" title={$t("env.active")}><Icon name="check" size="14px" /></span>
 						{/if}
 						{#if entry.path === draft?.path && dirty}
-							<span class="dot" title={$t("env.unsaved")}>●</span>
+							<span class="dot" title={$t("env.unsaved")}></span>
 						{/if}
 					</button>
 				{/each}
@@ -279,7 +280,7 @@
 									/>
 									{$t("env.secret")}
 								</label>
-								<button class="remove" title={$t("env.removeVariable")} onclick={() => removeVariable(i)}>×</button>
+								<button class="remove" title={$t("env.removeVariable")} onclick={() => removeVariable(i)}><Icon name="remove" size="14px" /></button>
 							</div>
 						{/each}
 						<button class="add" onclick={addVariable}>{$t("env.addVariable")}</button>
@@ -367,12 +368,15 @@
 	.active-mark {
 		margin-left: auto;
 		color: var(--ok);
-		font-size: var(--fs-sm);
+		display: flex;
 	}
 	.dot {
 		margin-left: auto;
-		color: var(--warn);
-		font-size: var(--fs-xs);
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		flex-shrink: 0;
+		background: var(--warn);
 	}
 	.add-env {
 		margin-top: 0.3em;
@@ -445,6 +449,8 @@
 		color: var(--text-muted);
 	}
 	.remove {
+		display: flex;
+		align-items: center;
 		background: none;
 		border: none;
 		cursor: pointer;
