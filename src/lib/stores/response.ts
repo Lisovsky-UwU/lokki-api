@@ -1,20 +1,32 @@
 import { derived, get, writable } from "svelte/store";
-import type { ExecutionOutcome, KeyValue, SseComment, SseEvent, StreamEnd } from "../bindings/types";
+import type { ExecutionOutcome, KeyValue, SocketEnd, SseComment, SseEvent, StreamEnd, WsFrame } from "../bindings/types";
 import { activeRequest, isUnder, rebasePath } from "./activeRequest";
 
-/// An SSE stream, live or finished.
+/// What a connection's log is made of: an SSE stream's events and comments,
+/// or the messages that crossed a WebSocket.
+export type StreamEntry = SseEvent | SseComment | WsFrame;
+
+/// An open connection, live or finished: an SSE stream or a WebSocket. The
+/// two share everything but what their entries are and how they end.
 export interface StreamRecord {
+	protocol: "sse" | "websocket";
 	/// Null until the response head arrives.
 	status: number | null;
 	status_text: string;
 	headers: KeyValue[];
 	/// Oldest first, capped at STREAM_ENTRY_LIMIT - the oldest go first.
-	entries: (SseEvent | SseComment)[];
+	entries: StreamEntry[];
 	/// How many entries the cap pushed out.
 	dropped: number;
-	/// Null while the stream is open. A `not_a_stream` end carries no body
-	/// here: that response is filed as the record's `outcome` instead.
-	end: StreamEnd | null;
+	/// WebSocket messages each way, pings and pongs not counted. Kept as
+	/// running totals rather than counted from `entries`, which the cap
+	/// trims.
+	sent: number;
+	received: number;
+	/// Null while the connection is open. A `not_a_stream` or `rejected` end
+	/// carries no body here: that response is filed as the record's
+	/// `outcome` instead.
+	end: StreamEnd | SocketEnd | null;
 	/// Known once the stream has ended.
 	unresolved_variables: string[];
 }
@@ -33,7 +45,7 @@ export interface ResponseRecord {
 	/// The user stopped this send. Not a failure, and shown as neither. For
 	/// a stream, the ordinary way it ends.
 	cancelled?: boolean;
-	/// Set for an SSE send whose stream got as far as a response head.
+	/// Set for an SSE or WebSocket send that got as far as a response head.
 	stream?: StreamRecord;
 }
 
@@ -52,8 +64,8 @@ export interface RequestResponses {
 	/// and they haven't opened this one since - the sidebar marks it so a
 	/// background result isn't lost.
 	unseen: boolean;
-	/// The stream being received right now, for an SSE send in flight. Moves
-	/// into the record when the stream ends.
+	/// The connection open right now, for an SSE or WebSocket send in
+	/// flight. Moves into the record when it ends.
 	live: StreamRecord | null;
 	/// Newest first. Capped at HISTORY_LIMIT, which is 1 today - the shape is
 	/// already a list so turning on real response history later is just
@@ -79,8 +91,9 @@ const EMPTY: RequestResponses = {
 /// request's own last response instead of leaving the previous one on screen.
 export const responsesByRequest = writable<Record<string, RequestResponses>>({});
 
-/// `stream` starts an empty live stream alongside, for an SSE send.
-export function markSending(path: string, sendId: string, stream = false) {
+/// `stream` starts an empty live connection alongside, for an SSE or
+/// WebSocket send.
+export function markSending(path: string, sendId: string, stream?: StreamRecord["protocol"]) {
 	responsesByRequest.update((map) => ({
 		...map,
 		[path]: {
@@ -90,7 +103,18 @@ export function markSending(path: string, sendId: string, stream = false) {
 			cancelling: false,
 			unseen: false,
 			live: stream
-				? { status: null, status_text: "", headers: [], entries: [], dropped: 0, end: null, unresolved_variables: [] }
+				? {
+						protocol: stream,
+						status: null,
+						status_text: "",
+						headers: [],
+						entries: [],
+						dropped: 0,
+						sent: 0,
+						received: 0,
+						end: null,
+						unresolved_variables: [],
+					}
 				: null,
 			history: map[path]?.history ?? [],
 		},
@@ -115,7 +139,7 @@ export function markStreamOpen(path: string, status: number, status_text: string
 /// model streaming tokens) sends dozens of events a second; copying the
 /// entry list and re-rendering for every one of them would be the slowest
 /// part of the app, so they are gathered and written a few times a second.
-const pendingEntries = new Map<string, (SseEvent | SseComment)[]>();
+const pendingEntries = new Map<string, StreamEntry[]>();
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 const FLUSH_INTERVAL_MS = 100;
 
@@ -127,16 +151,24 @@ function flushEntries() {
 		updateLive(path, (live) => {
 			const entries = live.entries.concat(batch);
 			const overflow = Math.max(0, entries.length - STREAM_ENTRY_LIMIT);
+			let { sent, received } = live;
+			for (const entry of batch) {
+				if (entry.kind !== "frame" || entry.opcode === "ping" || entry.opcode === "pong") continue;
+				if (entry.direction === "sent") sent++;
+				else received++;
+			}
 			return {
 				...live,
 				entries: overflow > 0 ? entries.slice(overflow) : entries,
 				dropped: live.dropped + overflow,
+				sent,
+				received,
 			};
 		});
 	}
 }
 
-export function appendStreamEntry(path: string, entry: SseEvent | SseComment) {
+export function appendStreamEntry(path: string, entry: StreamEntry) {
 	const batch = pendingEntries.get(path);
 	if (batch) batch.push(entry);
 	else pendingEntries.set(path, [entry]);

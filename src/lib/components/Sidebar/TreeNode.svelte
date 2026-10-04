@@ -22,7 +22,7 @@
 	import { reportError } from "../../ui/notices";
 	import { api } from "../../api/client";
 	import { t } from "../../i18n";
-	import { methodColor, requestBadge, shortBadge } from "../../ui/methods";
+	import { methodColor, NEW_REQUEST_TITLE, requestBadge, shortBadge } from "../../ui/methods";
 
 	// `collection` travels down the tree so opening a request always points
 	// the app at the collection that actually owns it; `parentPath` and
@@ -84,7 +84,7 @@
 	}
 
 	async function addRequest(protocol: Protocol = "http") {
-		const title = $t(protocol === "sse" ? "prompt.newSseRequest" : "prompt.newRequest");
+		const title = $t(NEW_REQUEST_TITLE[protocol]);
 		const name = await promptForText(title, $t("prompt.requestName"), title);
 		if (!name) return;
 		await api.createRequest(node.path, name, "GET" as HttpMethod, protocol);
@@ -253,6 +253,7 @@
 		[
 			{ label: $t("menu.addRequest"), icon: "request-add", action: () => addRequest() },
 			{ label: $t("menu.addSseRequest"), icon: "stream", action: () => addRequest("sse") },
+			{ label: $t("menu.addWsRequest"), icon: "socket", action: () => addRequest("websocket") },
 			{ label: $t("menu.addFolder"), icon: "folder-add", action: addFolder },
 		],
 		[{ label: $t("menu.renameFolder"), icon: "rename", action: renameFolder }],

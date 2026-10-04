@@ -1,6 +1,7 @@
 <script lang="ts">
-	// HTTP or SSE for the open request. Both are described by the same HTTP
-	// spec, so switching is lossless and needs no confirmation.
+	// HTTP, SSE or WebSocket for the open request. All three start from the
+	// same HTTP spec and a WebSocket's message is kept aside when switching
+	// away, so switching is lossless and needs no confirmation.
 	import { t } from "../../i18n";
 	import type { Protocol } from "../../bindings/types";
 
@@ -10,10 +11,12 @@
 		onChange,
 	}: { value: Protocol; disabled?: boolean; onChange: (protocol: Protocol) => void } = $props();
 
-	const OPTIONS: { id: Protocol; label: string; hint: "protocol.httpHint" | "protocol.sseHint" }[] = [
-		{ id: "http", label: "HTTP", hint: "protocol.httpHint" },
-		{ id: "sse", label: "SSE", hint: "protocol.sseHint" },
-	];
+	const OPTIONS: { id: Protocol; label: string; hint: "protocol.httpHint" | "protocol.sseHint" | "protocol.wsHint" }[] =
+		[
+			{ id: "http", label: "HTTP", hint: "protocol.httpHint" },
+			{ id: "sse", label: "SSE", hint: "protocol.sseHint" },
+			{ id: "websocket", label: "WS", hint: "protocol.wsHint" },
+		];
 </script>
 
 <div class="protocol-switch" role="radiogroup" aria-label={$t("protocol.label")}>

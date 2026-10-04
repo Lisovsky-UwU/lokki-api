@@ -77,12 +77,14 @@
 	// Only the newest record is kept today (see HISTORY_LIMIT), but reading
 	// it as "the first of a list" keeps the viewer ready for real history.
 	let latest = $derived($activeResponses.history[0] ?? null);
-	// A stream has a viewer of its own - while it is open, and afterwards
-	// unless the server answered with an ordinary response instead, which
-	// reads best the usual way.
+	// A stream or a socket has a viewer of its own - while it is open, and
+	// afterwards unless the server answered with an ordinary response
+	// instead, which reads best the usual way.
 	let liveStream = $derived($activeResponses.loading ? $activeResponses.live : null);
 	let finishedStream = $derived(
-		latest?.stream && latest.stream.end?.type !== "not_a_stream" ? latest.stream : null,
+		latest?.stream && latest.stream.end?.type !== "not_a_stream" && latest.stream.end?.type !== "rejected"
+			? latest.stream
+			: null,
 	);
 	// Decoding is skipped for bodies that were never text - see
 	// isTextualMediaType; the file view only needs the size and the type.
@@ -188,7 +190,7 @@
 		</div>
 
 		{#if latest.stream}
-			<p class="warning">{$t("stream.notAStream")}</p>
+			<p class="warning">{$t(latest.stream.protocol === "websocket" ? "socket.rejected" : "stream.notAStream")}</p>
 		{/if}
 		{#if outcome.unresolved_variables.length > 0}
 			<p class="warning">

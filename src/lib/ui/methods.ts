@@ -1,11 +1,11 @@
-import type { CollectionTreeNode, HttpMethod } from "../bindings/types";
+import type { CollectionTreeNode, HttpMethod, Protocol } from "../bindings/types";
 
 export const HTTP_METHODS: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 
-/// Badges with a colour of their own. SSE is not a method, but it takes a
-/// method's place in the tree: a stream is told apart by what it is, not by
-/// the GET that opens it.
-const KNOWN = new Set<string>([...HTTP_METHODS, "SSE"]);
+/// Badges with a colour of their own. SSE and WS are not methods, but they
+/// take a method's place in the tree: a stream or a socket is told apart by
+/// what it is, not by the GET that opens it.
+const KNOWN = new Set<string>([...HTTP_METHODS, "SSE", "WS"]);
 
 /// One palette for the whole app, so a method looks the same in the sidebar
 /// tree and in the request editor's selector. The values live with the rest
@@ -27,5 +27,20 @@ export function shortBadge(badge: string): string {
 /// protocol other than plain HTTP, the protocol.
 export function requestBadge(node: Extract<CollectionTreeNode, { kind: "Request" }>): string {
 	if (node.protocol === "http" && node.method) return node.method;
-	return node.protocol.toUpperCase();
+	return protocolBadge(node.protocol);
+}
+
+/// What the name prompt is titled when a request of each kind is created
+/// from the tree. GraphQL can't be created yet, so it borrows the plain one.
+export const NEW_REQUEST_TITLE = {
+	http: "prompt.newRequest",
+	sse: "prompt.newSseRequest",
+	websocket: "prompt.newWsRequest",
+	graphql: "prompt.newRequest",
+} as const satisfies Record<Protocol, string>;
+
+/// "websocket" is too long for the tree's four-character column, and "WS"
+/// is what everyone calls it anyway.
+export function protocolBadge(protocol: Protocol): string {
+	return protocol === "websocket" ? "WS" : protocol.toUpperCase();
 }

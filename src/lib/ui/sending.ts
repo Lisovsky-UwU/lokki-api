@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { api } from "../api/client";
 import { newId } from "../bindings/types";
-import type { ExecutionOutcome, SseEnd } from "../bindings/types";
+import type { ExecutionOutcome, ExecutionTrace, KeyValue, SseEnd, WsEnd } from "../bindings/types";
 import { translate } from "../i18n";
 import { activeRequest } from "../stores/activeRequest";
 import { activeCollection } from "../stores/collectionTree";
@@ -13,13 +13,15 @@ import {
 	recordResponse,
 	responsesByRequest,
 	takeLiveStream,
+	type StreamRecord,
 } from "../stores/response";
 import { workspacePath } from "../stores/workspace";
 import { notifyResult, reportError, type NoticeKind } from "./notices";
 
-/// Sends the open request - or, for an SSE request, opens its stream. Lives
-/// outside any one component because both the header's button and the
-/// response pane start and stop sends, and the two must not drift apart.
+/// Sends the open request - or, for an SSE or WebSocket request, opens its
+/// connection. Lives outside any one component because both the header's
+/// button and the response pane start and stop sends, and the two must not
+/// drift apart.
 export async function sendActiveRequest() {
 	const active = get(activeRequest);
 	if (!active) return;
@@ -35,16 +37,23 @@ export async function sendActiveRequest() {
 	let summary: string;
 	let kind: NoticeKind;
 	let inBackground: boolean;
-	if (request.meta.protocol === "sse") {
-		markSending(path, sendId, true);
+	const protocol = request.meta.protocol;
+	if (protocol === "sse" || protocol === "websocket") {
+		markSending(path, sendId, protocol);
 		try {
-			const end = await api.openSseStream(request, workspace, collection, sendId, (message) => {
-				if (message.kind === "open") markStreamOpen(path, message.status, message.status_text, message.headers);
-				else appendStreamEntry(path, message);
-			});
-			({ summary, kind, inBackground } = recordStreamEnd(path, end));
+			const end =
+				protocol === "sse"
+					? await api.openSseStream(request, workspace, collection, sendId, (message) => {
+							if (message.kind === "open") markStreamOpen(path, message.status, message.status_text, message.headers);
+							else appendStreamEntry(path, message);
+						})
+					: await api.openWebSocket(request, workspace, collection, sendId, (message) => {
+							if (message.kind === "open") markStreamOpen(path, message.status, message.status_text, message.headers);
+							else appendStreamEntry(path, message);
+						});
+			({ summary, kind, inBackground } = recordConnectionEnd(path, end));
 		} catch (e) {
-			// The stream never started, so there is nothing of it to keep.
+			// The connection never opened, so there is nothing of it to keep.
 			takeLiveStream(path);
 			summary = translate("request.sendFailedShort");
 			kind = "error";
@@ -69,51 +78,110 @@ export async function sendActiveRequest() {
 	if (inBackground) notifyResult(translate("request.backgroundDone", { name, summary }), kind);
 }
 
-/// Files a finished stream. An answer that was not a stream at all becomes
-/// an ordinary response record, so the usual viewer shows it - a 401 with a
-/// JSON error is better read as one than as an empty event list.
-function recordStreamEnd(path: string, end: SseEnd) {
+/// Files a finished stream or socket. An answer that never became one - not
+/// an event stream, or an upgrade the server refused - becomes an ordinary
+/// response record, so the usual viewer shows it: a 401 with a JSON error is
+/// better read as one than as an empty log.
+function recordConnectionEnd(path: string, end: SseEnd | WsEnd) {
 	const { outcome: result, trace, unresolved_variables } = end;
 	const live = takeLiveStream(path);
-	const stream = {
+	const sse = "events" in result;
+	const stream: StreamRecord = {
+		protocol: sse ? "sse" : "websocket",
 		status: result.status,
 		status_text: result.status_text,
 		headers: result.headers,
 		entries: live?.entries ?? [],
 		dropped: live?.dropped ?? 0,
-		end: result.end.type === "not_a_stream" ? { type: "not_a_stream" as const, body_base64: "" } : result.end,
+		sent: sse ? 0 : result.sent,
+		received: sse ? 0 : result.received,
+		// The body moves into the record's outcome below; keeping a second
+		// copy of it here would only double what the store holds.
+		end:
+			result.end.type === "not_a_stream" || result.end.type === "rejected"
+				? { ...result.end, body_base64: "" }
+				: result.end,
 		unresolved_variables,
 	};
 	const at = Date.now();
 
-	if (result.end.type === "not_a_stream") {
-		const outcome: ExecutionOutcome = {
-			status: result.status,
-			status_text: result.status_text,
-			headers: result.headers,
-			body_base64: result.end.body_base64,
-			trace,
-			unresolved_variables,
-		};
+	if (result.end.type === "not_a_stream" || result.end.type === "rejected") {
 		return {
 			summary: `${result.status} ${result.status_text}`,
 			kind: "error" as NoticeKind,
-			inBackground: recordResponse(path, { outcome, error: null, at, stream }),
+			inBackground: recordResponse(path, {
+				outcome: answerAsOutcome(result, result.end.body_base64, trace, unresolved_variables),
+				error: null,
+				at,
+				stream,
+			}),
 		};
 	}
 	const error = result.end.type === "failed" ? result.end.message : null;
+	const summary = sse
+		? translate(error ? "stream.summaryFailed" : "stream.summaryClosed", { count: result.events })
+		: translate(error ? "socket.summaryFailed" : "socket.summaryClosed", {
+				sent: result.sent,
+				received: result.received,
+			});
 	return {
-		summary: translate(error ? "stream.summaryFailed" : "stream.summaryClosed", { count: result.events }),
+		summary,
 		kind: (error ? "error" : "success") as NoticeKind,
 		inBackground: recordResponse(path, { outcome: null, error, at, stream }),
 	};
 }
 
-/// Stops the open request's send. For a stream this is the ordinary way to
-/// end it. The send stays "loading" until the backend comes back with the
-/// cancellation - the connection is torn down there, and reporting it as
-/// finished any earlier would let a second send start while the first is
-/// still unwinding.
+function answerAsOutcome(
+	head: { status: number; status_text: string; headers: KeyValue[] },
+	body_base64: string,
+	trace: ExecutionTrace,
+	unresolved_variables: string[],
+): ExecutionOutcome {
+	return {
+		status: head.status,
+		status_text: head.status_text,
+		headers: head.headers,
+		body_base64,
+		trace,
+		unresolved_variables,
+	};
+}
+
+/// Whether the open request is a WebSocket that is open right now - past
+/// the handshake, not merely connecting.
+export function activeSocketIsOpen(): boolean {
+	const active = get(activeRequest);
+	if (active?.request.meta.protocol !== "websocket") return false;
+	const live = get(responsesByRequest)[active.path]?.live;
+	return live?.protocol === "websocket" && live.status === 101;
+}
+
+/// Sends the open WebSocket request's message over its socket. The message
+/// is the one in the editor, unsaved edits included - what the user sees is
+/// what goes out.
+export async function sendSocketMessage() {
+	const active = get(activeRequest);
+	if (!active || !activeSocketIsOpen()) return;
+	const sendId = get(responsesByRequest)[active.path]?.sendId;
+	const message = active.request.websocket?.message ?? "";
+	if (!sendId) return;
+	try {
+		await api.sendWebSocketMessage(
+			sendId,
+			message,
+			get(workspacePath),
+			get(activeCollection)?.path ?? null,
+		);
+	} catch (e) {
+		reportError(translate("socket.sendFailed"), e);
+	}
+}
+
+/// Stops the open request's send. For a stream or a socket this is the
+/// ordinary way to end it. The send stays "loading" until the backend comes
+/// back with the cancellation - the connection is torn down there, and
+/// reporting it as finished any earlier would let a second send start while
+/// the first is still unwinding.
 export async function cancelActiveSend() {
 	const path = get(activeRequest)?.path;
 	const sendId = path ? get(responsesByRequest)[path]?.sendId : null;

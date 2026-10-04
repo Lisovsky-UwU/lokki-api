@@ -274,6 +274,7 @@
 		--method-head: #56607a;
 		--method-options: #08766f;
 		--method-sse: #a8337f;
+		--method-ws: #557209;
 		--method-other: #6b6779;
 		color: var(--text);
 		background-color: var(--surface);
@@ -386,6 +387,7 @@
 		--method-head: #a3abbd;
 		--method-options: #5ccfc6;
 		--method-sse: #e68ac9;
+		--method-ws: #b4d468;
 		--method-other: #9a96ab;
 		--scrollbar-thumb: rgba(154, 150, 171, 0.2);
 		--scrollbar-thumb-hover: rgba(154, 150, 171, 0.35);

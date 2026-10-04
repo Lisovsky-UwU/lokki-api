@@ -5,9 +5,9 @@ fn default_true() -> bool {
     true
 }
 
-/// Protocol this request executes over. `Http` and `Sse` are implemented;
-/// the others exist so `RequestFile` can grow sibling `Option` fields (e.g.
-/// `ws: Option<WsRequestSpec>`) later without a breaking schema migration.
+/// Protocol this request executes over. `Http`, `Sse` and `WebSocket` are
+/// implemented; the others exist so `RequestFile` can grow sibling `Option`
+/// fields later without a breaking schema migration.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Protocol {
@@ -37,6 +37,42 @@ pub struct RequestFile {
     /// what makes switching a request between the two lossless.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub http: Option<HttpRequestSpec>,
+    /// What a WebSocket request needs beyond its handshake. The handshake
+    /// is the `http` spec above - it is an HTTP GET with an `Upgrade`, so the
+    /// URL, query, headers and auth are described there and resolved the
+    /// same way - and only the message being composed lives here.
+    ///
+    /// Kept when the request is switched to another protocol, so switching
+    /// back loses nothing.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub websocket: Option<WebSocketSpec>,
+}
+
+/// The message a WebSocket request sends. One draft rather than a list: it
+/// is what the composer shows, and a request file is not the place for a
+/// conversation log.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WebSocketSpec {
+    /// Only picks the editor's highlighting. A WebSocket message carries no
+    /// type of its own, and it always goes out as a text frame.
+    #[serde(default = "default_message_format")]
+    pub format: TextFormat,
+    #[serde(default)]
+    pub message: String,
+}
+
+/// Most WebSocket APIs speak JSON, so a new message starts out as JSON.
+fn default_message_format() -> TextFormat {
+    TextFormat::Json
+}
+
+impl Default for WebSocketSpec {
+    fn default() -> Self {
+        WebSocketSpec {
+            format: default_message_format(),
+            message: String::new(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -158,8 +194,9 @@ impl RequestFile {
         Self::new(name, seq, Protocol::Http, method)
     }
 
-    /// A blank request over one of the protocols that are described by an
-    /// HTTP request (`Http`, `Sse`).
+    /// A blank request. Every implemented protocol starts from an HTTP
+    /// request - for SSE and WebSocket it is the one that opens the
+    /// connection - and a WebSocket request gets an empty message as well.
     pub fn new(name: impl Into<String>, seq: u32, protocol: Protocol, method: HttpMethod) -> Self {
         RequestFile {
             meta: RequestMeta {
@@ -176,6 +213,7 @@ impl RequestFile {
                 auth: AuthSpec::None,
                 body: BodySpec::None,
             }),
+            websocket: (protocol == Protocol::WebSocket).then(WebSocketSpec::default),
         }
     }
 }

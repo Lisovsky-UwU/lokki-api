@@ -208,6 +208,11 @@
 							closeBrackets(),
 							autocompletion({ override: [variableCompletions] }),
 							keymap.of([
+								// Ctrl+Enter sends, app-wide (the header listens on
+								// the window). Claimed here so the default keymap's
+								// "insert a blank line" doesn't first slip a newline
+								// into the very text being sent.
+								{ key: "Mod-Enter", run: () => true },
 								...closeBracketsKeymap,
 								...completionKeymap,
 								...defaultKeymap,
