@@ -110,7 +110,7 @@
 	}
 	.toolbar button {
 		cursor: pointer;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 	}
 	.editor-container {
 		flex: 1;
@@ -118,13 +118,13 @@
 	}
 	.file-path {
 		margin: 0;
-		font-family: ui-monospace, monospace;
-		font-size: 0.85em;
+		font-family: var(--font-mono);
+		font-size: var(--fs-sm);
 		word-break: break-all;
 	}
 	.hint {
 		margin: 0;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		opacity: 0.6;
 	}
 </style>

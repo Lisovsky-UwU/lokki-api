@@ -133,8 +133,8 @@
 	// (white on white) here. Blinking is left to CodeMirror's own animation -
 	// defining a competing one made the caret flicker erratically.
 	const theme = EditorView.theme({
-		"&": { fontSize: "0.85em", height: "100%", backgroundColor: "transparent" },
-		".cm-content": { fontFamily: "ui-monospace, monospace", padding: "0.5em", caretColor: "currentColor" },
+		"&": { fontSize: "var(--fs-md)", height: "100%", backgroundColor: "transparent" },
+		".cm-content": { fontFamily: "var(--font-mono)", padding: "0.5em", caretColor: "currentColor" },
 		".cm-scroller": { overflow: "auto" },
 		"&.cm-focused": { outline: "none" },
 		".cm-cursor, .cm-dropCursor": { borderLeftColor: "currentColor", borderLeftWidth: "2px" },

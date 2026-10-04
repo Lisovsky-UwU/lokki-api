@@ -64,7 +64,7 @@
 		border: none;
 		cursor: pointer;
 		opacity: 0.5;
-		font-size: 1.1em;
+		font-size: var(--fs-lg);
 		line-height: 1;
 		padding: 0.2em 0.4em;
 	}

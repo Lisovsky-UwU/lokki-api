@@ -365,7 +365,7 @@
 		padding: 0.3em 0.4em;
 		border-radius: 4px;
 		cursor: pointer;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 		color: inherit;
 	}
 	.node-name {
@@ -387,10 +387,10 @@
 		margin: 0;
 		padding: 0.2em 0.6em;
 		opacity: 0.45;
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 	}
 	.method {
-		font-size: 0.7em;
+		font-size: var(--fs-xs);
 		letter-spacing: 0.03em;
 		font-weight: 700;
 		min-width: 2.8em;

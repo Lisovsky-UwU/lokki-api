@@ -142,7 +142,7 @@
 		display: flex;
 		gap: 1em;
 		align-items: center;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 	}
 	.group {
 		display: flex;
@@ -151,7 +151,7 @@
 	}
 	.group label {
 		opacity: 0.6;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		max-width: 16em;
 		overflow: hidden;
 		text-overflow: ellipsis;

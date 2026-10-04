@@ -208,7 +208,7 @@
 		background: transparent;
 		color: inherit;
 		cursor: pointer;
-		font-size: 1em;
+		font-size: var(--fs-md);
 	}
 	.primary {
 		border-color: var(--accent);
@@ -245,7 +245,7 @@
 		margin-top: 0.5rem;
 	}
 	.recent-head {
-		font-size: 0.75em;
+		font-size: var(--fs-xs);
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		opacity: 0.6;
@@ -271,7 +271,7 @@
 		background: none;
 		border: none;
 		padding: 0.5em 0.6em;
-		font-size: 1em;
+		font-size: var(--fs-md);
 		text-align: left;
 	}
 	.recent-name {
@@ -280,25 +280,25 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		font-weight: 600;
-		font-size: 0.95em;
+		font-size: var(--fs-md);
 	}
 	.recent-path {
 		max-width: 100%;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-		font-family: ui-monospace, monospace;
-		font-size: 0.78em;
+		font-family: var(--font-mono);
+		font-size: var(--fs-xs);
 		opacity: 0.6;
 	}
 	.recent-busy {
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 		opacity: 0.6;
 		white-space: nowrap;
 	}
 	.hint {
 		margin: 0;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		opacity: 0.6;
 		margin-bottom: 1em;
 	}

@@ -323,7 +323,7 @@
 	}
 	h2 {
 		margin: 0 0 0.8em;
-		font-size: 1.1em;
+		font-size: var(--fs-xl);
 	}
 	.layout {
 		display: grid;
@@ -351,7 +351,7 @@
 		border-radius: 4px;
 		cursor: pointer;
 		color: inherit;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	.env-name {
 		overflow: hidden;
@@ -367,19 +367,19 @@
 	.active-mark {
 		margin-left: auto;
 		color: var(--ok);
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 	}
 	.dot {
 		margin-left: auto;
 		color: var(--warn);
-		font-size: 0.7em;
+		font-size: var(--fs-xs);
 	}
 	.add-env {
 		margin-top: 0.3em;
 		background: none;
 		border: 1px dashed var(--line-strong);
 		cursor: pointer;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		color: inherit;
 	}
 	.editor {
@@ -400,7 +400,7 @@
 		min-width: 0;
 	}
 	.name-field span {
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 		opacity: 0.6;
 	}
 	.name-field input {
@@ -412,7 +412,7 @@
 		border: 1px solid color-mix(in srgb, var(--danger) 50%, transparent);
 		color: var(--danger);
 		cursor: pointer;
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 		white-space: nowrap;
 	}
 	.delete-env:hover {
@@ -434,13 +434,13 @@
 	.var-row input.mono {
 		flex: 1;
 		min-width: 0;
-		font-family: ui-monospace, monospace;
+		font-family: var(--font-mono);
 	}
 	.secret-toggle {
 		display: flex;
 		align-items: center;
 		gap: 0.2em;
-		font-size: 0.75em;
+		font-size: var(--fs-xs);
 		white-space: nowrap;
 		opacity: 0.7;
 	}
@@ -449,7 +449,7 @@
 		border: none;
 		cursor: pointer;
 		opacity: 0.5;
-		font-size: 1.1em;
+		font-size: var(--fs-lg);
 	}
 	.add {
 		align-self: flex-start;
@@ -457,12 +457,12 @@
 		background: none;
 		border: 1px dashed var(--line-strong);
 		cursor: pointer;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		color: inherit;
 	}
 	.hint {
 		opacity: 0.6;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	.actions {
 		display: flex;
@@ -473,7 +473,7 @@
 	}
 	.unsaved {
 		margin-right: auto;
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 		color: var(--warn);
 	}
 	.actions button {

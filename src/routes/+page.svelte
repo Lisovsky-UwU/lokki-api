@@ -1,5 +1,9 @@
 <script lang="ts">
 	import { onMount } from "svelte";
+	// Bundled rather than fetched: the app has to look the same offline, and
+	// neither face ships with any OS.
+	import "@fontsource-variable/onest";
+	import "@fontsource-variable/jetbrains-mono";
 	import { workspace, workspacePath, collections } from "../lib/stores/workspace";
 	import { activeRequest } from "../lib/stores/activeRequest";
 	import { api } from "../lib/api/client";
@@ -194,7 +198,21 @@
 	   Components take every colour from these names and never carry a
 	   literal of their own, so a theme is this block and nothing else. */
 	:global(:root) {
-		font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+		/* Onest has a Cyrillic as careful as its Latin, which the Russian UI
+		   needs. The mono face carries everything the user types or reads
+		   off the wire: URLs, bodies, headers. */
+		--font-ui: "Onest Variable", "Segoe UI", system-ui, sans-serif;
+		--font-mono: "JetBrains Mono Variable", ui-monospace, Consolas, monospace;
+		/* Pixels, not ems: an em nested in an em is how one label ended up
+		   at three slightly different sizes. */
+		--fs-xs: 11px;
+		--fs-sm: 12px;
+		--fs-md: 13px;
+		--fs-lg: 14px;
+		--fs-xl: 16px;
+		--fs-2xl: 20px;
+		font-family: var(--font-ui);
+		font-size: var(--fs-md);
 		color-scheme: light;
 		--text: #24292f;
 		--surface: #ffffff;
@@ -263,6 +281,7 @@
 	}
 	:global(input, select, textarea, button) {
 		font-family: inherit;
+		font-size: inherit;
 		border-radius: 6px;
 		border: 1px solid var(--line-strong);
 		padding: 0.4em 0.6em;
@@ -357,7 +376,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.35em;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		font-weight: 600;
 		opacity: 0.75;
 		white-space: nowrap;
@@ -368,14 +387,14 @@
 		color: inherit;
 		border-radius: 6px;
 		padding: 0.25em 0.7em;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		cursor: pointer;
 	}
 	.exit-incognito:hover {
 		background: var(--hover);
 	}
 	.hint {
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		opacity: 0.6;
 	}
 	.settings-btn {
@@ -385,7 +404,7 @@
 		background: none;
 		border: none;
 		padding: 0.2em 0.4em;
-		font-size: 1.1em;
+		font-size: var(--fs-lg);
 		line-height: 1;
 		cursor: pointer;
 		opacity: 0.7;

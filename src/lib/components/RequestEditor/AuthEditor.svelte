@@ -70,7 +70,7 @@
 		grid-template-columns: auto 1fr;
 		gap: 0.35em 0.9em;
 		margin: 0;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		margin-bottom: 1.2em;
 		align-items: center;
 	}

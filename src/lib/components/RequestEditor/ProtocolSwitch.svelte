@@ -45,7 +45,7 @@
 		border: none;
 		border-radius: 0;
 		padding: 0.15em 0.6em;
-		font-size: 0.75em;
+		font-size: var(--fs-xs);
 		font-weight: 700;
 		letter-spacing: 0.03em;
 		color: inherit;

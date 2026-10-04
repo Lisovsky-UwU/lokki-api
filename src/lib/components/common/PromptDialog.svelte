@@ -84,13 +84,13 @@
 	}
 	h2 {
 		margin: 0;
-		font-size: 1em;
+		font-size: var(--fs-xl);
 	}
 	label {
 		display: flex;
 		flex-direction: column;
 		gap: 0.3em;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 	}
 	label span {
 		opacity: 0.7;

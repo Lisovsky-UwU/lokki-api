@@ -84,7 +84,7 @@
 		opacity: 0.55;
 		padding: 0.25em 0.35em;
 		border-radius: 4px;
-		font-size: 0.95em;
+		font-size: var(--fs-md);
 		line-height: 1;
 	}
 	.trigger:hover {

@@ -187,11 +187,11 @@
 	}
 	.request-title .dirty {
 		color: var(--warn);
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 	}
 	.request-title .warn {
 		font-weight: 400;
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 		color: var(--danger);
 	}
 	.send {
