@@ -30,6 +30,7 @@
 	import RequestWorkbench from "../lib/components/RequestWorkbench.svelte";
 	import GhostIcon from "../lib/components/common/GhostIcon.svelte";
 	import Icon from "../lib/components/common/Icon.svelte";
+	import ShortcutHints from "../lib/components/common/ShortcutHints.svelte";
 	import ContextMenu from "../lib/components/common/ContextMenu.svelte";
 	import EnvironmentSwitcher from "../lib/components/EnvironmentSwitcher/EnvironmentSwitcher.svelte";
 	import RequestTitle from "../lib/components/RequestEditor/RequestTitle.svelte";
@@ -184,6 +185,7 @@
 				<div class="empty-state-outer">
 					<div class="empty-state">
 						<p>{$t("app.emptyState")}</p>
+						<ShortcutHints />
 					</div>
 				</div>
 			{:else}
@@ -507,10 +509,15 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		gap: 16px;
 		flex: 1;
 		min-width: 0;
 		height: 100%;
 		color: var(--text-muted);
 		flex-direction: column;
+	}
+	.empty-state p {
+		margin: 0;
+		font-size: var(--fs-lg);
 	}
 </style>

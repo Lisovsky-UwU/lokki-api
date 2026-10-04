@@ -8,6 +8,7 @@
 	import { formatDuration, formatElapsed, formatSize } from "../../ui/format";
 	import CodeEditor from "../CodeEditor.svelte";
 	import Icon from "../common/Icon.svelte";
+	import ShortcutHints from "../common/ShortcutHints.svelte";
 	import HeadersTable from "./HeadersTable.svelte";
 	import StreamViewer from "./StreamViewer.svelte";
 	import { detectFormat, isTextualMediaType, mediaTypeOf } from "../../ui/contentType";
@@ -232,6 +233,7 @@
 	{:else}
 		<div class="hint-outer">
 			<p class="hint">{$t("response.notSent")}</p>
+			<ShortcutHints save={false} />
 		</div>
 	{/if}
 </div>
@@ -249,6 +251,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		flex-direction: column;
+		gap: 14px;
 	}
 	.hint {
 		color: var(--text-muted);
