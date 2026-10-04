@@ -83,6 +83,7 @@
 		<label for="global-env">{$t("env.global")}</label>
 		<select
 			id="global-env"
+			title={$t("env.global")}
 			class:none={!$activeGlobalEnvironmentId}
 			value={$activeGlobalEnvironmentId ?? ""}
 			onchange={(e) => selectGlobal((e.target as HTMLSelectElement).value)}
@@ -114,6 +115,7 @@
 			<label for="collection-env" title={$activeCollection.name}>{$activeCollection.name}</label>
 			<select
 				id="collection-env"
+				title={$activeCollection.name}
 				class:none={!$activeCollectionEnvironmentId}
 				value={$activeCollectionEnvironmentId ?? ""}
 				onchange={(e) => selectCollection((e.target as HTMLSelectElement).value)}
@@ -168,6 +170,16 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+	/* In a narrow window the breadcrumb needs the room more than the scope
+	   names do; the select's tooltip still names its scope. */
+	@container topbar (max-width: 760px) {
+		label {
+			display: none;
+		}
+		.picker {
+			padding-left: 4px;
+		}
 	}
 	select {
 		height: 100%;
