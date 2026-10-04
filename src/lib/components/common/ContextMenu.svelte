@@ -71,8 +71,8 @@
 		flex-direction: column;
 		padding: 0.25em;
 		border-radius: 8px;
-		background: var(--modal-bg, #fff);
-		border: 1px solid rgba(127, 127, 127, 0.3);
-		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+		background: var(--surface-raised);
+		border: 1px solid var(--line-strong);
+		box-shadow: var(--shadow-popover);
 	}
 </style>

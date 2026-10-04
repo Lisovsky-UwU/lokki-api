@@ -33,7 +33,7 @@
 		flex: 1;
 		min-height: 0;
 		overflow: auto;
-		border: 1px solid rgba(127, 127, 127, 0.3);
+		border: 1px solid var(--line-strong);
 		border-radius: 6px;
 	}
 	.headers table {
@@ -47,12 +47,12 @@
 		text-align: left;
 		font-weight: 600;
 		padding: 0.45em 0.6em;
-		background: var(--modal-bg, #f6f8fa);
-		border-bottom: 1px solid rgba(127, 127, 127, 0.35);
+		background: var(--surface-sunken);
+		border-bottom: 1px solid var(--line-strong);
 	}
 	.headers td {
 		padding: 0.4em 0.6em;
-		border-bottom: 1px solid rgba(127, 127, 127, 0.18);
+		border-bottom: 1px solid var(--line);
 		vertical-align: top;
 	}
 	.headers tr:last-child td {

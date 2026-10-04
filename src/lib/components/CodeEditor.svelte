@@ -145,12 +145,12 @@
 		".cm-content ::selection, .cm-line ::selection": { background: "var(--cm-selection) !important" },
 		".cm-activeLine": { backgroundColor: "var(--cm-active-line)" },
 		".cm-tooltip": {
-			background: "var(--modal-bg, #fff)",
-			border: "1px solid rgba(127,127,127,0.35)",
+			background: "var(--surface-raised)",
+			border: "1px solid var(--line-strong)",
 			borderRadius: "6px",
 			color: "inherit",
 		},
-		".cm-tooltip-autocomplete ul li[aria-selected]": { background: "rgba(57, 108, 216, 0.35)", color: "inherit" },
+		".cm-tooltip-autocomplete ul li[aria-selected]": { background: "var(--selected)", color: "inherit" },
 	});
 
 	/// EDN has no CodeMirror package of its own; it is a subset of Clojure's
@@ -274,7 +274,7 @@
 	.code-editor {
 		height: 100%;
 		min-height: 8em;
-		border: 1px solid rgba(127, 127, 127, 0.35);
+		border: 1px solid var(--line-strong);
 		border-radius: 6px;
 		overflow: hidden;
 	}

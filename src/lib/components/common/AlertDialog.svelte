@@ -54,7 +54,7 @@
 	.backdrop {
 		position: fixed;
 		inset: 0;
-		background: rgba(0, 0, 0, 0.4);
+		background: var(--overlay);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -63,11 +63,11 @@
 		z-index: 60;
 	}
 	.dialog {
-		background: var(--modal-bg, #fff);
+		background: var(--surface-raised);
 		border-radius: 10px;
 		padding: 1.2em;
 		width: min(30em, 90vw);
-		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+		box-shadow: var(--shadow-dialog);
 		display: flex;
 		flex-direction: column;
 		gap: 0.7em;
@@ -92,8 +92,8 @@
 		margin-top: 0.3em;
 	}
 	.primary {
-		background: #396cd8;
-		border-color: #396cd8;
-		color: white;
+		background: var(--accent);
+		border-color: var(--accent);
+		color: var(--accent-ink);
 	}
 </style>

@@ -204,16 +204,16 @@
 	button {
 		padding: 0.6em 1.4em;
 		border-radius: 8px;
-		border: 1px solid rgba(127, 127, 127, 0.45);
+		border: 1px solid var(--line-strong);
 		background: transparent;
 		color: inherit;
 		cursor: pointer;
 		font-size: 1em;
 	}
 	.primary {
-		border-color: #396cd8;
-		background: #396cd8;
-		color: white;
+		border-color: var(--accent);
+		background: var(--accent);
+		color: var(--accent-ink);
 	}
 	button:disabled {
 		opacity: 0.6;
@@ -234,7 +234,7 @@
 	}
 	.ghost:hover:not(:disabled) {
 		opacity: 1;
-		background: rgba(127, 127, 127, 0.15);
+		background: var(--hover);
 	}
 	.recent {
 		display: flex;
@@ -259,7 +259,7 @@
 		padding-right: 0.3em;
 	}
 	.recent-row:hover {
-		background: rgba(127, 127, 127, 0.12);
+		background: var(--hover);
 	}
 	.recent-open {
 		flex: 1;

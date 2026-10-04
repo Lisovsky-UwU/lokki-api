@@ -227,10 +227,10 @@
 		font-weight: 700;
 	}
 	.state.open {
-		color: #2e9e5b;
+		color: var(--ok);
 	}
 	.state.failed {
-		color: #d1443c;
+		color: var(--danger);
 	}
 	.state.ended {
 		opacity: 0.7;
@@ -240,13 +240,13 @@
 		font-size: 0.9em;
 	}
 	.status-ok {
-		color: #2e9e5b;
+		color: var(--ok);
 	}
 	.status-redirect {
-		color: #a37c00;
+		color: var(--warn);
 	}
 	.status-error {
-		color: #d1443c;
+		color: var(--danger);
 	}
 	.meta {
 		opacity: 0.6;
@@ -261,7 +261,7 @@
 	}
 	.disconnect {
 		background: none;
-		border: 1px solid rgba(127, 127, 127, 0.45);
+		border: 1px solid var(--line-strong);
 		color: inherit;
 		border-radius: 6px;
 		padding: 0.15em 0.7em;
@@ -269,8 +269,8 @@
 		cursor: pointer;
 	}
 	.disconnect:hover:not(:disabled) {
-		border-color: #d1443c;
-		color: #d1443c;
+		border-color: var(--danger);
+		color: var(--danger);
 	}
 	.disconnect:disabled {
 		opacity: 0.5;
@@ -279,8 +279,8 @@
 	.spinner {
 		width: 0.8em;
 		height: 0.8em;
-		border: 2px solid rgba(127, 127, 127, 0.35);
-		border-top-color: #396cd8;
+		border: 2px solid var(--line-strong);
+		border-top-color: var(--accent-text);
 		border-radius: 50%;
 		animation: spin 0.7s linear infinite;
 	}
@@ -311,12 +311,12 @@
 	}
 	.error {
 		margin: 0;
-		color: #d1443c;
+		color: var(--danger);
 		white-space: pre-wrap;
 	}
 	.warning {
-		color: #a37c00;
-		background: rgba(163, 124, 0, 0.1);
+		color: var(--warn);
+		background: color-mix(in srgb, var(--warn) 10%, transparent);
 		border-radius: 6px;
 		padding: 0.4em 0.6em;
 		font-size: 0.85em;
@@ -326,7 +326,7 @@
 		display: flex;
 		align-items: flex-end;
 		gap: 0.2em;
-		border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+		border-bottom: 1px solid var(--line);
 	}
 	.tabs button {
 		background: none;
@@ -340,7 +340,7 @@
 	}
 	.tabs button.active {
 		opacity: 1;
-		border-bottom-color: #396cd8;
+		border-bottom-color: var(--accent-text);
 	}
 	.filter {
 		margin: 0 0 0.25em auto;
@@ -353,7 +353,7 @@
 		flex: 1;
 		min-height: 0;
 		overflow: auto;
-		border: 1px solid rgba(127, 127, 127, 0.3);
+		border: 1px solid var(--line-strong);
 		border-radius: 6px;
 		font-size: 0.85em;
 	}
@@ -363,7 +363,7 @@
 		align-items: baseline;
 		column-gap: 0.6em;
 		padding: 0.3em 0.6em;
-		border-bottom: 1px solid rgba(127, 127, 127, 0.15);
+		border-bottom: 1px solid var(--line);
 	}
 	.entry:last-child {
 		border-bottom: none;
@@ -393,7 +393,7 @@
 	}
 	.type.named {
 		opacity: 1;
-		color: #396cd8;
+		color: var(--accent-text);
 	}
 	.id {
 		font-family: ui-monospace, monospace;

@@ -36,7 +36,7 @@
 		display: flex;
 		margin-left: auto;
 		flex-shrink: 0;
-		border: 1px solid rgba(127, 127, 127, 0.35);
+		border: 1px solid var(--line-strong);
 		border-radius: 6px;
 		overflow: hidden;
 	}
@@ -53,11 +53,11 @@
 		cursor: pointer;
 	}
 	.protocol-switch button + button {
-		border-left: 1px solid rgba(127, 127, 127, 0.35);
+		border-left: 1px solid var(--line-strong);
 	}
 	.protocol-switch button.current {
 		opacity: 1;
-		background: rgba(57, 108, 216, 0.18);
+		background: var(--selected);
 	}
 	.protocol-switch button:disabled {
 		cursor: default;

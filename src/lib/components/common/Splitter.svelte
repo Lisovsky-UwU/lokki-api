@@ -84,7 +84,7 @@
 	.splitter:hover,
 	.splitter.dragging,
 	.splitter:focus-visible {
-		background: rgba(57, 108, 216, 0.45);
+		background: color-mix(in srgb, var(--accent) 45%, transparent);
 		outline: none;
 	}
 	.vertical {

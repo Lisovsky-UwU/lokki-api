@@ -99,7 +99,7 @@
 	.tabs {
 		display: flex;
 		gap: 0.2em;
-		border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+		border-bottom: 1px solid var(--line);
 	}
 	.tabs button {
 		background: none;
@@ -112,7 +112,7 @@
 	}
 	.tabs button.active {
 		opacity: 1;
-		border-bottom-color: #396cd8;
+		border-bottom-color: var(--accent-text);
 	}
 	.tab-content {
 		flex: 1;
@@ -124,10 +124,10 @@
 		gap: 0.8em;
 	}
 	.url-preview {
-		border: 1px solid rgba(127, 127, 127, 0.35);
+		border: 1px solid var(--line-strong);
 		border-radius: 8px;
 		padding: 0.6em 0.7em;
-		background: rgba(127, 127, 127, 0.08);
+		background: var(--fill-subtle);
 		display: flex;
 		flex-direction: column;
 		gap: 0.4em;

@@ -334,23 +334,23 @@
 		border-bottom: 2px solid transparent;
 	}
 	.node-row:hover {
-		background: rgba(127, 127, 127, 0.15);
+		background: var(--hover);
 	}
 	.node-row.active {
-		background: rgba(57, 108, 216, 0.2);
+		background: var(--selected);
 	}
 	.node-row.dragged {
 		opacity: 0.4;
 	}
 	.node-row.drop-before {
-		border-top-color: #396cd8;
+		border-top-color: var(--accent-text);
 	}
 	.node-row.drop-after {
-		border-bottom-color: #396cd8;
+		border-bottom-color: var(--accent-text);
 	}
 	.node-row.drop-inside {
-		background: rgba(57, 108, 216, 0.25);
-		outline: 1px dashed #396cd8;
+		background: color-mix(in srgb, var(--accent) 25%, transparent);
+		outline: 1px dashed var(--accent-text);
 	}
 	.folder-label,
 	.request-label {

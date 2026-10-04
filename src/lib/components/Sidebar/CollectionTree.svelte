@@ -530,7 +530,7 @@
 		border-radius: 4px;
 	}
 	.sidebar-header-collections :global(.trigger.custom:hover) {
-		background: rgba(127, 127, 127, 0.15);
+		background: var(--hover);
 	}
 	/* The row is at normal size now, so the marker follows the small-caps
 	   label beside it rather than the row it sits in. */
@@ -550,7 +550,7 @@
 		color: inherit;
 	}
 	.icon-btn:hover {
-		background: rgba(127, 127, 127, 0.15);
+		background: var(--hover);
 	}
 	/* A collection is drawn as a container, a folder as a plain row inside
 	   one. Weight alone stopped carrying that once a workspace had enough
@@ -561,7 +561,7 @@
 	   "raised", which is two more palette entries to keep in step. A hairline
 	   says "container" the same way in both. */
 	.collection {
-		border: 1px solid rgba(127, 127, 127, 0.25);
+		border: 1px solid var(--line);
 		border-radius: 6px;
 		padding: 0.15em;
 		margin-bottom: 0.4em;
@@ -570,10 +570,10 @@
 	   border: a border that grows from 1px to 2px shifts everything below it
 	   by a pixel while the drag is in flight. */
 	.collection.drop-before {
-		box-shadow: inset 0 2px 0 #396cd8;
+		box-shadow: inset 0 2px 0 var(--accent-text);
 	}
 	.collection.drop-after {
-		box-shadow: inset 0 -2px 0 #396cd8;
+		box-shadow: inset 0 -2px 0 var(--accent-text);
 	}
 	.collection.dragged {
 		opacity: 0.4;
@@ -603,12 +603,12 @@
 		white-space: nowrap;
 	}
 	.collection-label:hover {
-		background: rgba(127, 127, 127, 0.15);
+		background: var(--hover);
 	}
 	/* The collection whose environment is in effect - it follows the open
 	   request, so this also says where that request lives. */
 	.collection-header.active {
-		background: rgba(57, 108, 216, 0.14);
+		background: var(--selected);
 		border-radius: 4px;
 	}
 	.chevron {
@@ -624,8 +624,8 @@
 		border-radius: 4px;
 	}
 	.tree.drop-root {
-		background: rgba(57, 108, 216, 0.12);
-		outline: 1px dashed rgba(57, 108, 216, 0.6);
+		background: color-mix(in srgb, var(--accent) 12%, transparent);
+		outline: 1px dashed color-mix(in srgb, var(--accent) 60%, transparent);
 	}
 	.empty {
 		opacity: 0.6;
@@ -649,7 +649,7 @@
 		border-radius: 6px;
 	}
 	.workspace-name-outer :global(.trigger.custom:hover) {
-		background: rgba(127, 127, 127, 0.15);
+		background: var(--hover);
 	}
 	.workspace-name {
 		font-weight: 600;

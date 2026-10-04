@@ -245,12 +245,12 @@
 		opacity: 0.6;
 	}
 	.error {
-		color: #d1443c;
+		color: var(--danger);
 		white-space: pre-wrap;
 	}
 	.warning {
-		color: #a37c00;
-		background: rgba(163, 124, 0, 0.1);
+		color: var(--warn);
+		background: color-mix(in srgb, var(--warn) 10%, transparent);
 		border-radius: 6px;
 		padding: 0.4em 0.6em;
 		font-size: 0.85em;
@@ -271,7 +271,7 @@
 	}
 	.cancel {
 		background: none;
-		border: 1px solid rgba(127, 127, 127, 0.45);
+		border: 1px solid var(--line-strong);
 		color: inherit;
 		border-radius: 6px;
 		padding: 0.3em 0.9em;
@@ -279,8 +279,8 @@
 		cursor: pointer;
 	}
 	.cancel:hover:not(:disabled) {
-		border-color: #d1443c;
-		color: #d1443c;
+		border-color: var(--danger);
+		color: var(--danger);
 	}
 	.cancel:disabled {
 		opacity: 0.5;
@@ -298,14 +298,14 @@
 		font-weight: 700;
 	}
 	.status-ok {
-		color: #2e9e5b;
+		color: var(--ok);
 	}
 	.status-redirect {
-		color: #a37c00;
+		color: var(--warn);
 	}
 	.status-client-error,
 	.status-server-error {
-		color: #d1443c;
+		color: var(--danger);
 	}
 	.meta {
 		opacity: 0.6;
@@ -320,8 +320,8 @@
 	.spinner {
 		width: 0.85em;
 		height: 0.85em;
-		border: 2px solid rgba(127, 127, 127, 0.35);
-		border-top-color: #396cd8;
+		border: 2px solid var(--line-strong);
+		border-top-color: var(--accent-text);
 		border-radius: 50%;
 		align-self: center;
 		animation: spin 0.7s linear infinite;
@@ -345,7 +345,7 @@
 	.tabs {
 		display: flex;
 		gap: 0.2em;
-		border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+		border-bottom: 1px solid var(--line);
 	}
 	.tabs button {
 		background: none;
@@ -358,7 +358,7 @@
 	}
 	.tabs button.active {
 		opacity: 1;
-		border-bottom-color: #396cd8;
+		border-bottom-color: var(--accent-text);
 	}
 	.body {
 		flex: 1;
@@ -367,7 +367,7 @@
 	.preview {
 		flex: 1;
 		min-height: 8em;
-		border: 1px solid rgba(127, 127, 127, 0.3);
+		border: 1px solid var(--line-strong);
 		border-radius: 6px;
 		background: white;
 	}
@@ -378,13 +378,13 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border: 1px solid rgba(127, 127, 127, 0.3);
+		border: 1px solid var(--line-strong);
 		border-radius: 6px;
 		/* Chequerboard, so transparency in the image is visible as such. */
-		background-image: linear-gradient(45deg, rgba(127, 127, 127, 0.15) 25%, transparent 25%),
-			linear-gradient(-45deg, rgba(127, 127, 127, 0.15) 25%, transparent 25%),
-			linear-gradient(45deg, transparent 75%, rgba(127, 127, 127, 0.15) 75%),
-			linear-gradient(-45deg, transparent 75%, rgba(127, 127, 127, 0.15) 75%);
+		background-image: linear-gradient(45deg, var(--hover) 25%, transparent 25%),
+			linear-gradient(-45deg, var(--hover) 25%, transparent 25%),
+			linear-gradient(45deg, transparent 75%, var(--hover) 75%),
+			linear-gradient(-45deg, transparent 75%, var(--hover) 75%);
 		background-size: 16px 16px;
 		background-position:
 			0 0,
@@ -416,7 +416,7 @@
 	}
 	.save-body {
 		background: none;
-		border: 1px solid rgba(127, 127, 127, 0.4);
+		border: 1px solid var(--line-strong);
 		border-radius: 6px;
 		color: inherit;
 		font-size: 0.8em;
@@ -424,6 +424,6 @@
 		cursor: pointer;
 	}
 	.save-body:hover:not(:disabled) {
-		background: rgba(127, 127, 127, 0.15);
+		background: var(--hover);
 	}
 </style>
