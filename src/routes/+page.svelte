@@ -1,5 +1,9 @@
 <script lang="ts">
 	import { onMount } from "svelte";
+	// Bundled rather than fetched: the app has to look the same offline, and
+	// neither face ships with any OS.
+	import "@fontsource-variable/onest";
+	import "@fontsource-variable/jetbrains-mono";
 	import { workspace, workspacePath, collections } from "../lib/stores/workspace";
 	import { activeRequest } from "../lib/stores/activeRequest";
 	import { api } from "../lib/api/client";
@@ -25,8 +29,11 @@
 	import CollectionTree from "../lib/components/Sidebar/CollectionTree.svelte";
 	import RequestWorkbench from "../lib/components/RequestWorkbench.svelte";
 	import GhostIcon from "../lib/components/common/GhostIcon.svelte";
+	import Icon from "../lib/components/common/Icon.svelte";
+	import ShortcutHints from "../lib/components/common/ShortcutHints.svelte";
 	import ContextMenu from "../lib/components/common/ContextMenu.svelte";
 	import EnvironmentSwitcher from "../lib/components/EnvironmentSwitcher/EnvironmentSwitcher.svelte";
+	import RequestTitle from "../lib/components/RequestEditor/RequestTitle.svelte";
 
 	let restoring = $state(true);
 
@@ -118,19 +125,22 @@
 		<div class="main">
 			<header class="topbar">
 				<span class="incognito-badge" title={$t("incognito.badgeTitle")}>
-					<GhostIcon />
+					<GhostIcon size="16px" />
 					{$t("incognito.badge")}
 				</span>
-				{#if $workspacePath}
-					<EnvironmentSwitcher />
-				{:else}
-					<span class="hint">{$t("app.noWorkspaceHint")}</span>
-				{/if}
-				<div class="topbar-actions">
-					<button class="settings-btn" title={$t("app.settings")} aria-label={$t("app.settings")} onclick={openSettings}
-						>⚙</button
-					>
-					<button class="exit-incognito" onclick={leaveIncognito}>{$t("incognito.exit")}</button>
+				<RequestTitle />
+				<div class="topbar-end">
+					{#if $workspacePath}
+						<EnvironmentSwitcher />
+					{:else}
+						<span class="hint">{$t("app.noWorkspaceHint")}</span>
+					{/if}
+					<div class="topbar-actions">
+						<button class="icon-btn" title={$t("app.settings")} aria-label={$t("app.settings")} onclick={openSettings}
+							><Icon name="settings" size="16px" /></button
+						>
+						<button class="exit-incognito" onclick={leaveIncognito}>{$t("incognito.exit")}</button>
+					</div>
 				</div>
 			</header>
 			<RequestWorkbench />
@@ -153,25 +163,29 @@
 		/>
 		<div class="main">
 			<header class="topbar">
-				<EnvironmentSwitcher />
-				<div class="topbar-actions">
-					<button
-						class="settings-btn"
-						title={$t("incognito.request")}
-						aria-label={$t("incognito.request")}
-						onclick={openIncognito}
-					>
-						<GhostIcon />
-					</button>
-					<button class="settings-btn" title={$t("app.settings")} aria-label={$t("app.settings")} onclick={openSettings}
-						>⚙</button
-					>
+				<RequestTitle />
+				<div class="topbar-end">
+					<EnvironmentSwitcher />
+					<div class="topbar-actions">
+						<button
+							class="icon-btn"
+							title={$t("incognito.request")}
+							aria-label={$t("incognito.request")}
+							onclick={openIncognito}
+						>
+							<GhostIcon size="16px" />
+						</button>
+						<button class="icon-btn" title={$t("app.settings")} aria-label={$t("app.settings")} onclick={openSettings}
+							><Icon name="settings" size="16px" /></button
+						>
+					</div>
 				</div>
 			</header>
 			{#if !$activeRequest}
 				<div class="empty-state-outer">
 					<div class="empty-state">
 						<p>{$t("app.emptyState")}</p>
+						<ShortcutHints />
 					</div>
 				</div>
 			{:else}
@@ -190,20 +204,85 @@
 		height: 100%;
 		overflow: hidden;
 	}
-	/* The light palette is the base; the dark one overrides it below. */
+	/* The light palette is the base; the dark one overrides it below.
+	   Components take every colour from these names and never carry a
+	   literal of their own, so a theme is this block and nothing else. */
 	:global(:root) {
-		font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+		/* Onest has a Cyrillic as careful as its Latin, which the Russian UI
+		   needs. The mono face carries everything the user types or reads
+		   off the wire: URLs, bodies, headers. */
+		--font-ui: "Onest Variable", "Segoe UI", system-ui, sans-serif;
+		--font-mono: "JetBrains Mono Variable", ui-monospace, Consolas, monospace;
+		/* Pixels, not ems: an em nested in an em is how one label ended up
+		   at three slightly different sizes. */
+		--fs-xs: 11px;
+		--fs-sm: 12px;
+		--fs-md: 13px;
+		--fs-lg: 14px;
+		--fs-xl: 16px;
+		--fs-2xl: 20px;
+		font-family: var(--font-ui);
+		font-size: var(--fs-md);
 		color-scheme: light;
-		color: #24292f;
-		background-color: #ffffff;
-		/* Translucent so the bar takes on whatever panel is behind it
-		   (sidebar, editor, dialog) instead of carrying its own colour. */
-		--scrollbar-thumb: rgba(27, 31, 36, 0.2);
-		--scrollbar-thumb-hover: rgba(27, 31, 36, 0.35);
+		--text: #1d1b24;
+		/* Hints, metadata, labels. A colour rather than `opacity`, which
+		   would fade whatever coloured text sits inside it as well. */
+		--text-muted: #6b6779;
+		--surface: #ffffff;
+		/* Dialogs, menus and inputs: what sits on top of the page. */
+		--surface-raised: #ffffff;
 		/* The tree sits a shade off the page so the panel reads as its own
 		   surface rather than as part of the editor next to it. Both themes
 		   do this; see the dark block below. */
-		--sidebar-bg: #f6f8fa;
+		--surface-sunken: #f6f5f9;
+		/* Neutrals lean towards the lavender grey of the logo's outline
+		   instead of a plain grey, and stay translucent so they read the same
+		   on any surface. */
+		--line: rgba(84, 79, 104, 0.16);
+		--line-strong: rgba(84, 79, 104, 0.3);
+		--fill-subtle: rgba(84, 79, 104, 0.05);
+		--hover: rgba(84, 79, 104, 0.08);
+		--pressed: rgba(84, 79, 104, 0.14);
+		/* The open request, the current menu item, the picked option. Neutral
+		   on purpose: the accent is kept for what can be acted on. */
+		--selected: rgba(84, 79, 104, 0.14);
+		/* The mint of the cat's eyes. `--accent` is a fill and
+		   `--accent-ink` the text on it (dark, like the tick in the logo);
+		   `--accent-text` is the accent drawn as a line or as text on the
+		   page, which needs more contrast than a fill does - on white the
+		   fill itself manages barely 2:1. */
+		--accent: #2ccb82;
+		--accent-ink: #06170e;
+		--accent-text: #0e8452;
+		--ok: #0e8452;
+		--ok-fill: #0e8452;
+		--warn: #8a6a00;
+		--danger: #c2333d;
+		--danger-fill: #c2333d;
+		/* Text on the semantic fills above. */
+		--on-fill: #ffffff;
+		--overlay: rgba(15, 17, 23, 0.45);
+		--shadow-popover: 0 6px 20px rgba(29, 27, 36, 0.14);
+		--shadow-dialog: 0 12px 40px rgba(29, 27, 36, 0.22);
+		/* Read through `methodColor` in ui/methods.ts. Drawn as text on the
+		   page and in the tree, so every one clears 4.5:1 on the sidebar. */
+		--method-get: #2f62c9;
+		--method-post: #a65200;
+		--method-put: #7c47c9;
+		--method-patch: #8a6a00;
+		--method-delete: #c2333d;
+		--method-head: #56607a;
+		--method-options: #08766f;
+		--method-sse: #a8337f;
+		--method-other: #6b6779;
+		color: var(--text);
+		background-color: var(--surface);
+		/* Native checkboxes, radios and range inputs. */
+		accent-color: var(--accent-text);
+		/* Translucent so the bar takes on whatever panel is behind it
+		   (sidebar, editor, dialog) instead of carrying its own colour. */
+		--scrollbar-thumb: rgba(84, 79, 104, 0.25);
+		--scrollbar-thumb-hover: rgba(84, 79, 104, 0.4);
 		/* GitHub light syntax palette, consumed by the code editor. */
 		--cm-property: #0550ae;
 		--cm-string: #0a3069;
@@ -223,14 +302,27 @@
 	}
 	:global(input, select, textarea, button) {
 		font-family: inherit;
+		font-size: inherit;
 		border-radius: 6px;
-		border: 1px solid rgba(127, 127, 127, 0.35);
+		border: 1px solid var(--line-strong);
 		padding: 0.4em 0.6em;
-		background: white;
+		background: var(--surface-raised);
 		color: inherit;
 	}
 	:global(button) {
 		cursor: pointer;
+	}
+	/* One ring for every control. Plenty of them drop their border and
+	   background, which left the webview's own focus ring as the only cue,
+	   and that one all but disappears on a filled button. */
+	:global(:focus-visible) {
+		outline: 2px solid var(--accent-text);
+		outline-offset: 1px;
+	}
+	/* Inside the border on fields, so the ring doesn't grow a field into
+	   its neighbour in a tight row. */
+	:global(:is(input, select, textarea):focus-visible) {
+		outline-offset: -1px;
 	}
 	:global(*) {
 		scrollbar-width: thin;
@@ -261,15 +353,42 @@
 	   selector here instead of a media query plus a duplicate of it. */
 	:global(:root[data-theme="dark"]) {
 		color-scheme: dark;
-		color: #e6edf3;
-		background-color: #0d1117;
-		--modal-bg: #161b22;
-		/* One step off the page, the same lift the light theme gives it
-		   (#ffffff -> #f6f8fa). Shares a value with --modal-bg by
-		   coincidence of the palette, not by dependence on it. */
-		--sidebar-bg: #161b22;
-		--scrollbar-thumb: rgba(240, 246, 252, 0.16);
-		--scrollbar-thumb-hover: rgba(240, 246, 252, 0.3);
+		--text: #e9e7f0;
+		--text-muted: #9a96ab;
+		/* The background of the logo itself. */
+		--surface: #0f1117;
+		--surface-raised: #1a1d27;
+		/* One step off the page, the same lift the light theme gives it. */
+		--surface-sunken: #14161e;
+		--line: rgba(154, 150, 171, 0.14);
+		--line-strong: rgba(154, 150, 171, 0.26);
+		--fill-subtle: rgba(154, 150, 171, 0.05);
+		--hover: rgba(154, 150, 171, 0.08);
+		--pressed: rgba(154, 150, 171, 0.14);
+		--selected: rgba(154, 150, 171, 0.14);
+		/* Bright enough on the dark page to serve as its own text colour. */
+		--accent: #4be39a;
+		--accent-ink: #06170e;
+		--accent-text: #4be39a;
+		--ok: #4be39a;
+		--ok-fill: #187a4c;
+		--warn: #e6c95a;
+		--danger: #f47c84;
+		--danger-fill: #c2333d;
+		--overlay: rgba(0, 0, 0, 0.55);
+		--shadow-popover: 0 6px 20px rgba(0, 0, 0, 0.4);
+		--shadow-dialog: 0 12px 40px rgba(0, 0, 0, 0.5);
+		--method-get: #82a6f5;
+		--method-post: #f2a65a;
+		--method-put: #b99af5;
+		--method-patch: #e6c95a;
+		--method-delete: #f47c84;
+		--method-head: #a3abbd;
+		--method-options: #5ccfc6;
+		--method-sse: #e68ac9;
+		--method-other: #9a96ab;
+		--scrollbar-thumb: rgba(154, 150, 171, 0.2);
+		--scrollbar-thumb-hover: rgba(154, 150, 171, 0.35);
 		/* GitHub dark syntax palette. */
 		--cm-property: #79c0ff;
 		--cm-string: #a5d6ff;
@@ -287,16 +406,6 @@
 		--cm-selection: rgba(56, 139, 253, 0.4);
 		--cm-active-line: rgba(110, 118, 129, 0.1);
 	}
-	/* `:where()` keeps this at the specificity of a bare type selector, the
-	   same as the light rule above it - it must win over that one by source
-	   order and lose to everything else. Plenty of controls opt out of the
-	   chrome entirely (`background: none; border: none` on icon buttons and
-	   tab strips); a selector heavy enough to outrank their class would put
-	   a filled box and a visible border back on every one of them. */
-	:global(:where(:root[data-theme="dark"]) :is(input, select, textarea, button)) {
-		background: #161b22;
-		border-color: rgba(240, 246, 252, 0.15);
-	}
 
 	.app {
 		display: grid;
@@ -304,8 +413,8 @@
 		height: 100vh;
 	}
 	.sidebar {
-		background: var(--sidebar-bg);
-		border-right: 1px solid rgba(127, 127, 127, 0.25);
+		background: var(--surface-sunken);
+		border-right: 1px solid var(--line);
 		overflow-y: auto;
 		min-width: 0;
 	}
@@ -315,66 +424,83 @@
 		min-width: 0;
 		min-height: 0;
 	}
+	/* Everything about the request on the left, everything about the app
+	   on the right; the left side is the one that gives way. */
+	.topbar-end {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin-left: auto;
+		min-width: 0;
+	}
 	.topbar-actions {
 		display: flex;
 		align-items: center;
-		gap: 0.4em;
-		margin-left: auto;
+		gap: 2px;
+		padding-left: 8px;
+		border-left: 1px solid var(--line);
 	}
 	.incognito-badge {
 		display: flex;
 		align-items: center;
 		gap: 0.35em;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		font-weight: 600;
-		opacity: 0.75;
+		color: var(--text-muted);
 		white-space: nowrap;
 	}
 	.exit-incognito {
 		background: none;
-		border: 1px solid rgba(127, 127, 127, 0.45);
+		border: 1px solid var(--line-strong);
 		color: inherit;
 		border-radius: 6px;
-		padding: 0.25em 0.7em;
-		font-size: 0.85em;
+		height: 28px;
+		padding: 0 10px;
+		font-size: var(--fs-sm);
 		cursor: pointer;
 	}
 	.exit-incognito:hover {
-		background: rgba(127, 127, 127, 0.15);
+		background: var(--hover);
 	}
 	.hint {
-		font-size: 0.85em;
-		opacity: 0.6;
+		font-size: var(--fs-sm);
+		color: var(--text-muted);
 	}
-	.settings-btn {
+	.icon-btn {
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		width: 28px;
+		height: 28px;
+		padding: 0;
 		background: none;
 		border: none;
-		padding: 0.2em 0.4em;
-		font-size: 1.1em;
-		line-height: 1;
+		border-radius: 6px;
 		cursor: pointer;
-		opacity: 0.7;
+		color: var(--text-muted);
 	}
-	.settings-btn:hover {
-		opacity: 1;
+	.icon-btn:hover {
+		color: var(--text);
+		background: var(--hover);
 	}
 	.topbar {
+		/* The environment pickers drop their scope labels when the bar gets
+		   narrow; see EnvironmentSwitcher. */
+		container: topbar / inline-size;
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: 1em;
-		padding: 0.5em 1em;
-		border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+		gap: 12px;
+		height: 46px;
+		flex-shrink: 0;
+		padding: 0 10px 0 16px;
+		border-bottom: 1px solid var(--line);
 	}
 	.restoring {
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		height: 100vh;
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	.empty-state-outer {
 		flex: 1;
@@ -386,10 +512,15 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		gap: 16px;
 		flex: 1;
 		min-width: 0;
 		height: 100%;
-		opacity: 0.5;
+		color: var(--text-muted);
 		flex-direction: column;
+	}
+	.empty-state p {
+		margin: 0;
+		font-size: var(--fs-lg);
 	}
 </style>

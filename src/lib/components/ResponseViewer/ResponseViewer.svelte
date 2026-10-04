@@ -7,6 +7,8 @@
 	import { cancelActiveSend } from "../../ui/sending";
 	import { formatDuration, formatElapsed, formatSize } from "../../ui/format";
 	import CodeEditor from "../CodeEditor.svelte";
+	import Icon from "../common/Icon.svelte";
+	import ShortcutHints from "../common/ShortcutHints.svelte";
 	import HeadersTable from "./HeadersTable.svelte";
 	import StreamViewer from "./StreamViewer.svelte";
 	import { detectFormat, isTextualMediaType, mediaTypeOf } from "../../ui/contentType";
@@ -172,16 +174,17 @@
 	{:else if latest?.outcome}
 		{@const outcome = latest.outcome}
 		<div class="status-bar">
-			<span class="status {statusClass(outcome.status)}">{outcome.status} {outcome.status_text}</span>
+			<span class="status {statusClass(outcome.status)}">
+				{#if outcome.status < 300}<Icon name="check" size="14px" stroke={2.2} />{/if}
+				{outcome.status}
+				{outcome.status_text}
+			</span>
 			<span class="meta" title={$t("response.duration")}>{formatDuration($t, outcome.trace.total_ms)}</span>
 			<span class="meta" title={$t("response.bodySize")}>{formatSize($t, byteLength(outcome.body_base64))}</span>
 			{#if format}<span class="meta" title={$t("response.contentType")}>{format.mediaType}</span>{/if}
 			<span class="meta time" title={$t("response.sentAt")}
 				>{new Date(latest.at).toLocaleTimeString($locale)}</span
 			>
-			<button class="save-body" onclick={saveBody} disabled={saving} title={$t("response.saveBodyHint")}>
-				{saving ? $t("common.saving") : $t("response.saveBodyButton")}
-			</button>
 		</div>
 
 		{#if latest.stream}
@@ -197,6 +200,13 @@
 			{#each tabs as item (item.id + item.label)}
 				<button class:active={tab === item.id} onclick={() => (tab = item.id)}>{item.label}</button>
 			{/each}
+			<!-- Beside the tabs rather than in the status line: it acts on the
+			     body, and the status line has no room left for it in a split pane. -->
+			<span class="tabs-end">
+				<button class="save-body" onclick={saveBody} disabled={saving} title={$t("response.saveBodyHint")}>
+					{saving ? $t("common.saving") : $t("response.saveBodyButton")}
+				</button>
+			</span>
 		</div>
 
 		{#if tab === "preview"}
@@ -223,6 +233,7 @@
 	{:else}
 		<div class="hint-outer">
 			<p class="hint">{$t("response.notSent")}</p>
+			<ShortcutHints save={false} />
 		</div>
 	{/if}
 </div>
@@ -240,26 +251,30 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		flex-direction: column;
+		gap: 14px;
 	}
 	.hint {
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	.error {
-		color: #d1443c;
+		color: var(--danger);
 		white-space: pre-wrap;
 	}
 	.warning {
-		color: #a37c00;
-		background: rgba(163, 124, 0, 0.1);
+		color: var(--warn);
+		background: color-mix(in srgb, var(--warn) 10%, transparent);
 		border-radius: 6px;
 		padding: 0.4em 0.6em;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		margin: 0;
 	}
 	.status-bar {
 		display: flex;
-		align-items: baseline;
-		gap: 0.9em;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 4px 12px;
+		min-height: 26px;
 	}
 	.loading-state {
 		display: flex;
@@ -271,57 +286,72 @@
 	}
 	.cancel {
 		background: none;
-		border: 1px solid rgba(127, 127, 127, 0.45);
+		border: 1px solid var(--line-strong);
 		color: inherit;
 		border-radius: 6px;
 		padding: 0.3em 0.9em;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		cursor: pointer;
 	}
 	.cancel:hover:not(:disabled) {
-		border-color: #d1443c;
-		color: #d1443c;
+		border-color: var(--danger);
+		color: var(--danger);
 	}
 	.cancel:disabled {
 		opacity: 0.5;
 		cursor: default;
 	}
 	.status-cancelled {
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	.loading-row {
 		display: flex;
 		align-items: baseline;
 		gap: 0.6em;
 	}
+	/* A chip rather than coloured text, so the outcome reads at a glance
+	   before any of the numbers beside it. Tinted from its own colour, which
+	   the class below sets. */
 	.status {
-		font-weight: 700;
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		height: 24px;
+		padding: 0 10px;
+		border-radius: 12px;
+		font-weight: 600;
+		white-space: nowrap;
+		background: color-mix(in srgb, currentColor 12%, transparent);
+	}
+	.status:has(:global(.icon)) {
+		padding-left: 7px;
 	}
 	.status-ok {
-		color: #2e9e5b;
+		color: var(--ok);
 	}
 	.status-redirect {
-		color: #a37c00;
+		color: var(--warn);
 	}
 	.status-client-error,
 	.status-server-error {
-		color: #d1443c;
+		color: var(--danger);
 	}
 	.meta {
-		opacity: 0.6;
-		font-size: 0.9em;
+		color: var(--text-muted);
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
 	}
 	.elapsed {
-		font-family: ui-monospace, monospace;
+		font-family: var(--font-mono);
 		/* Fixed-width digits so the counter doesn't jiggle as it ticks. */
 		font-variant-numeric: tabular-nums;
-		opacity: 0.75;
+		color: var(--text-muted);
 	}
 	.spinner {
 		width: 0.85em;
 		height: 0.85em;
-		border: 2px solid rgba(127, 127, 127, 0.35);
-		border-top-color: #396cd8;
+		border: 2px solid var(--line-strong);
+		border-top-color: var(--accent-text);
 		border-radius: 50%;
 		align-self: center;
 		animation: spin 0.7s linear infinite;
@@ -344,21 +374,25 @@
 	}
 	.tabs {
 		display: flex;
+		align-items: center;
 		gap: 0.2em;
-		border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+		border-bottom: 1px solid var(--line);
 	}
-	.tabs button {
+	.tabs-end {
+		margin-left: auto;
+		padding-bottom: 4px;
+	}
+	.tabs > button {
 		background: none;
 		border: none;
 		padding: 0.35em 0.8em;
 		cursor: pointer;
-		color: inherit;
-		opacity: 0.6;
+		color: var(--text-muted);
 		border-bottom: 2px solid transparent;
 	}
-	.tabs button.active {
-		opacity: 1;
-		border-bottom-color: #396cd8;
+	.tabs > button.active {
+		color: var(--text);
+		border-bottom-color: var(--accent-text);
 	}
 	.body {
 		flex: 1;
@@ -367,7 +401,7 @@
 	.preview {
 		flex: 1;
 		min-height: 8em;
-		border: 1px solid rgba(127, 127, 127, 0.3);
+		border: 1px solid var(--line-strong);
 		border-radius: 6px;
 		background: white;
 	}
@@ -378,13 +412,13 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border: 1px solid rgba(127, 127, 127, 0.3);
+		border: 1px solid var(--line-strong);
 		border-radius: 6px;
 		/* Chequerboard, so transparency in the image is visible as such. */
-		background-image: linear-gradient(45deg, rgba(127, 127, 127, 0.15) 25%, transparent 25%),
-			linear-gradient(-45deg, rgba(127, 127, 127, 0.15) 25%, transparent 25%),
-			linear-gradient(45deg, transparent 75%, rgba(127, 127, 127, 0.15) 75%),
-			linear-gradient(-45deg, transparent 75%, rgba(127, 127, 127, 0.15) 75%);
+		background-image: linear-gradient(45deg, var(--hover) 25%, transparent 25%),
+			linear-gradient(-45deg, var(--hover) 25%, transparent 25%),
+			linear-gradient(45deg, transparent 75%, var(--hover) 75%),
+			linear-gradient(-45deg, transparent 75%, var(--hover) 75%);
 		background-size: 16px 16px;
 		background-position:
 			0 0,
@@ -411,19 +445,20 @@
 	}
 	.file-line {
 		margin: 0;
-		font-family: ui-monospace, monospace;
-		font-size: 0.9em;
+		font-family: var(--font-mono);
+		font-size: var(--fs-md);
 	}
 	.save-body {
 		background: none;
-		border: 1px solid rgba(127, 127, 127, 0.4);
+		border: 1px solid var(--line-strong);
 		border-radius: 6px;
 		color: inherit;
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 		padding: 0.15em 0.6em;
 		cursor: pointer;
+		white-space: nowrap;
 	}
 	.save-body:hover:not(:disabled) {
-		background: rgba(127, 127, 127, 0.15);
+		background: var(--hover);
 	}
 </style>

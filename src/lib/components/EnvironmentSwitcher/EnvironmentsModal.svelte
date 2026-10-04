@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { EnvironmentEntry, EnvironmentScope } from "../../bindings/types";
+	import Icon from "../common/Icon.svelte";
 	import { newId } from "../../bindings/types";
 	import { isValidVariableName, requestEnvironmentsRefresh, sanitizeVariableName } from "../../stores/environments";
 	import { api } from "../../api/client";
@@ -208,10 +209,10 @@
 					<button class="env" class:selected={entry.path === draft?.path} onclick={() => selectEnvironment(entry)}>
 						<span class="env-name">{entry.meta.name}</span>
 						{#if entry.meta.id === activeId}
-							<span class="active-mark" title={$t("env.active")}>✓</span>
+							<span class="active-mark" title={$t("env.active")}><Icon name="check" size="14px" /></span>
 						{/if}
 						{#if entry.path === draft?.path && dirty}
-							<span class="dot" title={$t("env.unsaved")}>●</span>
+							<span class="dot" title={$t("env.unsaved")}></span>
 						{/if}
 					</button>
 				{/each}
@@ -279,7 +280,7 @@
 									/>
 									{$t("env.secret")}
 								</label>
-								<button class="remove" title={$t("env.removeVariable")} onclick={() => removeVariable(i)}>×</button>
+								<button class="remove" title={$t("env.removeVariable")} onclick={() => removeVariable(i)}><Icon name="remove" size="14px" /></button>
 							</div>
 						{/each}
 						<button class="add" onclick={addVariable}>{$t("env.addVariable")}</button>
@@ -304,14 +305,14 @@
 	.backdrop {
 		position: fixed;
 		inset: 0;
-		background: rgba(0, 0, 0, 0.4);
+		background: var(--overlay);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		z-index: 10;
 	}
 	.modal {
-		background: var(--modal-bg, #fff);
+		background: var(--surface-raised);
 		color: inherit;
 		border-radius: 10px;
 		padding: 1.2em;
@@ -319,11 +320,11 @@
 		max-height: 82vh;
 		display: flex;
 		flex-direction: column;
-		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+		box-shadow: var(--shadow-dialog);
 	}
 	h2 {
 		margin: 0 0 0.8em;
-		font-size: 1.1em;
+		font-size: var(--fs-xl);
 	}
 	.layout {
 		display: grid;
@@ -337,7 +338,7 @@
 		flex-direction: column;
 		gap: 0.2em;
 		overflow-y: auto;
-		border-right: 1px solid rgba(127, 127, 127, 0.25);
+		border-right: 1px solid var(--line);
 		padding-right: 0.6em;
 	}
 	.env {
@@ -351,7 +352,7 @@
 		border-radius: 4px;
 		cursor: pointer;
 		color: inherit;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	.env-name {
 		overflow: hidden;
@@ -359,27 +360,30 @@
 		white-space: nowrap;
 	}
 	.env:hover {
-		background: rgba(127, 127, 127, 0.15);
+		background: var(--hover);
 	}
 	.env.selected {
-		background: rgba(57, 108, 216, 0.2);
+		background: var(--selected);
 	}
 	.active-mark {
 		margin-left: auto;
-		color: #2e9e5b;
-		font-size: 0.8em;
+		color: var(--ok);
+		display: flex;
 	}
 	.dot {
 		margin-left: auto;
-		color: #a37c00;
-		font-size: 0.7em;
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		flex-shrink: 0;
+		background: var(--warn);
 	}
 	.add-env {
 		margin-top: 0.3em;
 		background: none;
-		border: 1px dashed rgba(127, 127, 127, 0.5);
+		border: 1px dashed var(--line-strong);
 		cursor: pointer;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		color: inherit;
 	}
 	.editor {
@@ -400,8 +404,8 @@
 		min-width: 0;
 	}
 	.name-field span {
-		font-size: 0.8em;
-		opacity: 0.6;
+		font-size: var(--fs-sm);
+		color: var(--text-muted);
 	}
 	.name-field input {
 		flex: 1;
@@ -409,14 +413,14 @@
 	}
 	.delete-env {
 		background: none;
-		border: 1px solid rgba(209, 68, 60, 0.5);
-		color: #d1443c;
+		border: 1px solid color-mix(in srgb, var(--danger) 50%, transparent);
+		color: var(--danger);
 		cursor: pointer;
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 		white-space: nowrap;
 	}
 	.delete-env:hover {
-		background: rgba(209, 68, 60, 0.1);
+		background: color-mix(in srgb, var(--danger) 10%, transparent);
 	}
 	.variables {
 		display: flex;
@@ -429,40 +433,42 @@
 		gap: 0.4em;
 	}
 	.var-row input.invalid {
-		border-color: #d1443c;
+		border-color: var(--danger);
 	}
 	.var-row input.mono {
 		flex: 1;
 		min-width: 0;
-		font-family: ui-monospace, monospace;
+		font-family: var(--font-mono);
 	}
 	.secret-toggle {
 		display: flex;
 		align-items: center;
 		gap: 0.2em;
-		font-size: 0.75em;
+		font-size: var(--fs-xs);
 		white-space: nowrap;
-		opacity: 0.7;
+		color: var(--text-muted);
 	}
 	.remove {
+		display: flex;
+		align-items: center;
 		background: none;
 		border: none;
 		cursor: pointer;
-		opacity: 0.5;
-		font-size: 1.1em;
+		color: var(--text-muted);
+		font-size: var(--fs-lg);
 	}
 	.add {
 		align-self: flex-start;
 		margin-top: 0.4em;
 		background: none;
-		border: 1px dashed rgba(127, 127, 127, 0.5);
+		border: 1px dashed var(--line-strong);
 		cursor: pointer;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		color: inherit;
 	}
 	.hint {
-		opacity: 0.6;
-		font-size: 0.9em;
+		color: var(--text-muted);
+		font-size: var(--fs-md);
 	}
 	.actions {
 		display: flex;
@@ -473,16 +479,16 @@
 	}
 	.unsaved {
 		margin-right: auto;
-		font-size: 0.8em;
-		color: #a37c00;
+		font-size: var(--fs-sm);
+		color: var(--warn);
 	}
 	.actions button {
 		cursor: pointer;
 	}
 	.primary {
-		background: #396cd8;
-		color: white;
-		border-color: #396cd8;
+		background: var(--accent);
+		color: var(--accent-ink);
+		border-color: var(--accent);
 	}
 	.primary:disabled {
 		opacity: 0.5;

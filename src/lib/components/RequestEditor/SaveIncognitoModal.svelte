@@ -8,6 +8,7 @@
 	import { exitIncognito } from "../../stores/incognito";
 	import { collections, workspace } from "../../stores/workspace";
 	import { notifyResult, reportError } from "../../ui/notices";
+	import Select from "../common/Select.svelte";
 
 	let { request, onClose }: { request: RequestFile; onClose: () => void } = $props();
 
@@ -144,25 +145,19 @@
 			{#if canUseWorkspace}
 				<label class="field">
 					<span>{$t("saveIncognito.collection")}</span>
-					<select
+					<Select
 						value={collection?.path ?? ""}
-						onchange={(e) => {
-							const path = (e.target as HTMLSelectElement).value;
-							collection = $collections.find((c) => c.path === path) ?? null;
-						}}
-					>
-						{#each $collections as item (item.path)}
-							<option value={item.path}>{item.name}</option>
-						{/each}
-					</select>
+						options={$collections.map((item) => ({ value: item.path, label: item.name }))}
+						onChange={(path) => (collection = $collections.find((c) => c.path === path) ?? null)}
+					/>
 				</label>
 				<label class="field">
 					<span>{$t("saveIncognito.folder")}</span>
-					<select bind:value={folderPath}>
-						{#each folders as folder (folder.path)}
-							<option value={folder.path}>{"  ".repeat(folder.depth) + folder.label}</option>
-						{/each}
-					</select>
+					<Select
+						value={folderPath ?? ""}
+						options={folders.map((folder) => ({ value: folder.path, label: folder.label, depth: folder.depth }))}
+						onChange={(path) => (folderPath = path)}
+					/>
 				</label>
 			{:else}
 				<p class="hint">{$t("saveIncognito.noWorkspace")}</p>
@@ -186,14 +181,14 @@
 	.backdrop {
 		position: fixed;
 		inset: 0;
-		background: rgba(0, 0, 0, 0.4);
+		background: var(--overlay);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		z-index: 20;
 	}
 	.modal {
-		background: var(--modal-bg, #fff);
+		background: var(--surface-raised);
 		color: inherit;
 		border-radius: 10px;
 		padding: 1.2em;
@@ -201,32 +196,32 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.7em;
-		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+		box-shadow: var(--shadow-dialog);
 	}
 	h2 {
 		margin: 0;
-		font-size: 1.1em;
+		font-size: var(--fs-xl);
 	}
 	.field {
 		display: flex;
 		align-items: center;
 		gap: 0.6em;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	.field > span {
 		width: 7em;
-		opacity: 0.6;
-		font-size: 0.9em;
+		color: var(--text-muted);
+		font-size: var(--fs-md);
 	}
 	.field input,
-	.field select {
+	.field :global(.trigger) {
 		flex: 1;
 		min-width: 0;
 	}
 	.targets {
 		display: flex;
 		gap: 1.2em;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	.radio {
 		display: flex;
@@ -238,8 +233,8 @@
 	}
 	.hint {
 		margin: 0;
-		font-size: 0.85em;
-		opacity: 0.6;
+		font-size: var(--fs-sm);
+		color: var(--text-muted);
 	}
 	.actions {
 		display: flex;
@@ -251,9 +246,9 @@
 		cursor: pointer;
 	}
 	.primary {
-		background: #396cd8;
-		color: white;
-		border-color: #396cd8;
+		background: var(--accent);
+		color: var(--accent-ink);
+		border-color: var(--accent);
 	}
 	.primary:disabled {
 		opacity: 0.5;

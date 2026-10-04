@@ -5,6 +5,7 @@
 	import { reportError } from "../../ui/notices";
 	import KeyValueTable from "./KeyValueTable.svelte";
 	import CodeEditor from "../CodeEditor.svelte";
+	import Select from "../common/Select.svelte";
 
 	let { body, onChange }: { body: BodySpec; onChange: (body: BodySpec) => void } = $props();
 
@@ -60,14 +61,18 @@
 
 <div class="body-editor">
 	<div class="toolbar">
-		<select value={choice} onchange={(e) => select((e.target as HTMLSelectElement).value as BodyChoice)}>
-			<option value="none">{$t("body.none")}</option>
-			{#each textFormats as item (item.value)}
-				<option value={item.value}>{item.label}</option>
-			{/each}
-			<option value="form">{$t("body.form")}</option>
-			<option value="file">{$t("body.file")}</option>
-		</select>
+		<Select
+			class="body-type"
+			value={choice}
+			ariaLabel={$t("body.typeAria")}
+			options={[
+				{ value: "none", label: $t("body.none") },
+				...textFormats.map((item) => ({ value: item.value, label: item.label })),
+				{ value: "form", label: $t("body.form") },
+				{ value: "file", label: $t("body.file") },
+			]}
+			onChange={(value) => select(value as BodyChoice)}
+		/>
 
 		{#if body.type === "file"}
 			<button onclick={pickFile}>{$t("body.pickFile")}</button>
@@ -110,7 +115,7 @@
 	}
 	.toolbar button {
 		cursor: pointer;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 	}
 	.editor-container {
 		flex: 1;
@@ -118,13 +123,13 @@
 	}
 	.file-path {
 		margin: 0;
-		font-family: ui-monospace, monospace;
-		font-size: 0.85em;
+		font-family: var(--font-mono);
+		font-size: var(--fs-sm);
 		word-break: break-all;
 	}
 	.hint {
 		margin: 0;
-		font-size: 0.85em;
-		opacity: 0.6;
+		font-size: var(--fs-sm);
+		color: var(--text-muted);
 	}
 </style>

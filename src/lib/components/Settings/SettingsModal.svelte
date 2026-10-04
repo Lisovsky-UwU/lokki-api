@@ -8,6 +8,7 @@
 	import { setThemePreference, systemTheme, themePreference, type ThemePreference } from "../../stores/theme";
 	import { layout, updateLayout, type PaneOrientation } from "../../stores/layout";
 	import { reportError } from "../../ui/notices";
+	import Select from "../common/Select.svelte";
 
 	let { onClose }: { onClose: () => void } = $props();
 
@@ -182,54 +183,43 @@
 					<div class="settings-form">
 						<label class="row">
 							<span>{$t("settings.language")}</span>
-							<select
+							<Select
 								value={$languagePreference ?? ""}
-								onchange={(e) => selectLanguage((e.target as HTMLSelectElement).value)}
-							>
-								<option value="">{$t("settings.languageAuto", { name: systemLanguageName })}</option>
-								{#each Object.entries(LOCALE_NAMES) as [code, name] (code)}
-									<option value={code}>{name}</option>
-								{/each}
-							</select>
+								options={[
+									{ value: "", label: $t("settings.languageAuto", { name: systemLanguageName }) },
+									...Object.entries(LOCALE_NAMES).map(([code, name]) => ({ value: code, label: name })),
+								]}
+								onChange={selectLanguage}
+							/>
 						</label>
 
 						{#if startup}
 							<label class="row">
 								<span>{$t("settings.startup")}</span>
-								<select
+								<Select
 									value={startup}
-									onchange={(e) => selectStartup((e.target as HTMLSelectElement).value as StartupBehavior)}
-								>
-									{#each startupOptions as option (option.value)}
-										<option value={option.value}>{option.label}</option>
-									{/each}
-								</select>
+									options={startupOptions}
+									onChange={(value) => selectStartup(value as StartupBehavior)}
+								/>
 							</label>
 						{/if}
 
 						<label class="row">
 							<span>{$t("settings.paneLayout")}</span>
-							<select
+							<Select
 								value={$layout.orientation}
-								onchange={(e) =>
-									updateLayout({ orientation: (e.target as HTMLSelectElement).value as PaneOrientation })}
-							>
-								{#each paneLayouts as option (option.value)}
-									<option value={option.value}>{option.label}</option>
-								{/each}
-							</select>
+								options={paneLayouts}
+								onChange={(value) => updateLayout({ orientation: value as PaneOrientation })}
+							/>
 						</label>
 
 						<label class="row">
 							<span>{$t("settings.theme")}</span>
-							<select
+							<Select
 								value={$themePreference}
-								onchange={(e) => setThemePreference((e.target as HTMLSelectElement).value as ThemePreference)}
-							>
-								{#each themeOptions as option (option.value)}
-									<option value={option.value}>{option.label}</option>
-								{/each}
-							</select>
+								options={themeOptions}
+								onChange={(value) => setThemePreference(value as ThemePreference)}
+							/>
 						</label>
 					</div>
 				{:else if tab === "requests"}
@@ -365,14 +355,14 @@
 	.backdrop {
 		position: fixed;
 		inset: 0;
-		background: rgba(0, 0, 0, 0.4);
+		background: var(--overlay);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		z-index: 10;
 	}
 	.modal {
-		background: var(--modal-bg, #fff);
+		background: var(--surface-raised);
 		color: inherit;
 		border-radius: 10px;
 		padding: 1.2em;
@@ -382,18 +372,18 @@
 		height: min(38em, 84vh);
 		display: flex;
 		flex-direction: column;
-		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+		box-shadow: var(--shadow-dialog);
 	}
 	h2 {
 		margin: 0 0 0.8em;
-		font-size: 1.1em;
+		font-size: var(--fs-xl);
 	}
 	h3 {
 		margin: 0;
-		font-size: 0.75em;
+		font-size: var(--fs-xs);
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
-		opacity: 0.7;
+		color: var(--text-muted);
 	}
 	.layout {
 		display: grid;
@@ -407,7 +397,7 @@
 		flex-direction: column;
 		gap: 0.2em;
 		overflow-y: auto;
-		border-right: 1px solid rgba(127, 127, 127, 0.25);
+		border-right: 1px solid var(--line);
 		padding-right: 0.6em;
 	}
 	.tabs button {
@@ -418,13 +408,13 @@
 		border-radius: 4px;
 		cursor: pointer;
 		color: inherit;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	.tabs button:hover {
-		background: rgba(127, 127, 127, 0.15);
+		background: var(--hover);
 	}
 	.tabs button.selected {
-		background: rgba(57, 108, 216, 0.2);
+		background: var(--selected);
 	}
 	.pane {
 		overflow-y: auto;
@@ -442,13 +432,13 @@
 		flex-shrink: 0;
 	}
 	.app-name {
-		font-size: 1.15em;
+		font-size: var(--fs-lg);
 		font-weight: 700;
 	}
 	.description {
 		margin: 0.2em 0 0;
-		font-size: 0.85em;
-		opacity: 0.7;
+		font-size: var(--fs-sm);
+		color: var(--text-muted);
 	}
 	.section-head {
 		display: flex;
@@ -458,12 +448,12 @@
 		margin: 1.2em 0 0.5em;
 	}
 	.section-head button {
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 		cursor: pointer;
 	}
 	.section-head button.copied {
-		border-color: #2e9e5b;
-		color: #2e9e5b;
+		border-color: var(--ok);
+		color: var(--ok);
 	}
 	/* Plain label/value list: a two-column grid keeps the values aligned
 	   without turning it into a table. */
@@ -472,29 +462,29 @@
 		grid-template-columns: auto 1fr;
 		gap: 0.35em 0.9em;
 		margin: 0;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 	}
 	dt {
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	dd {
 		margin: 0;
-		font-family: ui-monospace, monospace;
+		font-family: var(--font-mono);
 		word-break: break-all;
 	}
 	dd.unknown {
 		font-family: inherit;
-		opacity: 0.5;
+		color: var(--text-muted);
 	}
 	.hint {
-		opacity: 0.6;
-		font-size: 0.85em;
+		color: var(--text-muted);
+		font-size: var(--fs-sm);
 	}
 	.settings-form {
 		display: flex;
 		flex-direction: column;
 		gap: 0.5em;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 		max-width: 34em;
 	}
 	.settings-form .row {
@@ -509,24 +499,28 @@
 	.settings-form .row.check > span {
 		flex: none;
 	}
+	/* One width for every picker, so they line up down the column. */
+	.settings-form .row :global(.trigger) {
+		width: 17em;
+	}
 	.settings-form .row input[type="number"] {
 		width: 7em;
 	}
 	.settings-form .row input.mono {
 		flex: 1;
 		min-width: 0;
-		font-family: ui-monospace, monospace;
+		font-family: var(--font-mono);
 	}
 	.settings-form .hint {
 		margin: 0;
 	}
 	.warning {
 		margin: 0;
-		color: #a37c00;
-		background: rgba(163, 124, 0, 0.1);
+		color: var(--warn);
+		background: color-mix(in srgb, var(--warn) 10%, transparent);
 		border-radius: 6px;
 		padding: 0.4em 0.6em;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 	}
 	.actions {
 		display: flex;

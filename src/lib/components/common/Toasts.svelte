@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { t } from "../../i18n";
+	import Icon from "./Icon.svelte";
 	import { dismissNotice, notices } from "../../ui/notices";
 </script>
 
@@ -8,7 +9,7 @@
 		{#each $notices as notice (notice.id)}
 			<div class="toast {notice.kind}">
 				<span>{notice.message}{notice.count > 1 ? ` (×${notice.count})` : ""}</span>
-				<button title={$t("common.hide")} onclick={() => dismissNotice(notice.id)}>×</button>
+				<button title={$t("common.hide")} onclick={() => dismissNotice(notice.id)}><Icon name="remove" size="14px" /></button>
 			</div>
 		{/each}
 	</div>
@@ -31,15 +32,15 @@
 		gap: 0.6em;
 		padding: 0.6em 0.8em;
 		border-radius: 8px;
-		color: white;
-		font-size: 0.85em;
-		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+		color: var(--on-fill);
+		font-size: var(--fs-sm);
+		box-shadow: var(--shadow-popover);
 	}
 	.toast.error {
-		background: #d1443c;
+		background: var(--danger-fill);
 	}
 	.toast.success {
-		background: #2e7d4f;
+		background: var(--ok-fill);
 	}
 	.toast span {
 		flex: 1;
@@ -50,7 +51,7 @@
 		border: none;
 		color: inherit;
 		cursor: pointer;
-		font-size: 1.1em;
+		font-size: var(--fs-lg);
 		line-height: 1;
 		padding: 0;
 	}

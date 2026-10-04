@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { KeyValue } from "../../bindings/types";
+	import Icon from "../common/Icon.svelte";
 	import { newKeyValue } from "../../bindings/types";
 	import { t } from "../../i18n";
 	import VariableInput from "../common/VariableInput.svelte";
@@ -43,7 +44,7 @@
 				value={row.value}
 				onChange={(value) => update(i, { value })}
 			/>
-			<button class="remove" title={$t("kv.remove")} onclick={() => remove(i)}>×</button>
+			<button class="remove" title={$t("kv.remove")} onclick={() => remove(i)}><Icon name="remove" size="14px" /></button>
 		</div>
 	{/each}
 </div>
@@ -60,15 +61,17 @@
 		gap: 0.4em;
 	}
 	.remove {
+		display: flex;
+		align-items: center;
 		background: none;
 		border: none;
 		cursor: pointer;
-		opacity: 0.5;
-		font-size: 1.1em;
+		color: var(--text-muted);
+		font-size: var(--fs-lg);
 		line-height: 1;
 		padding: 0.2em 0.4em;
 	}
 	.remove:hover {
-		opacity: 1;
+		color: var(--text);
 	}
 </style>

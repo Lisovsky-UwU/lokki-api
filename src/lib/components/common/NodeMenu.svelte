@@ -80,16 +80,15 @@
 		background: none;
 		border: none;
 		cursor: pointer;
-		color: inherit;
-		opacity: 0.55;
+		color: var(--text-muted);
 		padding: 0.25em 0.35em;
 		border-radius: 4px;
-		font-size: 0.95em;
+		font-size: var(--fs-md);
 		line-height: 1;
 	}
 	.trigger:hover {
-		opacity: 1;
-		background: rgba(127, 127, 127, 0.2);
+		color: var(--text);
+		background: var(--pressed);
 	}
 	/* A custom trigger brings its own layout; only the button chrome is
 	   reused. */
@@ -98,7 +97,7 @@
 		align-items: center;
 		gap: 0.4em;
 		width: 100%;
-		opacity: 1;
+		color: inherit;
 		font-size: inherit;
 		padding: 0;
 	}
@@ -113,9 +112,9 @@
 		flex-direction: column;
 		padding: 0.25em;
 		border-radius: 8px;
-		background: var(--modal-bg, #fff);
-		border: 1px solid rgba(127, 127, 127, 0.3);
-		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+		background: var(--surface-raised);
+		border: 1px solid var(--line-strong);
+		box-shadow: var(--shadow-popover);
 	}
 	.menu.align-left {
 		left: 0;

@@ -66,34 +66,34 @@
 	.backdrop {
 		position: fixed;
 		inset: 0;
-		background: rgba(0, 0, 0, 0.4);
+		background: var(--overlay);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		z-index: 20;
 	}
 	.dialog {
-		background: var(--modal-bg, #fff);
+		background: var(--surface-raised);
 		border-radius: 10px;
 		padding: 1.2em;
 		width: min(24em, 90vw);
-		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+		box-shadow: var(--shadow-dialog);
 		display: flex;
 		flex-direction: column;
 		gap: 0.8em;
 	}
 	h2 {
 		margin: 0;
-		font-size: 1em;
+		font-size: var(--fs-xl);
 	}
 	label {
 		display: flex;
 		flex-direction: column;
 		gap: 0.3em;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 	}
 	label span {
-		opacity: 0.7;
+		color: var(--text-muted);
 	}
 	.actions {
 		display: flex;
@@ -101,8 +101,8 @@
 		gap: 0.5em;
 	}
 	.primary {
-		background: #396cd8;
-		color: white;
-		border-color: #396cd8;
+		background: var(--accent);
+		color: var(--accent-ink);
+		border-color: var(--accent);
 	}
 </style>

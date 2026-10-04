@@ -135,85 +135,117 @@
 		onclick={startIncognito}
 		disabled={busy !== null}
 	>
-		<GhostIcon size="1.3em" />
+		<GhostIcon size="18px" />
 	</button>
-	<img class="logo" src="{base}/logo-horizontal.png" alt="LokkiAPI" />
-	<!-- <p>{$t("picker.tagline")}</p> -->
-	<div class="actions">
-		<button class="primary" onclick={createWorkspace} disabled={busy !== null}>
-			{busy === "create" ? $t("picker.creating") : $t("picker.create")}
-		</button>
-		<button onclick={openWorkspace} disabled={busy !== null}>
-			{busy === "open" ? $t("picker.opening") : $t("picker.openExisting")}
-		</button>
-	</div>
-	<p class="hint">{$t("picker.hint")}</p>
-	{#if recent.length > 0}
-		<div class="recent">
-			<div class="recent-head">{$t("picker.recent")}</div>
-			{#each recent as entry (entry.path)}
-				<div class="recent-row" role="presentation" oncontextmenu={(e) => openContextMenu(e, recentMenu(entry))}>
-					<button class="recent-open" onclick={() => openRecent(entry)} disabled={busy !== null}>
-						<span class="recent-name">{entry.name}</span>
-						<!-- A path long enough to be clipped is still identifiable
-						     from the tooltip; `dir="rtl"` would keep the tail visible
-						     but reorders the separators around it. -->
-						<span class="recent-path" title={entry.path}>{entry.path}</span>
-					</button>
-					{#if busy === entry.path}
-						<span class="recent-busy">{$t("picker.opening")}</span>
-					{:else}
-						<NodeMenu menu={recentMenu(entry)} label={$t("picker.recentActions")} />
-					{/if}
-				</div>
-			{/each}
+	<div class="column">
+		<!-- The app icon plus a typeset wordmark rather than the banner image:
+		     the icon is a tile of its own and sits on either theme, where the
+		     banner was a dark plate pasted onto the light one. -->
+		<header class="brand">
+			<img class="logo" src="{base}/logo-256.png" alt="" />
+			<h1 class="wordmark">Lokki<span>API</span></h1>
+		</header>
+		<p class="hint">{$t("picker.hint")}</p>
+		<div class="actions">
+			<button class="primary" onclick={createWorkspace} disabled={busy !== null}>
+				{busy === "create" ? $t("picker.creating") : $t("picker.create")}
+			</button>
+			<button onclick={openWorkspace} disabled={busy !== null}>
+				{busy === "open" ? $t("picker.opening") : $t("picker.openExisting")}
+			</button>
 		</div>
-	{/if}
+		{#if recent.length > 0}
+			<div class="recent">
+				<div class="recent-head">{$t("picker.recent")}</div>
+				{#each recent as entry (entry.path)}
+					<div class="recent-row" role="presentation" oncontextmenu={(e) => openContextMenu(e, recentMenu(entry))}>
+						<button class="recent-open" onclick={() => openRecent(entry)} disabled={busy !== null}>
+							<span class="recent-name">{entry.name}</span>
+							<!-- A path long enough to be clipped is still identifiable
+							     from the tooltip; `dir="rtl"` would keep the tail visible
+							     but reorders the separators around it. -->
+							<span class="recent-path" title={entry.path}>{entry.path}</span>
+						</button>
+						{#if busy === entry.path}
+							<span class="recent-busy">{$t("picker.opening")}</span>
+						{:else}
+							<NodeMenu menu={recentMenu(entry)} label={$t("picker.recentActions")} />
+						{/if}
+					</div>
+				{/each}
+			</div>
+		{/if}
+	</div>
 </div>
 
 <style>
-	.logo {
-		/* The wordmark is white on transparency, so the asset ships on a plate
-		   the colour of the dark theme's background: it disappears into the
-		   page there, and stays a readable dark banner on a light one. */
-		width: 380px;
-		max-width: 80vw;
-		height: auto;
-		border-radius: 12px;
-		margin-bottom: 0.25rem;
-	}
 	.picker {
 		position: relative;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		justify-content: center;
 		height: 100vh;
-		gap: 0.75rem;
-		text-align: center;
-		padding: 2rem;
+		padding: 15vh 2rem 2rem;
 		/* The recent list is the one part that can outgrow the window. */
 		overflow-y: auto;
 	}
+	/* Left-aligned in a column of its own: the name, what a workspace is,
+	   the two ways in, and where you were last - read top to bottom. */
+	.column {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 14px;
+		width: min(480px, 100%);
+	}
+	.brand {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+	.logo {
+		/* The tile has transparent margins of its own; the negative margin
+		   lines the visible edge up with the text below. */
+		width: 76px;
+		height: 76px;
+		margin: -8px -4px -8px -10px;
+	}
+	.wordmark {
+		margin: 0;
+		font-size: 30px;
+		font-weight: 800;
+		letter-spacing: -0.02em;
+	}
+	/* The two halves of the name as the logo sets them. */
+	.wordmark span {
+		color: var(--accent-text);
+	}
+	.hint {
+		margin: 0;
+		color: var(--text-muted);
+		line-height: 1.5;
+	}
 	.actions {
 		display: flex;
-		gap: 0.6rem;
+		gap: 8px;
 		flex-wrap: wrap;
-		justify-content: center;
+		margin-top: 4px;
 	}
 	button {
-		padding: 0.6em 1.4em;
+		padding: 0 16px;
+		height: 36px;
 		border-radius: 8px;
-		border: 1px solid rgba(127, 127, 127, 0.45);
-		background: transparent;
+		border: 1px solid var(--line-strong);
+		background: var(--surface-raised);
 		color: inherit;
 		cursor: pointer;
-		font-size: 1em;
+		font-size: var(--fs-lg);
 	}
 	.primary {
-		border-color: #396cd8;
-		background: #396cd8;
-		color: white;
+		border-color: var(--accent);
+		background: var(--accent);
+		color: var(--accent-ink);
+		font-weight: 600;
 	}
 	button:disabled {
 		opacity: 0.6;
@@ -221,45 +253,50 @@
 	}
 	.ghost {
 		position: absolute;
-		top: 1rem;
-		right: 1rem;
+		top: 10px;
+		right: 10px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		width: 32px;
+		height: 32px;
+		padding: 0;
 		border: none;
 		background: none;
 		border-radius: 6px;
-		padding: 0.4em;
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	.ghost:hover:not(:disabled) {
-		opacity: 1;
-		background: rgba(127, 127, 127, 0.15);
+		color: var(--text);
+		background: var(--hover);
 	}
 	.recent {
 		display: flex;
 		flex-direction: column;
-		gap: 0.15rem;
-		width: min(34rem, 100%);
-		text-align: left;
-		margin-top: 0.5rem;
+		gap: 2px;
+		/* Rows reach past the column by their own padding, so the names line
+		   up with the text above while the hover fill still has room. */
+		width: calc(100% + 16px);
+		margin: 20px -8px 0;
 	}
 	.recent-head {
-		font-size: 0.75em;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		opacity: 0.6;
-		padding: 0 0.2em 0.2em;
+		font-size: var(--fs-sm);
+		font-weight: 600;
+		color: var(--text-muted);
+		padding: 0 8px 4px;
 	}
 	.recent-row {
 		display: flex;
 		align-items: center;
-		gap: 0.2em;
+		gap: 4px;
 		border-radius: 8px;
-		padding-right: 0.3em;
+		padding-right: 4px;
 	}
 	.recent-row:hover {
-		background: rgba(127, 127, 127, 0.12);
+		background: var(--hover);
+	}
+	.recent-row:not(:hover):not(:focus-within) :global(.trigger[aria-expanded="false"]) {
+		opacity: 0;
 	}
 	.recent-open {
 		flex: 1;
@@ -267,11 +304,12 @@
 		display: flex;
 		flex-direction: column;
 		align-items: flex-start;
-		gap: 0.1em;
+		justify-content: center;
+		gap: 2px;
+		height: auto;
 		background: none;
 		border: none;
-		padding: 0.5em 0.6em;
-		font-size: 1em;
+		padding: 8px;
 		text-align: left;
 	}
 	.recent-name {
@@ -280,26 +318,20 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		font-weight: 600;
-		font-size: 0.95em;
+		font-size: var(--fs-md);
 	}
 	.recent-path {
 		max-width: 100%;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-		font-family: ui-monospace, monospace;
-		font-size: 0.78em;
-		opacity: 0.6;
+		font-family: var(--font-mono);
+		font-size: var(--fs-xs);
+		color: var(--text-muted);
 	}
 	.recent-busy {
-		font-size: 0.8em;
-		opacity: 0.6;
+		font-size: var(--fs-sm);
+		color: var(--text-muted);
 		white-space: nowrap;
-	}
-	.hint {
-		margin: 0;
-		font-size: 0.85em;
-		opacity: 0.6;
-		margin-bottom: 1em;
 	}
 </style>

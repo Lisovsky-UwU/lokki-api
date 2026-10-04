@@ -35,26 +35,26 @@
 		border-radius: 5px;
 		cursor: pointer;
 		color: inherit;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		white-space: nowrap;
 	}
 	button:hover {
-		background: rgba(127, 127, 127, 0.18);
+		background: var(--pressed);
 	}
 	/* The icon reads as decoration next to its label, not as a second focus
 	   point - until the row is pointed at. */
 	button :global(.icon) {
-		opacity: 0.7;
+		color: var(--text-muted);
 	}
 	button:hover :global(.icon) {
-		opacity: 1;
+		color: inherit;
 	}
 	button.danger {
-		color: #d1443c;
+		color: var(--danger);
 	}
 	.separator {
 		height: 1px;
 		margin: 0.25em 0.4em;
-		background: rgba(127, 127, 127, 0.25);
+		background: var(--pressed);
 	}
 </style>

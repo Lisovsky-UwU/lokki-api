@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { api } from "../../api/client";
+	import Icon from "../common/Icon.svelte";
+	import Select, { type SelectOption } from "../common/Select.svelte";
 	import { t } from "../../i18n";
 	import { workspace, workspacePath } from "../../stores/workspace";
 	import { activeCollection } from "../../stores/collectionTree";
@@ -73,24 +75,29 @@
 		await api.setActiveEnvironment(collection.path, id || null);
 		activeCollectionEnvironmentId.set(id || null);
 	}
+
+	/// "None" first, then the scope's environments by name as stored.
+	function choices(entries: EnvironmentEntry[]): SelectOption[] {
+		return [{ value: "", label: $t("env.none") }, ...entries.map((env) => ({ value: env.meta.id, label: env.meta.name }))];
+	}
 </script>
 
+<!-- Each scope is one compact control: the scope's name, the environment
+     picked for it, and the way into editing that scope's environments. -->
 <div class="switcher">
-	<label for="global-env">{$t("env.label")}</label>
-	<div class="group">
+	<div class="picker">
 		<label for="global-env">{$t("env.global")}</label>
-		<select
+		<Select
 			id="global-env"
+			variant="bare"
+			title={$t("env.global")}
+			muted={!$activeGlobalEnvironmentId}
 			value={$activeGlobalEnvironmentId ?? ""}
-			onchange={(e) => selectGlobal((e.target as HTMLSelectElement).value)}
-		>
-			<option value="">{$t("env.none")}</option>
-			{#each $globalEnvironments as env (env.meta.id)}
-				<option value={env.meta.id}>{env.meta.name}</option>
-			{/each}
-		</select>
+			options={choices($globalEnvironments)}
+			onChange={selectGlobal}
+		/>
 		<button
-			class="icon"
+			class="edit"
 			title={$t("env.workspaceEnvironments")}
 			aria-label={$t("env.workspaceEnvironments")}
 			disabled={!$workspacePath}
@@ -102,25 +109,24 @@
 					title: $workspace?.name ?? "",
 				})}
 		>
-			✎
+			<Icon name="rename" size="14px" />
 		</button>
 	</div>
 
 	{#if $activeCollection}
-		<div class="group">
-			<label for="collection-env">{$t("env.collection", { name: $activeCollection.name })}</label>
-			<select
+		<div class="picker">
+			<label for="collection-env" title={$activeCollection.name}>{$activeCollection.name}</label>
+			<Select
 				id="collection-env"
+				variant="bare"
+				title={$activeCollection.name}
+				muted={!$activeCollectionEnvironmentId}
 				value={$activeCollectionEnvironmentId ?? ""}
-				onchange={(e) => selectCollection((e.target as HTMLSelectElement).value)}
-			>
-				<option value="">{$t("env.none")}</option>
-				{#each $collectionEnvironments as env (env.meta.id)}
-					<option value={env.meta.id}>{env.meta.name}</option>
-				{/each}
-			</select>
+				options={choices($collectionEnvironments)}
+				onChange={selectCollection}
+			/>
 			<button
-				class="icon"
+				class="edit"
 				title={$t("env.collectionEnvironments")}
 				aria-label={$t("env.collectionEnvironments")}
 				onclick={() =>
@@ -131,7 +137,7 @@
 						title: $activeCollection.name,
 					})}
 			>
-				✎
+				<Icon name="rename" size="14px" />
 			</button>
 		</div>
 	{/if}
@@ -140,34 +146,70 @@
 <style>
 	.switcher {
 		display: flex;
-		gap: 1em;
+		gap: 6px;
 		align-items: center;
-		font-size: 0.85em;
+		min-width: 0;
 	}
-	.group {
+	.picker {
 		display: flex;
 		align-items: center;
-		gap: 0.3em;
+		height: 28px;
+		min-width: 0;
+		padding-left: 10px;
+		border: 1px solid var(--line);
+		border-radius: 7px;
+		background: var(--surface-raised);
+		font-size: var(--fs-sm);
 	}
-	.group label {
-		opacity: 0.6;
-		font-size: 0.85em;
-		max-width: 16em;
+	.picker:focus-within {
+		border-color: var(--line-strong);
+	}
+	label {
+		color: var(--text-muted);
+		max-width: 12em;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
-	.icon {
-		background: none;
-		border: none;
-		cursor: pointer;
-		color: inherit;
-		opacity: 0.6;
-		padding: 0.1em 0.35em;
-		border-radius: 4px;
+	/* In a narrow window the breadcrumb needs the room more than the scope
+	   names do; the select's tooltip still names its scope. */
+	@container topbar (max-width: 760px) {
+		label {
+			display: none;
+		}
+		.picker {
+			padding-left: 4px;
+		}
 	}
-	.icon:hover {
-		opacity: 1;
-		background: rgba(127, 127, 127, 0.18);
+	.picker :global(.trigger) {
+		max-width: 12em;
+		padding: 0 6px 0 6px;
+		font-weight: 600;
+	}
+	.picker :global(.trigger.muted) {
+		font-weight: 400;
+	}
+	.picker :global(.trigger:focus-visible) {
+		outline-offset: -2px;
+	}
+	.edit {
+		display: flex;
+		align-items: center;
+		height: 100%;
+		padding: 0 7px;
+		border: none;
+		border-left: 1px solid var(--line);
+		border-radius: 0 6px 6px 0;
+		background: none;
+		color: var(--text-muted);
+		cursor: pointer;
+	}
+	.edit:hover:not(:disabled) {
+		color: var(--text);
+		background: var(--hover);
+	}
+	.edit:disabled {
+		opacity: 0.4;
+		cursor: default;
 	}
 </style>

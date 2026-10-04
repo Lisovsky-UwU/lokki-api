@@ -133,7 +133,7 @@
 		width: 100%;
 	}
 	input.mono {
-		font-family: ui-monospace, monospace;
+		font-family: var(--font-mono);
 	}
 	.suggestions {
 		position: absolute;
@@ -145,9 +145,9 @@
 		padding: 0.2em;
 		list-style: none;
 		border-radius: 8px;
-		background: var(--modal-bg, #fff);
-		border: 1px solid rgba(127, 127, 127, 0.3);
-		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+		background: var(--surface-raised);
+		border: 1px solid var(--line-strong);
+		box-shadow: var(--shadow-popover);
 		max-height: 14em;
 		overflow-y: auto;
 	}
@@ -163,14 +163,14 @@
 		border-radius: 5px;
 		cursor: pointer;
 		color: inherit;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 	}
 	.suggestions button:hover,
 	.suggestions button.highlighted {
-		background: rgba(57, 108, 216, 0.2);
+		background: var(--selected);
 	}
 	.key {
-		font-family: ui-monospace, monospace;
+		font-family: var(--font-mono);
 		font-weight: 600;
 	}
 	.value {
@@ -179,11 +179,11 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	.scope {
-		opacity: 0.45;
-		font-size: 0.8em;
+		color: var(--text-muted);
+		font-size: var(--fs-sm);
 		white-space: nowrap;
 	}
 </style>

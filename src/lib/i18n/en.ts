@@ -47,6 +47,8 @@ export const en = {
 	"app.settings": "Settings",
 	"app.sidebarWidth": "Collection tree width",
 	"app.emptyState": "Pick a request on the left or create a new one",
+	"app.shortcutSend": "send the request",
+	"app.shortcutSave": "save it",
 	"app.restoreFailed": "Could not open the last workspace",
 	"app.noWorkspaceHint": "No workspace is open — variables are unavailable",
 	"app.requestPaneHeight": "Request pane height",
@@ -84,6 +86,7 @@ export const en = {
 	"kv.remove": "Remove",
 
 	// --- auth --------------------------------------------------------------
+	"auth.typeAria": "Authorization type",
 	"auth.none": "No auth",
 	"auth.bearer": "Bearer token",
 	"auth.basic": "Basic auth",
@@ -112,6 +115,7 @@ export const en = {
 	// --- request editor ----------------------------------------------------
 	"request.urlAria": "Request URL",
 	"request.urlPlaceholder": "https://api.example.com/pets or {{baseUrl}}/pets",
+	"request.methodAria": "HTTP method",
 	"request.send": "Send",
 	"request.sending": "Sending…",
 	"request.save": "Save",
@@ -131,6 +135,7 @@ export const en = {
 	"request.openFailed": "Could not open the request",
 
 	// --- body editor -------------------------------------------------------
+	"body.typeAria": "Body type",
 	"body.none": "No body",
 	"body.form": "Form (urlencoded)",
 	"body.file": "File from disk",
@@ -143,7 +148,6 @@ export const en = {
 	"body.format.plainPlaceholder": "arbitrary text",
 
 	// --- sidebar -----------------------------------------------------------
-	"sidebar.workspace": "Workspace",
 	"sidebar.workspaceMenu": "Workspace menu",
 	"sidebar.noWorkspace": "No workspace is open. Create one or open an existing one",
 	"sidebar.collections": "Collections",
@@ -223,10 +227,8 @@ export const en = {
 	"import.warnings": "Worth a look",
 
 	// --- environments ------------------------------------------------------
-	"env.label": "Environment:",
 	"env.global": "Global",
-	"env.collection": "Collection: {name}",
-	"env.none": "—",
+	"env.none": "none",
 	"env.workspaceEnvironments": "Workspace environments",
 	"env.collectionEnvironments": "Collection environments",
 	"env.loadFailed": "Could not load environments",

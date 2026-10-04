@@ -133,8 +133,8 @@
 	// (white on white) here. Blinking is left to CodeMirror's own animation -
 	// defining a competing one made the caret flicker erratically.
 	const theme = EditorView.theme({
-		"&": { fontSize: "0.85em", height: "100%", backgroundColor: "transparent" },
-		".cm-content": { fontFamily: "ui-monospace, monospace", padding: "0.5em", caretColor: "currentColor" },
+		"&": { fontSize: "var(--fs-md)", height: "100%", backgroundColor: "transparent" },
+		".cm-content": { fontFamily: "var(--font-mono)", padding: "0.5em", caretColor: "currentColor" },
 		".cm-scroller": { overflow: "auto" },
 		"&.cm-focused": { outline: "none" },
 		".cm-cursor, .cm-dropCursor": { borderLeftColor: "currentColor", borderLeftWidth: "2px" },
@@ -145,12 +145,12 @@
 		".cm-content ::selection, .cm-line ::selection": { background: "var(--cm-selection) !important" },
 		".cm-activeLine": { backgroundColor: "var(--cm-active-line)" },
 		".cm-tooltip": {
-			background: "var(--modal-bg, #fff)",
-			border: "1px solid rgba(127,127,127,0.35)",
+			background: "var(--surface-raised)",
+			border: "1px solid var(--line-strong)",
 			borderRadius: "6px",
 			color: "inherit",
 		},
-		".cm-tooltip-autocomplete ul li[aria-selected]": { background: "rgba(57, 108, 216, 0.35)", color: "inherit" },
+		".cm-tooltip-autocomplete ul li[aria-selected]": { background: "var(--selected)", color: "inherit" },
 	});
 
 	/// EDN has no CodeMirror package of its own; it is a subset of Clojure's
@@ -274,7 +274,7 @@
 	.code-editor {
 		height: 100%;
 		min-height: 8em;
-		border: 1px solid rgba(127, 127, 127, 0.35);
+		border: 1px solid var(--line-strong);
 		border-radius: 6px;
 		overflow: hidden;
 	}

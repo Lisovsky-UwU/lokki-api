@@ -34,30 +34,29 @@
 <style>
 	.protocol-switch {
 		display: flex;
-		margin-left: auto;
+		gap: 2px;
 		flex-shrink: 0;
-		border: 1px solid rgba(127, 127, 127, 0.35);
+		padding: 2px;
+		border: 1px solid var(--line);
 		border-radius: 6px;
-		overflow: hidden;
 	}
 	.protocol-switch button {
 		background: none;
 		border: none;
-		border-radius: 0;
-		padding: 0.15em 0.6em;
-		font-size: 0.75em;
-		font-weight: 700;
-		letter-spacing: 0.03em;
-		color: inherit;
-		opacity: 0.55;
+		border-radius: 4px;
+		padding: 1px 7px;
+		font-family: var(--font-mono);
+		font-size: var(--fs-xs);
+		font-weight: 600;
+		color: var(--text-muted);
 		cursor: pointer;
 	}
-	.protocol-switch button + button {
-		border-left: 1px solid rgba(127, 127, 127, 0.35);
+	.protocol-switch button:hover:not(:disabled) {
+		color: var(--text);
 	}
 	.protocol-switch button.current {
-		opacity: 1;
-		background: rgba(57, 108, 216, 0.18);
+		color: var(--text);
+		background: var(--selected);
 	}
 	.protocol-switch button:disabled {
 		cursor: default;

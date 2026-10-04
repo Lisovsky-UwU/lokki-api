@@ -99,20 +99,19 @@
 	.tabs {
 		display: flex;
 		gap: 0.2em;
-		border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+		border-bottom: 1px solid var(--line);
 	}
 	.tabs button {
 		background: none;
 		border: none;
 		padding: 0.4em 0.8em;
 		cursor: pointer;
-		color: inherit;
-		opacity: 0.6;
+		color: var(--text-muted);
 		border-bottom: 2px solid transparent;
 	}
 	.tabs button.active {
-		opacity: 1;
-		border-bottom-color: #396cd8;
+		color: var(--text);
+		border-bottom-color: var(--accent-text);
 	}
 	.tab-content {
 		flex: 1;
@@ -124,10 +123,10 @@
 		gap: 0.8em;
 	}
 	.url-preview {
-		border: 1px solid rgba(127, 127, 127, 0.35);
+		border: 1px solid var(--line-strong);
 		border-radius: 8px;
 		padding: 0.6em 0.7em;
-		background: rgba(127, 127, 127, 0.08);
+		background: var(--fill-subtle);
 		display: flex;
 		flex-direction: column;
 		gap: 0.4em;
@@ -137,16 +136,16 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 0.6em;
-		font-size: 0.8em;
-		opacity: 0.7;
+		font-size: var(--fs-sm);
+		color: var(--text-muted);
 	}
 	.url-preview-header button {
 		padding: 0.2em 0.7em;
-		font-size: 0.95em;
+		font-size: var(--fs-md);
 	}
 	.url-preview code {
-		font-family: ui-monospace, monospace;
-		font-size: 0.85em;
+		font-family: var(--font-mono);
+		font-size: var(--fs-sm);
 		word-break: break-all;
 	}
 	.empty-state-outer {
@@ -162,6 +161,6 @@
 		flex: 1;
 		min-width: 0;
 		height: 100%;
-		opacity: 0.5;
+		color: var(--text-muted);
 	}
 </style>

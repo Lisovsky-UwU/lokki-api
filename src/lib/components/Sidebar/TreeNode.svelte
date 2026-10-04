@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { CollectionSummary, CollectionTreeNode, HttpMethod, Protocol } from "../../bindings/types";
+	import Icon from "../common/Icon.svelte";
 	import TreeNode from "./TreeNode.svelte";
 	import NodeMenu from "../common/NodeMenu.svelte";
 	import ActivityIndicator from "../common/ActivityIndicator.svelte";
@@ -21,7 +22,7 @@
 	import { reportError } from "../../ui/notices";
 	import { api } from "../../api/client";
 	import { t } from "../../i18n";
-	import { methodColor, requestBadge } from "../../ui/methods";
+	import { methodColor, requestBadge, shortBadge } from "../../ui/methods";
 
 	// `collection` travels down the tree so opening a request always points
 	// the app at the collection that actually owns it; `parentPath` and
@@ -283,7 +284,7 @@
 			ondrop={onDrop}
 		>
 			<button class="folder-label" onclick={() => toggleExpanded(node.path, FOLDER_DEFAULT_EXPANDED)}>
-				<span class="chevron" class:collapsed={!expanded}>▾</span>
+				<span class="chevron" class:collapsed={!expanded}><Icon name="chevron" size="14px" /></span>
 				<span class="node-name">{node.name}</span>
 				<ActivityIndicator {activity} group />
 			</button>
@@ -317,7 +318,7 @@
 		ondrop={onDrop}
 	>
 		<button class="request-label" onclick={() => openRequest(node.path)}>
-			<span class="method" style="color: {methodColor(badge)}">{badge}</span>
+			<span class="method" style="color: {methodColor(badge)}" title={badge}>{shortBadge(badge)}</span>
 			<span class="node-name">{node.name}</span>
 			<ActivityIndicator {activity} />
 		</button>
@@ -329,43 +330,51 @@
 	.node-row {
 		display: flex;
 		align-items: center;
-		border-radius: 4px;
+		border-radius: 6px;
 		border-top: 2px solid transparent;
 		border-bottom: 2px solid transparent;
 	}
 	.node-row:hover {
-		background: rgba(127, 127, 127, 0.15);
+		background: var(--hover);
 	}
 	.node-row.active {
-		background: rgba(57, 108, 216, 0.2);
+		background: var(--selected);
+	}
+	.node-row.active .node-name {
+		font-weight: 600;
+	}
+	/* Same as the collection header: the menu shows with the pointer or the
+	   keyboard, and stays while it is open. */
+	.node-row:not(:hover):not(:focus-within) :global(.trigger[aria-expanded="false"]) {
+		opacity: 0;
 	}
 	.node-row.dragged {
 		opacity: 0.4;
 	}
 	.node-row.drop-before {
-		border-top-color: #396cd8;
+		border-top-color: var(--accent-text);
 	}
 	.node-row.drop-after {
-		border-bottom-color: #396cd8;
+		border-bottom-color: var(--accent-text);
 	}
 	.node-row.drop-inside {
-		background: rgba(57, 108, 216, 0.25);
-		outline: 1px dashed #396cd8;
+		background: color-mix(in srgb, var(--accent) 25%, transparent);
+		outline: 1px dashed var(--accent-text);
 	}
 	.folder-label,
 	.request-label {
 		display: flex;
 		align-items: center;
-		gap: 0.4em;
+		gap: 8px;
 		flex: 1;
 		min-width: 0;
 		text-align: left;
 		background: none;
 		border: none;
-		padding: 0.3em 0.4em;
-		border-radius: 4px;
+		padding: 4px 6px;
+		border-radius: 6px;
 		cursor: pointer;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 		color: inherit;
 	}
 	.node-name {
@@ -374,26 +383,36 @@
 		white-space: nowrap;
 	}
 	.chevron {
-		display: inline-block;
+		display: inline-flex;
+		color: var(--text-muted);
 		transition: transform 0.15s;
 	}
 	.chevron.collapsed {
 		transform: rotate(-90deg);
 	}
+	/* A guide line per level, under the folder's chevron. */
 	.children {
-		padding-left: 1.1em;
+		margin-left: 12px;
+		padding-left: 4px;
+		border-left: 1px solid var(--line);
 	}
 	.empty {
 		margin: 0;
 		padding: 0.2em 0.6em;
-		opacity: 0.45;
-		font-size: 0.8em;
+		color: var(--text-muted);
+		font-size: var(--fs-sm);
 	}
 	.method {
-		font-size: 0.7em;
-		letter-spacing: 0.03em;
-		font-weight: 700;
-		min-width: 2.8em;
+		font-size: var(--fs-xs);
+		font-family: var(--font-mono);
+		font-weight: 600;
+		/* The longest short form is four characters, so names line up. */
+		width: 4ch;
 		flex-shrink: 0;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.chevron {
+			transition: none;
+		}
 	}
 </style>

@@ -45,6 +45,19 @@ export const ICONS = {
 	/// circles.
 	plus: ["M12 5v14", "M5 12h14"],
 	more: ["M5 12h.01", "M12 12h.01", "M19 12h.01"],
+	/// Points down; a collapsed row rotates it rather than swapping icons, so
+	/// opening and closing can animate.
+	chevron: ["M6 9l6 6 6-6"],
+	check: ["M5 12.5l4.5 4.5L19 7"],
+	/// Sliders rather than a cog: a cog needs more detail than 16px holds.
+	settings: [
+		"M4 7h9",
+		"M19 7h1",
+		"M16 4.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z",
+		"M4 17h1",
+		"M11 17h9",
+		"M8 14.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z",
+	],
 } as const;
 
 export type IconName = keyof typeof ICONS;

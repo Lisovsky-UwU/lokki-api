@@ -46,6 +46,8 @@ export const ru: Record<keyof typeof en, string> = {
 	"app.settings": "Настройки",
 	"app.sidebarWidth": "Ширина дерева коллекций",
 	"app.emptyState": "Выберите запрос слева или создайте новый",
+	"app.shortcutSend": "отправить запрос",
+	"app.shortcutSave": "сохранить его",
 	"app.restoreFailed": "Не удалось открыть последнее пространство",
 	"app.noWorkspaceHint": "Пространство не открыто — переменные недоступны",
 	"app.requestPaneHeight": "Высота панели запроса",
@@ -84,6 +86,7 @@ export const ru: Record<keyof typeof en, string> = {
 	"kv.remove": "Удалить",
 
 	// --- auth --------------------------------------------------------------
+	"auth.typeAria": "Тип авторизации",
 	"auth.none": "Без авторизации",
 	"auth.bearer": "Bearer-токен",
 	"auth.basic": "Basic-авторизация",
@@ -112,6 +115,7 @@ export const ru: Record<keyof typeof en, string> = {
 	// --- request editor ----------------------------------------------------
 	"request.urlAria": "Адрес запроса",
 	"request.urlPlaceholder": "https://api.example.com/pets или {{baseUrl}}/pets",
+	"request.methodAria": "HTTP-метод",
 	"request.send": "Отправить",
 	"request.sending": "Отправка…",
 	"request.save": "Сохранить",
@@ -131,6 +135,7 @@ export const ru: Record<keyof typeof en, string> = {
 	"request.openFailed": "Не удалось открыть запрос",
 
 	// --- body editor -------------------------------------------------------
+	"body.typeAria": "Тип тела запроса",
 	"body.none": "Без тела",
 	"body.form": "Форма (urlencoded)",
 	"body.file": "Файл с компьютера",
@@ -143,7 +148,6 @@ export const ru: Record<keyof typeof en, string> = {
 	"body.format.plainPlaceholder": "произвольный текст",
 
 	// --- sidebar -----------------------------------------------------------
-	"sidebar.workspace": "Пространство",
 	"sidebar.workspaceMenu": "Меню пространства",
 	"sidebar.noWorkspace": "Нет открытого пространства. Создайте или откройте существующее",
 	"sidebar.collections": "Коллекции",
@@ -223,10 +227,8 @@ export const ru: Record<keyof typeof en, string> = {
 	"import.warnings": "Стоит проверить",
 
 	// --- environments ------------------------------------------------------
-	"env.label": "Окружение:",
 	"env.global": "Глобальное",
-	"env.collection": "Коллекция: {name}",
-	"env.none": "—",
+	"env.none": "нет",
 	"env.workspaceEnvironments": "Окружения пространства",
 	"env.collectionEnvironments": "Окружения коллекции",
 	"env.loadFailed": "Не удалось загрузить окружения",
