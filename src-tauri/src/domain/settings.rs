@@ -23,7 +23,9 @@ pub struct RequestSettings {
     pub follow_redirects: bool,
     pub max_redirects: u32,
     /// Sent as `User-Agent` unless the request sets its own header. Empty
-    /// leaves reqwest's default in place.
+    /// means `default_user_agent()` - reqwest sends no `User-Agent` at all
+    /// by itself, and some APIs (GitHub's among them) refuse a request
+    /// without one.
     pub user_agent: String,
 }
 
@@ -38,6 +40,20 @@ impl Default for RequestSettings {
             max_redirects: 10,
             user_agent: String::new(),
         }
+    }
+}
+
+/// What goes out as `User-Agent` when the setting is left empty. Named after
+/// the app and its version, so a server log says who was calling.
+pub fn default_user_agent() -> String {
+    format!("LokkiAPI/{}", env!("CARGO_PKG_VERSION"))
+}
+
+/// The `User-Agent` the settings ask for, the default filled in.
+pub fn effective_user_agent(settings: &RequestSettings) -> String {
+    match settings.user_agent.trim() {
+        "" => default_user_agent(),
+        custom => custom.to_string(),
     }
 }
 

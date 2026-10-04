@@ -1,8 +1,27 @@
 import { derived, get, writable } from "svelte/store";
-import type { ExecutionOutcome } from "../bindings/types";
+import type { ExecutionOutcome, KeyValue, SseComment, SseEvent, StreamEnd } from "../bindings/types";
 import { activeRequest, isUnder, rebasePath } from "./activeRequest";
 
+/// An SSE stream, live or finished.
+export interface StreamRecord {
+	/// Null until the response head arrives.
+	status: number | null;
+	status_text: string;
+	headers: KeyValue[];
+	/// Oldest first, capped at STREAM_ENTRY_LIMIT - the oldest go first.
+	entries: (SseEvent | SseComment)[];
+	/// How many entries the cap pushed out.
+	dropped: number;
+	/// Null while the stream is open. A `not_a_stream` end carries no body
+	/// here: that response is filed as the record's `outcome` instead.
+	end: StreamEnd | null;
+	/// Known once the stream has ended.
+	unresolved_variables: string[];
+}
+
 export interface ResponseRecord {
+	/// For a stream, set only when the server answered with an ordinary
+	/// response instead (`stream.end` is then `not_a_stream`).
 	outcome: ExecutionOutcome | null;
 	error: string | null;
 	at: number;
@@ -11,8 +30,11 @@ export interface ResponseRecord {
 	/// times only the HTTP exchange, not the IPC round trip), and the only
 	/// duration available at all when the request failed.
 	elapsedMs?: number;
-	/// The user stopped this send. Not a failure, and shown as neither.
+	/// The user stopped this send. Not a failure, and shown as neither. For
+	/// a stream, the ordinary way it ends.
 	cancelled?: boolean;
+	/// Set for an SSE send whose stream got as far as a response head.
+	stream?: StreamRecord;
 }
 
 export interface RequestResponses {
@@ -30,6 +52,9 @@ export interface RequestResponses {
 	/// and they haven't opened this one since - the sidebar marks it so a
 	/// background result isn't lost.
 	unseen: boolean;
+	/// The stream being received right now, for an SSE send in flight. Moves
+	/// into the record when the stream ends.
+	live: StreamRecord | null;
 	/// Newest first. Capped at HISTORY_LIMIT, which is 1 today - the shape is
 	/// already a list so turning on real response history later is just
 	/// raising the cap and adding a picker, not reworking the store.
@@ -37,12 +62,16 @@ export interface RequestResponses {
 }
 
 const HISTORY_LIMIT = 1;
+/// A stream can run for hours; past this many entries the oldest are let
+/// go, so an open stream can't grow the webview without bound.
+export const STREAM_ENTRY_LIMIT = 5000;
 const EMPTY: RequestResponses = {
 	loading: false,
 	startedAt: null,
 	sendId: null,
 	cancelling: false,
 	unseen: false,
+	live: null,
 	history: [],
 };
 
@@ -50,7 +79,8 @@ const EMPTY: RequestResponses = {
 /// request's own last response instead of leaving the previous one on screen.
 export const responsesByRequest = writable<Record<string, RequestResponses>>({});
 
-export function markSending(path: string, sendId: string) {
+/// `stream` starts an empty live stream alongside, for an SSE send.
+export function markSending(path: string, sendId: string, stream = false) {
 	responsesByRequest.update((map) => ({
 		...map,
 		[path]: {
@@ -59,9 +89,66 @@ export function markSending(path: string, sendId: string) {
 			sendId,
 			cancelling: false,
 			unseen: false,
+			live: stream
+				? { status: null, status_text: "", headers: [], entries: [], dropped: 0, end: null, unresolved_variables: [] }
+				: null,
 			history: map[path]?.history ?? [],
 		},
 	}));
+}
+
+/// Applies a change to the live stream of `path`, if it still has one - the
+/// request may have been deleted, or the send finished, in the meantime.
+function updateLive(path: string, change: (live: StreamRecord) => StreamRecord) {
+	responsesByRequest.update((map) => {
+		const current = map[path];
+		if (!current?.live) return map;
+		return { ...map, [path]: { ...current, live: change(current.live) } };
+	});
+}
+
+export function markStreamOpen(path: string, status: number, status_text: string, headers: KeyValue[]) {
+	updateLive(path, (live) => ({ ...live, status, status_text, headers }));
+}
+
+/// Entries waiting to be written to the store, per path. A fast stream (a
+/// model streaming tokens) sends dozens of events a second; copying the
+/// entry list and re-rendering for every one of them would be the slowest
+/// part of the app, so they are gathered and written a few times a second.
+const pendingEntries = new Map<string, (SseEvent | SseComment)[]>();
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+const FLUSH_INTERVAL_MS = 100;
+
+function flushEntries() {
+	flushTimer = null;
+	const batches = [...pendingEntries];
+	pendingEntries.clear();
+	for (const [path, batch] of batches) {
+		updateLive(path, (live) => {
+			const entries = live.entries.concat(batch);
+			const overflow = Math.max(0, entries.length - STREAM_ENTRY_LIMIT);
+			return {
+				...live,
+				entries: overflow > 0 ? entries.slice(overflow) : entries,
+				dropped: live.dropped + overflow,
+			};
+		});
+	}
+}
+
+export function appendStreamEntry(path: string, entry: SseEvent | SseComment) {
+	const batch = pendingEntries.get(path);
+	if (batch) batch.push(entry);
+	else pendingEntries.set(path, [entry]);
+	flushTimer ??= setTimeout(flushEntries, FLUSH_INTERVAL_MS);
+}
+
+/// The live stream as it stands, with everything still waiting in the batch
+/// written in - what a finished send files as its record.
+export function takeLiveStream(path: string): StreamRecord | null {
+	if (flushTimer) clearTimeout(flushTimer);
+	flushEntries();
+	return get(responsesByRequest)[path]?.live ?? null;
 }
 
 /// Marks that cancelling was requested. The send stays "loading" until it
@@ -100,6 +187,7 @@ export function recordResponse(path: string, record: ResponseRecord): boolean {
 				sendId: null,
 				cancelling: false,
 				unseen: inBackground,
+				live: null,
 				history: [complete, ...(current?.history ?? [])].slice(0, HISTORY_LIMIT),
 			},
 		};

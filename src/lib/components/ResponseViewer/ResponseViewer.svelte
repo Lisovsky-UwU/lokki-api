@@ -1,10 +1,14 @@
 <script lang="ts">
-	import { activeResponses, markCancelling } from "../../stores/response";
+	import { activeResponses } from "../../stores/response";
 	import { api } from "../../api/client";
 	import { locale, t } from "../../i18n";
 	import { reportError } from "../../ui/notices";
 	import { activeRequest } from "../../stores/activeRequest";
+	import { cancelActiveSend } from "../../ui/sending";
+	import { formatDuration, formatElapsed, formatSize } from "../../ui/format";
 	import CodeEditor from "../CodeEditor.svelte";
+	import HeadersTable from "./HeadersTable.svelte";
+	import StreamViewer from "./StreamViewer.svelte";
 	import { detectFormat, isTextualMediaType, mediaTypeOf } from "../../ui/contentType";
 
 	// Tabs depend on what came back: a page gets a rendered view, a picture
@@ -28,29 +32,6 @@
 		if (!base64) return 0;
 		const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
 		return Math.max(0, (base64.length / 4) * 3 - padding);
-	}
-
-	function formatSize(bytes: number): string {
-		if (bytes < 1024) return $t("unit.bytes", { value: bytes });
-		if (bytes < 1024 * 1024) return $t("unit.kilobytes", { value: (bytes / 1024).toFixed(1) });
-		return $t("unit.megabytes", { value: (bytes / (1024 * 1024)).toFixed(2) });
-	}
-
-	function formatDuration(ms: number): string {
-		if (ms < 1000) return $t("unit.milliseconds", { value: ms });
-		if (ms < 60_000) return $t("unit.seconds", { value: (ms / 1000).toFixed(2) });
-		const minutes = Math.floor(ms / 60_000);
-		const seconds = Math.round((ms % 60_000) / 1000);
-		return $t("unit.minutesSeconds", { minutes, seconds });
-	}
-
-	/// Live counter while the request is in flight. Kept at one decimal: at a
-	/// 100 ms tick, millisecond precision would just flicker.
-	function formatElapsed(ms: number): string {
-		if (ms < 60_000) return $t("unit.seconds", { value: (ms / 1000).toFixed(1) });
-		const minutes = Math.floor(ms / 60_000);
-		const seconds = Math.floor((ms % 60_000) / 1000);
-		return $t("unit.minutesSeconds", { minutes, seconds: String(seconds).padStart(2, "0") });
 	}
 
 	function isJson(text: string): boolean {
@@ -91,24 +72,16 @@
 		$activeResponses.startedAt != null ? Math.max(0, now - $activeResponses.startedAt) : 0,
 	);
 
-	/// Stops the in-flight send. The request stays "loading" until the
-	/// backend comes back with the cancellation - the connection is torn down
-	/// there, and reporting it as finished any earlier would let a second
-	/// send start while the first is still unwinding.
-	async function cancel() {
-		const sendId = $activeResponses.sendId;
-		if (!sendId) return;
-		markCancelling($activeRequest!.path);
-		try {
-			await api.cancelSend(sendId);
-		} catch (e) {
-			reportError($t("response.cancelFailed"), e);
-		}
-	}
-
 	// Only the newest record is kept today (see HISTORY_LIMIT), but reading
 	// it as "the first of a list" keeps the viewer ready for real history.
 	let latest = $derived($activeResponses.history[0] ?? null);
+	// A stream has a viewer of its own - while it is open, and afterwards
+	// unless the server answered with an ordinary response instead, which
+	// reads best the usual way.
+	let liveStream = $derived($activeResponses.loading ? $activeResponses.live : null);
+	let finishedStream = $derived(
+		latest?.stream && latest.stream.end?.type !== "not_a_stream" ? latest.stream : null,
+	);
 	// Decoding is skipped for bodies that were never text - see
 	// isTextualMediaType; the file view only needs the size and the type.
 	let bodyText = $derived(
@@ -166,17 +139,21 @@
 <div class="response-viewer">
 	{#if !$activeRequest}
 		<p class="hint">{$t("response.pickRequest")}</p>
+	{:else if liveStream}
+		<StreamViewer stream={liveStream} live startedAt={$activeResponses.startedAt} cancelling={$activeResponses.cancelling} />
 	{:else if $activeResponses.loading}
 		<div class="loading-state">
 			<div class="loading-row">
 				<span class="spinner" aria-hidden="true"></span>
 				<span class="hint">{$t("response.sending")}</span>
 			</div>
-			<span class="elapsed" aria-live="off">{formatElapsed(elapsed)}</span>
-			<button class="cancel" onclick={cancel} disabled={$activeResponses.cancelling}>
+			<span class="elapsed" aria-live="off">{formatElapsed($t, elapsed)}</span>
+			<button class="cancel" onclick={cancelActiveSend} disabled={$activeResponses.cancelling}>
 				{$activeResponses.cancelling ? $t("response.cancelling") : $t("response.cancel")}
 			</button>
 		</div>
+	{:else if finishedStream && latest}
+		<StreamViewer stream={finishedStream} record={latest} />
 	{:else if latest?.error}
 		<div class="status-bar">
 			{#if latest.cancelled}
@@ -185,7 +162,7 @@
 				<span class="status status-server-error">{$t("response.error")}</span>
 			{/if}
 			{#if latest.elapsedMs != null}<span class="meta" title={$t("response.duration")}
-					>{formatDuration(latest.elapsedMs)}</span
+					>{formatDuration($t, latest.elapsedMs)}</span
 				>{/if}
 			<span class="meta time" title={$t("response.sentAt")}
 				>{new Date(latest.at).toLocaleTimeString($locale)}</span
@@ -196,8 +173,8 @@
 		{@const outcome = latest.outcome}
 		<div class="status-bar">
 			<span class="status {statusClass(outcome.status)}">{outcome.status} {outcome.status_text}</span>
-			<span class="meta" title={$t("response.duration")}>{formatDuration(outcome.trace.total_ms)}</span>
-			<span class="meta" title={$t("response.bodySize")}>{formatSize(byteLength(outcome.body_base64))}</span>
+			<span class="meta" title={$t("response.duration")}>{formatDuration($t, outcome.trace.total_ms)}</span>
+			<span class="meta" title={$t("response.bodySize")}>{formatSize($t, byteLength(outcome.body_base64))}</span>
 			{#if format}<span class="meta" title={$t("response.contentType")}>{format.mediaType}</span>{/if}
 			<span class="meta time" title={$t("response.sentAt")}
 				>{new Date(latest.at).toLocaleTimeString($locale)}</span
@@ -207,6 +184,9 @@
 			</button>
 		</div>
 
+		{#if latest.stream}
+			<p class="warning">{$t("stream.notAStream")}</p>
+		{/if}
 		{#if outcome.unresolved_variables.length > 0}
 			<p class="warning">
 				{$t("response.unresolved", { names: outcome.unresolved_variables.map((v) => `{{${v}}}`).join(", ") })}
@@ -230,7 +210,7 @@
 		{:else if tab === "file"}
 			<div class="file-view">
 				<p class="file-line">{format?.mediaType}</p>
-				<p class="hint">{$t("response.binaryHint", { size: formatSize(byteLength(outcome.body_base64)) })}</p>
+				<p class="hint">{$t("response.binaryHint", { size: formatSize($t, byteLength(outcome.body_base64)) })}</p>
 				<button onclick={saveBody} disabled={saving}>{saving ? $t("common.saving") : $t("response.saveAsFile")}</button>
 			</div>
 		{:else if tab === "body"}
@@ -238,27 +218,7 @@
 				<CodeEditor value={sourceText} language={format?.language ?? "text"} readOnly />
 			</div>
 		{:else}
-			<div class="headers">
-				<table>
-					<thead>
-						<tr>
-							<th>{$t("response.headerName")}</th>
-							<th>{$t("response.headerValue")}</th>
-						</tr>
-					</thead>
-					<tbody>
-						<!-- Keyed by position, not by name: HTTP allows a header to
-						     repeat (Link, Set-Cookie), and each occurrence is its own
-						     row. -->
-						{#each outcome.headers as header, i (i)}
-							<tr>
-								<td class="header-key">{header.key}</td>
-								<td class="header-value">{header.value}</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
+			<HeadersTable headers={outcome.headers} />
 		{/if}
 	{:else}
 		<div class="hint-outer">
@@ -465,43 +425,5 @@
 	}
 	.save-body:hover:not(:disabled) {
 		background: rgba(127, 127, 127, 0.15);
-	}
-	.headers {
-		flex: 1;
-		min-height: 0;
-		overflow: auto;
-		border: 1px solid rgba(127, 127, 127, 0.3);
-		border-radius: 6px;
-	}
-	.headers table {
-		width: 100%;
-		border-collapse: collapse;
-		font-size: 0.85em;
-	}
-	.headers th {
-		position: sticky;
-		top: 0;
-		text-align: left;
-		font-weight: 600;
-		padding: 0.45em 0.6em;
-		background: var(--modal-bg, #f6f8fa);
-		border-bottom: 1px solid rgba(127, 127, 127, 0.35);
-	}
-	.headers td {
-		padding: 0.4em 0.6em;
-		border-bottom: 1px solid rgba(127, 127, 127, 0.18);
-		vertical-align: top;
-	}
-	.headers tr:last-child td {
-		border-bottom: none;
-	}
-	.header-key {
-		font-weight: 600;
-		white-space: nowrap;
-		font-family: ui-monospace, monospace;
-	}
-	.header-value {
-		font-family: ui-monospace, monospace;
-		word-break: break-all;
 	}
 </style>

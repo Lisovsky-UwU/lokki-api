@@ -1,7 +1,8 @@
-use crate::domain::{EnvironmentFile, RequestFile};
+use crate::domain::{EnvironmentFile, RequestFile, RequestSettings};
 use crate::error::{AppError, AppResult};
 use crate::exec::{
-    resolve_http_request, ExecutionContext, ExecutionOutcome, ExecutionTrace, HttpExecutor, ProtocolExecutor, TraceRecorder,
+    resolve_http_request, ExecutionContext, ExecutionOutcome, ExecutionTrace, HttpExecutor, ProtocolExecutor,
+    ResolvedHttpRequest, SseExecutor, SseMessage, TraceRecorder,
 };
 use crate::i18n::messages;
 use crate::interpolate::{Resolver, VariableScope};
@@ -12,6 +13,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use tokio::sync::oneshot;
+use tauri::ipc::Channel;
 use tauri::{AppHandle, Manager, State};
 
 /// Sends that are currently in flight, keyed by the id the frontend made up
@@ -103,29 +105,27 @@ fn env_to_scope(
     Ok(VariableScope(map))
 }
 
-#[tauri::command]
-pub async fn send_request(
-    app: AppHandle,
-    // Shared across sends: building a reqwest::Client per request would
-    // rebuild the whole rustls/TLS root store every time and throw away
-    // connection pooling.
-    executor: State<'_, HttpExecutor>,
-    in_flight: State<'_, InFlightSends>,
+/// A request ready to go out: variables substituted, auth folded into
+/// headers, the body read - plus what could not be substituted and the
+/// settings to send it with. Shared by every command that sends something,
+/// so a stream resolves its variables exactly the way a request does.
+struct PreparedSend {
+    resolved: ResolvedHttpRequest,
+    unresolved_variables: Vec<String>,
+    settings: RequestSettings,
+}
+
+fn prepare_send(
+    app: &AppHandle,
     request: RequestFile,
-    // Absent for an incognito send started from the welcome screen: there is
-    // no workspace, so no variables and no secrets at all.
     workspace_path: Option<String>,
-    // Absent for any incognito send - a request that lives nowhere has no
-    // collection environment to inherit.
     collection_path: Option<String>,
-    // Made up by the frontend for this send; `cancel_send` refers to it.
-    send_id: String,
-) -> AppResult<SendResult> {
+) -> AppResult<PreparedSend> {
     let http_spec = request
         .http
         .ok_or_else(|| AppError::NotFound("request has no http spec".to_string()))?;
 
-    let data_dir = app_local_data_dir(&app)?;
+    let data_dir = app_local_data_dir(app)?;
     let state = fs_app_state::load(&data_dir);
     let secrets = LocalFileSecretStore;
 
@@ -170,15 +170,52 @@ pub async fn send_request(
     let (resolved, unresolved_variables) =
         resolve_http_request(&http_spec, &resolver).map_err(|e| AppError::Message(e.to_string()))?;
 
-    let settings = state.request_settings.clone();
+    Ok(PreparedSend {
+        resolved,
+        unresolved_variables,
+        settings: state.request_settings,
+    })
+}
+
+/// A recorder that already carries the unresolved-variable warnings, so the
+/// log starts with them whatever happens next.
+fn start_trace(unresolved_variables: &[String]) -> TraceRecorder {
+    let mut recorder = TraceRecorder::start();
+    for name in unresolved_variables {
+        recorder.warn(messages::unresolved_variable(name));
+    }
+    recorder
+}
+
+#[tauri::command]
+pub async fn send_request(
+    app: AppHandle,
+    // Shared across sends: building a reqwest::Client per request would
+    // rebuild the whole rustls/TLS root store every time and throw away
+    // connection pooling.
+    executor: State<'_, HttpExecutor>,
+    in_flight: State<'_, InFlightSends>,
+    request: RequestFile,
+    // Absent for an incognito send started from the welcome screen: there is
+    // no workspace, so no variables and no secrets at all.
+    workspace_path: Option<String>,
+    // Absent for any incognito send - a request that lives nowhere has no
+    // collection environment to inherit.
+    collection_path: Option<String>,
+    // Made up by the frontend for this send; `cancel_send` refers to it.
+    send_id: String,
+) -> AppResult<SendResult> {
+    let PreparedSend {
+        resolved,
+        unresolved_variables,
+        settings,
+    } = prepare_send(&app, request, workspace_path, collection_path)?;
+
     // The recorder is owned here, not by the executor, so a failed attempt
     // still has a timeline. Handing it back on the error path needs a
     // structured IPC error and is a separate change; for now it is finished
     // and dropped, and only the message reaches the UI.
-    let mut recorder = TraceRecorder::start();
-    for name in &unresolved_variables {
-        recorder.warn(messages::unresolved_variable(name));
-    }
+    let mut recorder = start_trace(&unresolved_variables);
     let cancelled = in_flight.register(send_id.clone());
     let ctx = ExecutionContext { settings };
     let result = tokio::select! {
@@ -200,6 +237,68 @@ pub async fn send_request(
         trace,
         unresolved_variables,
     })
+}
+
+/// Opens a Server-Sent Events stream and forwards it to `on_message` until
+/// it ends. Takes the same arguments as `send_request`, because the request
+/// that opens a stream is an ordinary HTTP request.
+///
+/// Everything the UI learns comes through the channel, the closing
+/// `SseMessage::End` included, and the command itself returns nothing. It
+/// fails only when the stream never started - an unresolvable URL, a refused
+/// connection, a cancel while still waiting for the server. From the
+/// response head on, every ending, a disconnect included, arrives as `End`.
+///
+/// Stopping it is `cancel_send` with the same `send_id`, as for a request.
+// `send_request`'s arguments plus the channel; a struct would only rename
+// them, since Tauri takes command arguments one by one.
+#[allow(clippy::too_many_arguments)]
+#[tauri::command]
+pub async fn open_sse_stream(
+    app: AppHandle,
+    executor: State<'_, SseExecutor>,
+    in_flight: State<'_, InFlightSends>,
+    request: RequestFile,
+    workspace_path: Option<String>,
+    collection_path: Option<String>,
+    send_id: String,
+    on_message: Channel<SseMessage>,
+) -> AppResult<()> {
+    let PreparedSend {
+        resolved,
+        unresolved_variables,
+        settings,
+    } = prepare_send(&app, request, workspace_path, collection_path)?;
+
+    let mut recorder = start_trace(&unresolved_variables);
+    let cancelled = in_flight.register(send_id.clone());
+    let ctx = ExecutionContext { settings };
+    // A send fails only when the webview is gone (reloaded, closed): there is
+    // nobody left to tell.
+    let mut emit = |message: SseMessage| {
+        let _ = on_message.send(message);
+    };
+    let result = executor
+        .stream(
+            &resolved,
+            &ctx,
+            &mut recorder,
+            async {
+                let _ = cancelled.await;
+            },
+            &mut emit,
+        )
+        .await;
+    in_flight.forget(&send_id);
+    let trace = recorder.finish();
+
+    let outcome = result.map_err(|e| AppError::Message(e.to_string()))?;
+    let _ = on_message.send(SseMessage::End {
+        outcome,
+        trace,
+        unresolved_variables,
+    });
+    Ok(())
 }
 
 /// Writes a response body to a file the user picked. The body crosses IPC

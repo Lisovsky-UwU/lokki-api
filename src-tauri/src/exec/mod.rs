@@ -1,7 +1,9 @@
 pub mod http;
+pub mod sse;
 pub mod trace;
 
 pub use http::HttpExecutor;
+pub use sse::{SseExecutor, SseMessage, SseOutcome, StreamEnd};
 pub use trace::{ExecutionTrace, Phase, TraceEvent, TraceLevel, TraceRecorder};
 
 use crate::domain::{AuthSpec, BodySpec, HttpMethod, HttpRequestSpec, KeyValue, RequestSettings, TextFormat};
@@ -50,9 +52,10 @@ pub enum ExecutorError {
     Failed(String),
 }
 
-/// Future protocols (WebSocket, SSE, GraphQL) implement this trait as
-/// siblings to HttpExecutor and get their own Tauri commands (e.g. a
-/// streamed `send_ws_connect`) rather than overloading `send_request`.
+/// The request/response shape: one request in, one outcome out. Protocols
+/// that stream (SSE today, WebSocket later) don't fit a single outcome and
+/// live beside this trait as executors of their own - see `sse::SseExecutor`
+/// - with their own Tauri commands rather than an overloaded `send_request`.
 ///
 /// `trace` is where the implementation reports where the time went and what
 /// happened. Filling it is best-effort and transport-specific: whatever a
@@ -81,22 +84,21 @@ fn form_urlencode_pairs(pairs: &[(String, String)]) -> String {
     url.query().unwrap_or("").to_string()
 }
 
-/// Substitutes `{{variables}}` throughout an `HttpRequestSpec` (url, query,
-/// headers, auth, body) via `resolver`, folding auth into an `Authorization`
-/// header and body-type-appropriate `Content-Type`. Returns the resolved
-/// request plus any variable names that couldn't be found (left verbatim in
-/// the output rather than failing the whole request).
-/// Sets `Content-Type` unless the request already carries one - an explicit
-/// header the user wrote always wins over the body format's default.
-fn default_content_type(headers: &mut Vec<KeyValue>, value: &str) {
-    if headers.iter().any(|h| h.key.eq_ignore_ascii_case("content-type")) {
+/// Sets a header unless the request already carries one by that name - an
+/// explicit header the user wrote always wins over a default.
+pub(crate) fn default_header(headers: &mut Vec<KeyValue>, name: &str, value: &str) {
+    if headers.iter().any(|h| h.key.eq_ignore_ascii_case(name)) {
         return;
     }
     headers.push(KeyValue {
-        key: "Content-Type".to_string(),
+        key: name.to_string(),
         value: value.to_string(),
         enabled: true,
     });
+}
+
+fn default_content_type(headers: &mut Vec<KeyValue>, value: &str) {
+    default_header(headers, "Content-Type", value);
 }
 
 /// Best-effort type for a file body, by extension. Anything unrecognised
@@ -129,6 +131,11 @@ fn content_type_for_file(path: &str) -> &'static str {
     }
 }
 
+/// Substitutes `{{variables}}` throughout an `HttpRequestSpec` (url, query,
+/// headers, auth, body) via `resolver`, folding auth into an `Authorization`
+/// header and body-type-appropriate `Content-Type`. Returns the resolved
+/// request plus any variable names that couldn't be found (left verbatim in
+/// the output rather than failing the whole request).
 pub fn resolve_http_request(
     spec: &HttpRequestSpec,
     resolver: &Resolver,

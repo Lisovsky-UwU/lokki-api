@@ -4,18 +4,18 @@
 	// workbench lays it across the full width - in the side-by-side layout
 	// the editor pane is only half the window, which is not much of a URL
 	// field.
-	import { activeRequest, mutateHttp } from "../../stores/activeRequest";
+	import { activeRequest, mutateHttp, setProtocol } from "../../stores/activeRequest";
 	import { activeCollection, requestTreeRefresh } from "../../stores/collectionTree";
 	import { incognito } from "../../stores/incognito";
-	import { workspacePath } from "../../stores/workspace";
-	import { activeResponses, markSending, recordResponse } from "../../stores/response";
+	import { activeResponses } from "../../stores/response";
 	import { api } from "../../api/client";
 	import { t } from "../../i18n";
-	import { notifyResult, type NoticeKind } from "../../ui/notices";
-	import { newHttpRequestSpec, newId } from "../../bindings/types";
+	import { cancelActiveSend, sendActiveRequest } from "../../ui/sending";
+	import { newHttpRequestSpec } from "../../bindings/types";
 	import type { HttpMethod } from "../../bindings/types";
 	import VariableInput from "../common/VariableInput.svelte";
 	import MethodSelect from "./MethodSelect.svelte";
+	import ProtocolSwitch from "./ProtocolSwitch.svelte";
 	import SaveIncognitoModal from "./SaveIncognitoModal.svelte";
 
 	let saving = $state(false);
@@ -29,6 +29,7 @@
 	let canSend = $derived($incognito || $activeCollection != null);
 
 	let http = $derived($activeRequest?.request.http ?? newHttpRequestSpec());
+	let isStream = $derived($activeRequest?.request.meta.protocol === "sse");
 
 	async function save() {
 		if (!$activeRequest) return;
@@ -46,36 +47,8 @@
 		}
 	}
 
-	async function send() {
-		if (!$activeRequest || !canSend) return;
-		// Results are stored against the request's path, so each request keeps
-		// its own last response instead of sharing one global slot.
-		const path = $activeRequest.path;
-		const name = $activeRequest.request.meta.name;
-		const sendId = newId();
-		markSending(path, sendId);
-		let summary: string;
-		let kind: NoticeKind;
-		let inBackground: boolean;
-		try {
-			const outcome = await api.sendRequest(
-				$activeRequest.request,
-				$workspacePath,
-				$activeCollection?.path ?? null,
-				sendId,
-			);
-			summary = `${outcome.status} ${outcome.status_text}`;
-			kind = outcome.status >= 400 ? "error" : "success";
-			inBackground = recordResponse(path, { outcome, error: null, at: Date.now() });
-		} catch (e) {
-			summary = $t("request.sendFailedShort");
-			kind = "error";
-			inBackground = recordResponse(path, { outcome: null, error: String(e), at: Date.now() });
-		}
-		// The user moved on to another request while this one was in flight,
-		// so the response panel they are looking at won't show the result -
-		// the toast and the sidebar marker are the only way they learn of it.
-		if (inBackground) notifyResult($t("request.backgroundDone", { name, summary }), kind);
+	function send() {
+		if (canSend) sendActiveRequest();
 	}
 
 	function onShortcut(e: KeyboardEvent) {
@@ -135,6 +108,11 @@
 			{#if !canSend}
 				<span class="warn">{$t("request.noCollection")}</span>
 			{/if}
+			<ProtocolSwitch
+				value={$activeRequest.request.meta.protocol}
+				disabled={$activeResponses.loading}
+				onChange={setProtocol}
+			/>
 		</div>
 		<div class="url-bar">
 			<MethodSelect value={http.method} onChange={(method: HttpMethod) => mutateHttp({ method })} />
@@ -145,9 +123,19 @@
 				placeholder={$t("request.urlPlaceholder")}
 				onChange={(url) => mutateHttp({ url })}
 			/>
-			<button class="send" title="Ctrl+Enter" onclick={send} disabled={$activeResponses.loading || !canSend}>
-				{$activeResponses.loading ? $t("request.sending") : $t("request.send")}
-			</button>
+			{#if isStream && $activeResponses.loading}
+				<!-- An open stream has no natural end, so the button that opened
+				     it is the one that closes it. -->
+				<button class="send disconnect" onclick={cancelActiveSend} disabled={$activeResponses.cancelling}>
+					{$activeResponses.cancelling ? $t("stream.disconnecting") : $t("stream.disconnect")}
+				</button>
+			{:else if isStream}
+				<button class="send" title="Ctrl+Enter" onclick={send} disabled={!canSend}>{$t("stream.connect")}</button>
+			{:else}
+				<button class="send" title="Ctrl+Enter" onclick={send} disabled={$activeResponses.loading || !canSend}>
+					{$activeResponses.loading ? $t("request.sending") : $t("request.send")}
+				</button>
+			{/if}
 			<button
 				class="save"
 				title="Ctrl+S"
@@ -219,6 +207,10 @@
 	.send:disabled {
 		opacity: 0.5;
 		cursor: default;
+	}
+	.send.disconnect {
+		background: #d1443c;
+		border-color: #d1443c;
 	}
 	.save {
 		border-radius: 6px;

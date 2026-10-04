@@ -17,6 +17,9 @@ pub struct AppInfo {
     pub tauri_version: String,
     pub node_version: String,
     pub webview_version: String,
+    /// What goes out as `User-Agent` while the setting is empty - the
+    /// settings field shows it as its placeholder.
+    pub default_user_agent: String,
 }
 
 #[tauri::command]
@@ -36,6 +39,7 @@ pub fn app_info(app: AppHandle) -> AppInfo {
         // The system WebView is what actually renders the UI and differs per
         // machine, so it belongs in anything the user copies into a report.
         webview_version: tauri::webview_version().unwrap_or_default(),
+        default_user_agent: crate::domain::default_user_agent(),
     }
 }
 

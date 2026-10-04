@@ -2,7 +2,7 @@
 // interpolate + exec), exercising the same functions the IPC commands call.
 // Hits the real network (httpbin.org) - not part of `cargo test`, run
 // manually via `cargo run --example smoke`.
-use lokki_api_lib::domain::{EnvironmentScope, HttpMethod};
+use lokki_api_lib::domain::{EnvironmentScope, HttpMethod, Protocol};
 use lokki_api_lib::exec::{resolve_http_request, ExecutionContext, HttpExecutor, ProtocolExecutor, TraceRecorder};
 use lokki_api_lib::interpolate::{Resolver, VariableScope};
 use lokki_api_lib::store::{fs_collection, fs_environment, fs_request, fs_workspace};
@@ -28,7 +28,7 @@ async fn main() {
     .unwrap();
     println!("created environment '{}'", env.meta.name);
 
-    let created = fs_request::create_request(std::path::Path::new(&collection.path), "Get Ip", HttpMethod::Get)
+    let created = fs_request::create_request(std::path::Path::new(&collection.path), "Get Ip", HttpMethod::Get, Protocol::Http)
         .unwrap();
     let request_path = std::path::Path::new(&collection.path).join("Get Ip.lokki.toml");
 

@@ -160,6 +160,46 @@ pub fn body_received(bytes: usize) -> String {
     tr!("Response body received, {bytes} bytes", "Тело ответа получено, {bytes} байт")
 }
 
+// --- event streams (SSE) -------------------------------------------------
+
+pub fn stream_opened() -> String {
+    tr!("Event stream opened", "Поток событий открыт")
+}
+
+/// The server answered, but not with a stream - an error status, or a
+/// `Content-Type` other than `text/event-stream`. The body is read whole and
+/// shown as an ordinary response, since that is what it is.
+pub fn stream_not_an_event_stream(status: u16, content_type: &str) -> String {
+    tr!(
+        "The server answered {status} with “{content_type}” instead of an event stream (text/event-stream); the body is shown as an ordinary response.",
+        "Сервер ответил {status} с типом «{content_type}» вместо потока событий (text/event-stream); тело показано как обычный ответ.",
+    )
+}
+
+pub fn stream_closed_by_server(events: u64) -> String {
+    tr!(
+        "The server closed the stream; events received: {events}",
+        "Сервер закрыл поток; получено событий: {events}",
+    )
+}
+
+pub fn stream_closed_by_client(events: u64) -> String {
+    tr!(
+        "Disconnected; events received: {events}",
+        "Соединение закрыто; получено событий: {events}",
+    )
+}
+
+/// The stream ended without the blank line that completes an event. The
+/// specification has a client drop it, and so does this one - but silently
+/// losing the last thing the server sent would hide a server bug.
+pub fn stream_incomplete_event() -> String {
+    tr!(
+        "The stream ended in the middle of an event; the incomplete event was dropped.",
+        "Поток оборвался посреди события; незавершённое событие отброшено.",
+    )
+}
+
 // --- workspace and collections -------------------------------------------
 
 pub fn not_a_collection(path: &str) -> String {

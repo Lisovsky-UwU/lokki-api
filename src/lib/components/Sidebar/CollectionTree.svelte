@@ -3,7 +3,7 @@
 	import { api } from "../../api/client";
 	import { t } from "../../i18n";
 	import { workspacePath, collections, workspace } from "../../stores/workspace";
-	import type { CollectionSummary, CollectionTreeNode, HttpMethod } from "../../bindings/types";
+	import type { CollectionSummary, CollectionTreeNode, HttpMethod, Protocol } from "../../bindings/types";
 	import TreeNode from "./TreeNode.svelte";
 	import NodeMenu from "../common/NodeMenu.svelte";
 	import Icon from "../common/Icon.svelte";
@@ -211,10 +211,11 @@
 		}
 	}
 
-	async function addRequest(collection: CollectionSummary) {
-		const name = await promptForText($t("prompt.newRequest"), $t("prompt.requestName"), $t("prompt.newRequest"));
+	async function addRequest(collection: CollectionSummary, protocol: Protocol = "http") {
+		const title = $t(protocol === "sse" ? "prompt.newSseRequest" : "prompt.newRequest");
+		const name = await promptForText(title, $t("prompt.requestName"), title);
 		if (!name) return;
-		await api.createRequest(collection.path, name, "GET" as HttpMethod);
+		await api.createRequest(collection.path, name, "GET" as HttpMethod, protocol);
 		setExpanded(collection.path, true);
 		requestTreeRefresh();
 	}
@@ -288,6 +289,7 @@
 		return [
 			[
 				{ label: $t("menu.addRequest"), icon: "request-add", action: () => addRequest(collection) },
+				{ label: $t("menu.addSseRequest"), icon: "stream", action: () => addRequest(collection, "sse") },
 				{ label: $t("menu.addFolder"), icon: "folder-add", action: () => addFolder(collection) },
 			],
 			[
