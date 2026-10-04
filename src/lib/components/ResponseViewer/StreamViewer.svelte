@@ -236,9 +236,16 @@
 	.state.ended {
 		color: var(--text-muted);
 	}
+	/* Same chip as a plain response's status. */
 	.status {
+		display: inline-flex;
+		align-items: center;
+		height: 24px;
+		padding: 0 10px;
+		border-radius: 12px;
 		font-weight: 600;
-		font-size: var(--fs-md);
+		white-space: nowrap;
+		background: color-mix(in srgb, currentColor 12%, transparent);
 	}
 	.status-ok {
 		color: var(--ok);

@@ -7,6 +7,7 @@
 	import { cancelActiveSend } from "../../ui/sending";
 	import { formatDuration, formatElapsed, formatSize } from "../../ui/format";
 	import CodeEditor from "../CodeEditor.svelte";
+	import Icon from "../common/Icon.svelte";
 	import HeadersTable from "./HeadersTable.svelte";
 	import StreamViewer from "./StreamViewer.svelte";
 	import { detectFormat, isTextualMediaType, mediaTypeOf } from "../../ui/contentType";
@@ -172,16 +173,17 @@
 	{:else if latest?.outcome}
 		{@const outcome = latest.outcome}
 		<div class="status-bar">
-			<span class="status {statusClass(outcome.status)}">{outcome.status} {outcome.status_text}</span>
+			<span class="status {statusClass(outcome.status)}">
+				{#if outcome.status < 300}<Icon name="check" size="14px" stroke={2.2} />{/if}
+				{outcome.status}
+				{outcome.status_text}
+			</span>
 			<span class="meta" title={$t("response.duration")}>{formatDuration($t, outcome.trace.total_ms)}</span>
 			<span class="meta" title={$t("response.bodySize")}>{formatSize($t, byteLength(outcome.body_base64))}</span>
 			{#if format}<span class="meta" title={$t("response.contentType")}>{format.mediaType}</span>{/if}
 			<span class="meta time" title={$t("response.sentAt")}
 				>{new Date(latest.at).toLocaleTimeString($locale)}</span
 			>
-			<button class="save-body" onclick={saveBody} disabled={saving} title={$t("response.saveBodyHint")}>
-				{saving ? $t("common.saving") : $t("response.saveBodyButton")}
-			</button>
 		</div>
 
 		{#if latest.stream}
@@ -197,6 +199,13 @@
 			{#each tabs as item (item.id + item.label)}
 				<button class:active={tab === item.id} onclick={() => (tab = item.id)}>{item.label}</button>
 			{/each}
+			<!-- Beside the tabs rather than in the status line: it acts on the
+			     body, and the status line has no room left for it in a split pane. -->
+			<span class="tabs-end">
+				<button class="save-body" onclick={saveBody} disabled={saving} title={$t("response.saveBodyHint")}>
+					{saving ? $t("common.saving") : $t("response.saveBodyButton")}
+				</button>
+			</span>
 		</div>
 
 		{#if tab === "preview"}
@@ -258,8 +267,10 @@
 	}
 	.status-bar {
 		display: flex;
-		align-items: baseline;
-		gap: 0.9em;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 4px 12px;
+		min-height: 26px;
 	}
 	.loading-state {
 		display: flex;
@@ -294,8 +305,22 @@
 		align-items: baseline;
 		gap: 0.6em;
 	}
+	/* A chip rather than coloured text, so the outcome reads at a glance
+	   before any of the numbers beside it. Tinted from its own colour, which
+	   the class below sets. */
 	.status {
-		font-weight: 700;
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		height: 24px;
+		padding: 0 10px;
+		border-radius: 12px;
+		font-weight: 600;
+		white-space: nowrap;
+		background: color-mix(in srgb, currentColor 12%, transparent);
+	}
+	.status:has(:global(.icon)) {
+		padding-left: 7px;
 	}
 	.status-ok {
 		color: var(--ok);
@@ -309,7 +334,8 @@
 	}
 	.meta {
 		color: var(--text-muted);
-		font-size: var(--fs-md);
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
 	}
 	.elapsed {
 		font-family: var(--font-mono);
@@ -344,10 +370,15 @@
 	}
 	.tabs {
 		display: flex;
+		align-items: center;
 		gap: 0.2em;
 		border-bottom: 1px solid var(--line);
 	}
-	.tabs button {
+	.tabs-end {
+		margin-left: auto;
+		padding-bottom: 4px;
+	}
+	.tabs > button {
 		background: none;
 		border: none;
 		padding: 0.35em 0.8em;
@@ -355,7 +386,7 @@
 		color: var(--text-muted);
 		border-bottom: 2px solid transparent;
 	}
-	.tabs button.active {
+	.tabs > button.active {
 		color: var(--text);
 		border-bottom-color: var(--accent-text);
 	}
@@ -421,6 +452,7 @@
 		font-size: var(--fs-sm);
 		padding: 0.15em 0.6em;
 		cursor: pointer;
+		white-space: nowrap;
 	}
 	.save-body:hover:not(:disabled) {
 		background: var(--hover);
