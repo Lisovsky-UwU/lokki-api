@@ -20,7 +20,7 @@ LokkiAPI does three things differently from the clients already out there.
 
 **The app is light.** Tauri with the system WebView instead of Electron: less space disk, and an order of magnitude less memory than clients that ship their own Chromium.
 
-**The architecture is built to grow.** Every entity carries a stable ULID and a version, so a future self-hosted sync server plugs in without migrating the format. Request execution sits behind executors per protocol — HTTP and SSE today — so WebSocket and GraphQL are added alongside them rather than by rewriting the core.
+**The architecture is built to grow.** Every entity carries a stable ULID and a version, so a future self-hosted sync server plugs in without migrating the format. Request execution sits behind executors per protocol — HTTP, SSE and WebSocket today — so GraphQL and gRPC are added alongside them rather than by rewriting the core.
 
 **No subscriptions, ever, and open source forever.** LokkiAPI is built on open code and the absence of subscriptions of any kind. Never, in any form. Every feature is free to use for any person and any company.
 
@@ -41,6 +41,15 @@ LokkiAPI does three things differently from the clients already out there.
 - Filtering by type, id or data; the list follows new events while scrolled to the bottom
 - The stream stays open until the server closes it or you press Disconnect; the read and total timeouts don't cut a quiet stream short
 - If the server answers with something other than an event stream (a 401 with a JSON error, say), that answer is shown as an ordinary response
+
+**WebSocket**
+- The handshake is described like any request: URL, parameters, headers and auth, with variables substituted the same way; `http://` and `https://` addresses are taken as `ws://` and `wss://`
+- Created from the ⋯ menu as "Add WebSocket", or switched with the HTTP / SSE / WS toggle — the switch loses nothing, the message included
+- The Message tab holds what you send: JSON, XML, YAML, EDN or plain text, with `{{variables}}` resolved at the moment of sending; Send or Ctrl+Enter sends it over the open connection, as many times as you like
+- Every message is logged both ways as it goes: when, which way, the size and the content, with JSON pretty-printed on expanding; binary messages are shown as hex, pings and pongs dimmed
+- The connection stays open until either side closes it; the server's close code and reason are shown, and Disconnect closes it properly, with a close frame
+- If the server refuses to switch protocols (a 401 or a 404 on the wrong path), its answer is shown as an ordinary response
+- DNS, TCP, TLS and the handshake are timed separately, and the TLS and timeout settings apply as they do to HTTP
 
 **Collections**
 - Nested folders, any depth
@@ -150,7 +159,14 @@ token = "{{authToken}}"
 type = "none"
 ```
 
-An SSE request is the same file with `protocol = "sse"`: the `[http]` table describes the request that opens the stream.
+An SSE request is the same file with `protocol = "sse"`: the `[http]` table describes the request that opens the stream. A WebSocket request has `protocol = "websocket"`, its handshake in `[http]` (method and body are not used) and the message it sends in a table of its own:
+
+```toml
+[websocket]
+format = "json"
+message = """
+{"type": "subscribe", "channel": "{{channel}}"}"""
+```
 
 TOML rather than YAML or JSON: it has no implicit type coercion and no indentation traps when edited by hand, it gives line-by-line diffs on arrays of tables, and it has multi-line literals for request bodies.
 
@@ -204,7 +220,7 @@ Core modules (`src-tauri/src`):
 |---|---|
 | `domain/` | Models: workspace, collection, folder, request, environment, `SyncMeta` with identity and version |
 | `store/` | Reading and writing TOML, walking the collection tree, moving and ordering, local UI state |
-| `exec/` | The `ProtocolExecutor` trait and the HTTP implementation, the SSE stream reader beside it, building a request with variables substituted |
+| `exec/` | The `ProtocolExecutor` trait and the HTTP implementation, the SSE stream reader and the WebSocket client beside it, building a request with variables substituted |
 | `interpolate/` | The `{{variable}}` resolver: the collection environment wins over the global one |
 | `import/` | Reading somebody else's format (OpenAPI today) into a plan the store writes out |
 | `secrets/` | The `SecretStore` trait and its local-file implementation |
@@ -225,7 +241,7 @@ The frontend is split into `stores` (reactive state), `api/client.ts` (a typed w
     - [ ] Hoppscotch
 - [ ] More protocols:
     - [x] SSE
-    - [ ] WebSocket
+    - [x] WebSocket
     - [ ] GraphQL
     - [ ] gRPC
     - [ ] Raw TCP
