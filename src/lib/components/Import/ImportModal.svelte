@@ -140,16 +140,16 @@
 	}
 	h2 {
 		margin: 0;
-		font-size: 1.1em;
+		font-size: var(--fs-xl);
 	}
 	h3 {
 		margin: 0.3em 0 0;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	.sources {
 		display: flex;
 		gap: 1.2em;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	.radio {
 		display: flex;
@@ -160,7 +160,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.6em;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 		min-width: 0;
 	}
 	.field button {
@@ -184,11 +184,11 @@
 	}
 	.done {
 		margin: 0;
-		font-size: 0.95em;
+		font-size: var(--fs-md);
 	}
 	.hint {
 		margin: 0;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		opacity: 0.6;
 	}
 	.warnings {
@@ -196,7 +196,7 @@
 		padding-left: 1.2em;
 		max-height: 14em;
 		overflow-y: auto;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		display: flex;
 		flex-direction: column;
 		gap: 0.3em;

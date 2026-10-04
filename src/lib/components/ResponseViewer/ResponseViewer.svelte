@@ -253,7 +253,7 @@
 		background: color-mix(in srgb, var(--warn) 10%, transparent);
 		border-radius: 6px;
 		padding: 0.4em 0.6em;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		margin: 0;
 	}
 	.status-bar {
@@ -275,7 +275,7 @@
 		color: inherit;
 		border-radius: 6px;
 		padding: 0.3em 0.9em;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		cursor: pointer;
 	}
 	.cancel:hover:not(:disabled) {
@@ -309,10 +309,10 @@
 	}
 	.meta {
 		opacity: 0.6;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	.elapsed {
-		font-family: ui-monospace, monospace;
+		font-family: var(--font-mono);
 		/* Fixed-width digits so the counter doesn't jiggle as it ticks. */
 		font-variant-numeric: tabular-nums;
 		opacity: 0.75;
@@ -411,15 +411,15 @@
 	}
 	.file-line {
 		margin: 0;
-		font-family: ui-monospace, monospace;
-		font-size: 0.9em;
+		font-family: var(--font-mono);
+		font-size: var(--fs-md);
 	}
 	.save-body {
 		background: none;
 		border: 1px solid var(--line-strong);
 		border-radius: 6px;
 		color: inherit;
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 		padding: 0.15em 0.6em;
 		cursor: pointer;
 	}

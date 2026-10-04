@@ -76,14 +76,14 @@
 		min-width: 7em;
 		color: var(--on-fill);
 		font-weight: 700;
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 		letter-spacing: 0.03em;
 		cursor: pointer;
 	}
 	.caret {
 		margin-left: auto;
 		opacity: 0.85;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	.options {
 		position: absolute;
@@ -110,7 +110,7 @@
 		cursor: pointer;
 		/* Same type treatment as the method badge in the collection tree. */
 		font-weight: 700;
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 		letter-spacing: 0.03em;
 	}
 	.options button:hover,

@@ -494,7 +494,7 @@
 		height: 100%;
 		overflow-y: auto;
 		padding: 0.5rem;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	.sidebar-header {
 		display: flex;
@@ -510,7 +510,7 @@
 	.heading {
 		font-weight: 600;
 		text-transform: uppercase;
-		font-size: 0.75em;
+		font-size: var(--fs-xs);
 		letter-spacing: 0.04em;
 		opacity: 0.7;
 	}
@@ -535,7 +535,7 @@
 	/* The row is at normal size now, so the marker follows the small-caps
 	   label beside it rather than the row it sits in. */
 	.sidebar-header-collections .menu-hint {
-		font-size: 0.75em;
+		font-size: var(--fs-xs);
 	}
 	.icon-btn {
 		display: flex;
@@ -543,7 +543,7 @@
 		background: none;
 		border: none;
 		cursor: pointer;
-		font-size: 1em;
+		font-size: var(--fs-md);
 		line-height: 1;
 		padding: 0.2em 0.35em;
 		border-radius: 4px;
@@ -631,7 +631,7 @@
 		opacity: 0.6;
 		padding: 0.4em 0.6em;
 		margin: 0;
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 	}
 	.workspace-name-outer {
 		display: flex;
@@ -664,6 +664,6 @@
 	   collections heading carry the same one. */
 	.menu-hint {
 		opacity: 0.5;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 	}
 </style>

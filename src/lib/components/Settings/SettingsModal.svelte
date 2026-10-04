@@ -386,11 +386,11 @@
 	}
 	h2 {
 		margin: 0 0 0.8em;
-		font-size: 1.1em;
+		font-size: var(--fs-xl);
 	}
 	h3 {
 		margin: 0;
-		font-size: 0.75em;
+		font-size: var(--fs-xs);
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		opacity: 0.7;
@@ -418,7 +418,7 @@
 		border-radius: 4px;
 		cursor: pointer;
 		color: inherit;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	.tabs button:hover {
 		background: var(--hover);
@@ -442,12 +442,12 @@
 		flex-shrink: 0;
 	}
 	.app-name {
-		font-size: 1.15em;
+		font-size: var(--fs-lg);
 		font-weight: 700;
 	}
 	.description {
 		margin: 0.2em 0 0;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		opacity: 0.7;
 	}
 	.section-head {
@@ -458,7 +458,7 @@
 		margin: 1.2em 0 0.5em;
 	}
 	.section-head button {
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 		cursor: pointer;
 	}
 	.section-head button.copied {
@@ -472,14 +472,14 @@
 		grid-template-columns: auto 1fr;
 		gap: 0.35em 0.9em;
 		margin: 0;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 	}
 	dt {
 		opacity: 0.6;
 	}
 	dd {
 		margin: 0;
-		font-family: ui-monospace, monospace;
+		font-family: var(--font-mono);
 		word-break: break-all;
 	}
 	dd.unknown {
@@ -488,13 +488,13 @@
 	}
 	.hint {
 		opacity: 0.6;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 	}
 	.settings-form {
 		display: flex;
 		flex-direction: column;
 		gap: 0.5em;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 		max-width: 34em;
 	}
 	.settings-form .row {
@@ -515,7 +515,7 @@
 	.settings-form .row input.mono {
 		flex: 1;
 		min-width: 0;
-		font-family: ui-monospace, monospace;
+		font-family: var(--font-mono);
 	}
 	.settings-form .hint {
 		margin: 0;
@@ -526,7 +526,7 @@
 		background: color-mix(in srgb, var(--warn) 10%, transparent);
 		border-radius: 6px;
 		padding: 0.4em 0.6em;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 	}
 	.actions {
 		display: flex;

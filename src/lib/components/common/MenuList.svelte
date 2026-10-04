@@ -35,7 +35,7 @@
 		border-radius: 5px;
 		cursor: pointer;
 		color: inherit;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		white-space: nowrap;
 	}
 	button:hover {

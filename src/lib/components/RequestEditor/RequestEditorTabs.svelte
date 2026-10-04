@@ -137,16 +137,16 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 0.6em;
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 		opacity: 0.7;
 	}
 	.url-preview-header button {
 		padding: 0.2em 0.7em;
-		font-size: 0.95em;
+		font-size: var(--fs-md);
 	}
 	.url-preview code {
-		font-family: ui-monospace, monospace;
-		font-size: 0.85em;
+		font-family: var(--font-mono);
+		font-size: var(--fs-sm);
 		word-break: break-all;
 	}
 	.empty-state-outer {

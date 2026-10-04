@@ -205,18 +205,18 @@
 	}
 	h2 {
 		margin: 0;
-		font-size: 1.1em;
+		font-size: var(--fs-xl);
 	}
 	.field {
 		display: flex;
 		align-items: center;
 		gap: 0.6em;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	.field > span {
 		width: 7em;
 		opacity: 0.6;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	.field input,
 	.field select {
@@ -226,7 +226,7 @@
 	.targets {
 		display: flex;
 		gap: 1.2em;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	.radio {
 		display: flex;
@@ -238,7 +238,7 @@
 	}
 	.hint {
 		margin: 0;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		opacity: 0.6;
 	}
 	.actions {

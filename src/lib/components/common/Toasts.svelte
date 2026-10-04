@@ -32,7 +32,7 @@
 		padding: 0.6em 0.8em;
 		border-radius: 8px;
 		color: var(--on-fill);
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		box-shadow: var(--shadow-popover);
 	}
 	.toast.error {
@@ -50,7 +50,7 @@
 		border: none;
 		color: inherit;
 		cursor: pointer;
-		font-size: 1.1em;
+		font-size: var(--fs-lg);
 		line-height: 1;
 		padding: 0;
 	}

@@ -237,7 +237,7 @@
 	}
 	.status {
 		font-weight: 600;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	.status-ok {
 		color: var(--ok);
@@ -250,10 +250,10 @@
 	}
 	.meta {
 		opacity: 0.6;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	.elapsed {
-		font-family: ui-monospace, monospace;
+		font-family: var(--font-mono);
 		font-variant-numeric: tabular-nums;
 	}
 	.time {
@@ -265,7 +265,7 @@
 		color: inherit;
 		border-radius: 6px;
 		padding: 0.15em 0.7em;
-		font-size: 0.8em;
+		font-size: var(--fs-sm);
 		cursor: pointer;
 	}
 	.disconnect:hover:not(:disabled) {
@@ -319,7 +319,7 @@
 		background: color-mix(in srgb, var(--warn) 10%, transparent);
 		border-radius: 6px;
 		padding: 0.4em 0.6em;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 		margin: 0;
 	}
 	.tabs {
@@ -347,7 +347,7 @@
 		width: 14em;
 		max-width: 40%;
 		padding: 0.2em 0.5em;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 	}
 	.entries {
 		flex: 1;
@@ -355,7 +355,7 @@
 		overflow: auto;
 		border: 1px solid var(--line-strong);
 		border-radius: 6px;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 	}
 	.entry {
 		display: grid;
@@ -381,14 +381,14 @@
 		width: 1em;
 	}
 	.at {
-		font-family: ui-monospace, monospace;
+		font-family: var(--font-mono);
 		font-variant-numeric: tabular-nums;
 		opacity: 0.55;
 		white-space: nowrap;
 	}
 	.type {
 		font-weight: 700;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 		opacity: 0.6;
 	}
 	.type.named {
@@ -396,20 +396,20 @@
 		color: var(--accent-text);
 	}
 	.id {
-		font-family: ui-monospace, monospace;
+		font-family: var(--font-mono);
 		opacity: 0.6;
 	}
 	.copy {
 		grid-column: 6;
 		padding: 0 0.5em;
-		font-size: 0.9em;
+		font-size: var(--fs-md);
 	}
 	/* The data gets a row of its own under the event's details, so a long
 	   payload wraps across the full width instead of a narrow column. */
 	.data {
 		grid-column: 2 / -1;
 		margin: 0.15em 0 0;
-		font-family: ui-monospace, monospace;
+		font-family: var(--font-mono);
 		white-space: pre-wrap;
 		word-break: break-word;
 		display: -webkit-box;

@@ -39,7 +39,7 @@
 	.headers table {
 		width: 100%;
 		border-collapse: collapse;
-		font-size: 0.85em;
+		font-size: var(--fs-sm);
 	}
 	.headers th {
 		position: sticky;
@@ -61,10 +61,10 @@
 	.header-key {
 		font-weight: 600;
 		white-space: nowrap;
-		font-family: ui-monospace, monospace;
+		font-family: var(--font-mono);
 	}
 	.header-value {
-		font-family: ui-monospace, monospace;
+		font-family: var(--font-mono);
 		word-break: break-all;
 	}
 </style>
