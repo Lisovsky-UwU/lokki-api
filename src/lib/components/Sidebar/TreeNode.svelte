@@ -22,7 +22,7 @@
 	import { reportError } from "../../ui/notices";
 	import { api } from "../../api/client";
 	import { t } from "../../i18n";
-	import { methodColor, requestBadge } from "../../ui/methods";
+	import { methodColor, requestBadge, shortBadge } from "../../ui/methods";
 
 	// `collection` travels down the tree so opening a request always points
 	// the app at the collection that actually owns it; `parentPath` and
@@ -318,7 +318,7 @@
 		ondrop={onDrop}
 	>
 		<button class="request-label" onclick={() => openRequest(node.path)}>
-			<span class="method" style="color: {methodColor(badge)}">{badge}</span>
+			<span class="method" style="color: {methodColor(badge)}" title={badge}>{shortBadge(badge)}</span>
 			<span class="node-name">{node.name}</span>
 			<ActivityIndicator {activity} />
 		</button>
@@ -330,7 +330,7 @@
 	.node-row {
 		display: flex;
 		align-items: center;
-		border-radius: 4px;
+		border-radius: 6px;
 		border-top: 2px solid transparent;
 		border-bottom: 2px solid transparent;
 	}
@@ -339,6 +339,14 @@
 	}
 	.node-row.active {
 		background: var(--selected);
+	}
+	.node-row.active .node-name {
+		font-weight: 600;
+	}
+	/* Same as the collection header: the menu shows with the pointer or the
+	   keyboard, and stays while it is open. */
+	.node-row:not(:hover):not(:focus-within) :global(.trigger[aria-expanded="false"]) {
+		opacity: 0;
 	}
 	.node-row.dragged {
 		opacity: 0.4;
@@ -357,14 +365,14 @@
 	.request-label {
 		display: flex;
 		align-items: center;
-		gap: 0.4em;
+		gap: 8px;
 		flex: 1;
 		min-width: 0;
 		text-align: left;
 		background: none;
 		border: none;
-		padding: 0.3em 0.4em;
-		border-radius: 4px;
+		padding: 4px 6px;
+		border-radius: 6px;
 		cursor: pointer;
 		font-size: var(--fs-md);
 		color: inherit;
@@ -382,8 +390,11 @@
 	.chevron.collapsed {
 		transform: rotate(-90deg);
 	}
+	/* A guide line per level, under the folder's chevron. */
 	.children {
-		padding-left: 1.1em;
+		margin-left: 12px;
+		padding-left: 4px;
+		border-left: 1px solid var(--line);
 	}
 	.empty {
 		margin: 0;
@@ -395,7 +406,13 @@
 		font-size: var(--fs-xs);
 		font-family: var(--font-mono);
 		font-weight: 600;
-		min-width: 2.8em;
+		/* The longest short form is four characters, so names line up. */
+		width: 4ch;
 		flex-shrink: 0;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.chevron {
+			transition: none;
+		}
 	}
 </style>

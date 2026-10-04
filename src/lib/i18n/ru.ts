@@ -143,7 +143,6 @@ export const ru: Record<keyof typeof en, string> = {
 	"body.format.plainPlaceholder": "произвольный текст",
 
 	// --- sidebar -----------------------------------------------------------
-	"sidebar.workspace": "Пространство",
 	"sidebar.workspaceMenu": "Меню пространства",
 	"sidebar.noWorkspace": "Нет открытого пространства. Создайте или откройте существующее",
 	"sidebar.collections": "Коллекции",
