@@ -312,6 +312,14 @@
 	:global(button) {
 		cursor: pointer;
 	}
+	/* The open list of a <select> is drawn by the webview, which takes its
+	   colours from the select - and a select styled transparent gets a white
+	   list with the theme's light text on it. Spelled out on the options, the
+	   list follows the theme whatever the select itself looks like. */
+	:global(option, optgroup) {
+		background-color: var(--surface-raised);
+		color: var(--text);
+	}
 	/* One ring for every control. Plenty of them drop their border and
 	   background, which left the webview's own focus ring as the only cue,
 	   and that one all but disappears on a filled button. */

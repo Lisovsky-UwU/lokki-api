@@ -185,7 +185,9 @@
 		height: 100%;
 		max-width: 12em;
 		border: none;
-		background: none;
+		/* The picker's own fill rather than none, so the open list has a
+		   theme colour to inherit. */
+		background: var(--surface-raised);
 		padding: 0 4px 0 6px;
 		font-weight: 600;
 		cursor: pointer;
