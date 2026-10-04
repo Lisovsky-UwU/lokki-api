@@ -63,12 +63,12 @@
 		background: none;
 		border: none;
 		cursor: pointer;
-		opacity: 0.5;
+		color: var(--text-muted);
 		font-size: var(--fs-lg);
 		line-height: 1;
 		padding: 0.2em 0.4em;
 	}
 	.remove:hover {
-		opacity: 1;
+		color: var(--text);
 	}
 </style>

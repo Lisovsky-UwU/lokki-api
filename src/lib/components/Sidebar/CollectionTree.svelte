@@ -512,7 +512,7 @@
 		text-transform: uppercase;
 		font-size: var(--fs-xs);
 		letter-spacing: 0.04em;
-		opacity: 0.7;
+		color: var(--text-muted);
 	}
 	.sidebar-header-collections {
 		margin-bottom: 0.8em;
@@ -628,7 +628,7 @@
 		outline: 1px dashed color-mix(in srgb, var(--accent) 60%, transparent);
 	}
 	.empty {
-		opacity: 0.6;
+		color: var(--text-muted);
 		padding: 0.4em 0.6em;
 		margin: 0;
 		font-size: var(--fs-sm);
@@ -663,7 +663,7 @@
 	/* One marker for "this opens a menu": the workspace name and the
 	   collections heading carry the same one. */
 	.menu-hint {
-		opacity: 0.5;
+		color: var(--text-muted);
 		font-size: var(--fs-sm);
 	}
 </style>

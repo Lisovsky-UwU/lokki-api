@@ -150,7 +150,7 @@
 		gap: 0.3em;
 	}
 	.group label {
-		opacity: 0.6;
+		color: var(--text-muted);
 		font-size: var(--fs-sm);
 		max-width: 16em;
 		overflow: hidden;
@@ -162,12 +162,12 @@
 		border: none;
 		cursor: pointer;
 		color: inherit;
-		opacity: 0.6;
+		color: var(--text-muted);
 		padding: 0.1em 0.35em;
 		border-radius: 4px;
 	}
 	.icon:hover {
-		opacity: 1;
+		color: var(--text);
 		background: var(--pressed);
 	}
 </style>

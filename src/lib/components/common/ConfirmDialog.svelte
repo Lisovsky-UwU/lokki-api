@@ -80,7 +80,6 @@
 	p {
 		margin: 0;
 		font-size: var(--fs-md);
-		opacity: 0.85;
 		line-height: 1.45;
 	}
 	.actions {

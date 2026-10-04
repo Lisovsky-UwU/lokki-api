@@ -386,13 +386,13 @@
 	.empty {
 		margin: 0;
 		padding: 0.2em 0.6em;
-		opacity: 0.45;
+		color: var(--text-muted);
 		font-size: var(--fs-sm);
 	}
 	.method {
 		font-size: var(--fs-xs);
-		letter-spacing: 0.03em;
-		font-weight: 700;
+		font-family: var(--font-mono);
+		font-weight: 600;
 		min-width: 2.8em;
 		flex-shrink: 0;
 	}

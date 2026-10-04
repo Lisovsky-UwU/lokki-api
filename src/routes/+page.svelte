@@ -214,54 +214,65 @@
 		font-family: var(--font-ui);
 		font-size: var(--fs-md);
 		color-scheme: light;
-		--text: #24292f;
+		--text: #1d1b24;
+		/* Hints, metadata, labels. A colour rather than `opacity`, which
+		   would fade whatever coloured text sits inside it as well. */
+		--text-muted: #6b6779;
 		--surface: #ffffff;
 		/* Dialogs, menus and inputs: what sits on top of the page. */
 		--surface-raised: #ffffff;
 		/* The tree sits a shade off the page so the panel reads as its own
 		   surface rather than as part of the editor next to it. Both themes
 		   do this; see the dark block below. */
-		--surface-sunken: #f6f8fa;
-		/* Neutrals are translucent so they read the same on any surface. */
-		--line: rgba(127, 127, 127, 0.25);
-		--line-strong: rgba(127, 127, 127, 0.35);
-		--fill-subtle: rgba(127, 127, 127, 0.08);
-		--hover: rgba(127, 127, 127, 0.15);
-		--pressed: rgba(127, 127, 127, 0.2);
-		/* The open request, the current menu item, the picked option. */
-		--selected: rgba(57, 108, 216, 0.2);
-		/* `--accent` is a fill and `--accent-ink` the text on it;
+		--surface-sunken: #f6f5f9;
+		/* Neutrals lean towards the lavender grey of the logo's outline
+		   instead of a plain grey, and stay translucent so they read the same
+		   on any surface. */
+		--line: rgba(84, 79, 104, 0.16);
+		--line-strong: rgba(84, 79, 104, 0.3);
+		--fill-subtle: rgba(84, 79, 104, 0.05);
+		--hover: rgba(84, 79, 104, 0.08);
+		--pressed: rgba(84, 79, 104, 0.14);
+		/* The open request, the current menu item, the picked option. Neutral
+		   on purpose: the accent is kept for what can be acted on. */
+		--selected: rgba(84, 79, 104, 0.14);
+		/* The mint of the cat's eyes. `--accent` is a fill and
+		   `--accent-ink` the text on it (dark, like the tick in the logo);
 		   `--accent-text` is the accent drawn as a line or as text on the
-		   page, which needs more contrast than a fill does. */
-		--accent: #396cd8;
-		--accent-ink: #ffffff;
-		--accent-text: #396cd8;
-		--ok: #2e9e5b;
-		--ok-fill: #2e7d4f;
-		--warn: #a37c00;
-		--danger: #d1443c;
-		--danger-fill: #d1443c;
+		   page, which needs more contrast than a fill does - on white the
+		   fill itself manages barely 2:1. */
+		--accent: #2ccb82;
+		--accent-ink: #06170e;
+		--accent-text: #0e8452;
+		--ok: #0e8452;
+		--ok-fill: #0e8452;
+		--warn: #8a6a00;
+		--danger: #c2333d;
+		--danger-fill: #c2333d;
 		/* Text on the semantic fills above. */
 		--on-fill: #ffffff;
-		--overlay: rgba(0, 0, 0, 0.4);
-		--shadow-popover: 0 6px 20px rgba(0, 0, 0, 0.25);
-		--shadow-dialog: 0 10px 40px rgba(0, 0, 0, 0.3);
-		/* Read through `methodColor` in ui/methods.ts. */
-		--method-get: #6188db;
-		--method-post: #269b2c;
-		--method-put: #c26b0f;
-		--method-patch: #e2d138;
-		--method-delete: #d1443c;
-		--method-head: #6f42c1;
-		--method-options: #0d9488;
-		--method-sse: #b4489c;
-		--method-other: #6e7781;
+		--overlay: rgba(15, 17, 23, 0.45);
+		--shadow-popover: 0 6px 20px rgba(29, 27, 36, 0.14);
+		--shadow-dialog: 0 12px 40px rgba(29, 27, 36, 0.22);
+		/* Read through `methodColor` in ui/methods.ts. Drawn as text on the
+		   page and in the tree, so every one clears 4.5:1 on the sidebar. */
+		--method-get: #2f62c9;
+		--method-post: #a65200;
+		--method-put: #7c47c9;
+		--method-patch: #8a6a00;
+		--method-delete: #c2333d;
+		--method-head: #56607a;
+		--method-options: #08766f;
+		--method-sse: #a8337f;
+		--method-other: #6b6779;
 		color: var(--text);
 		background-color: var(--surface);
+		/* Native checkboxes, radios and range inputs. */
+		accent-color: var(--accent-text);
 		/* Translucent so the bar takes on whatever panel is behind it
 		   (sidebar, editor, dialog) instead of carrying its own colour. */
-		--scrollbar-thumb: rgba(27, 31, 36, 0.2);
-		--scrollbar-thumb-hover: rgba(27, 31, 36, 0.35);
+		--scrollbar-thumb: rgba(84, 79, 104, 0.25);
+		--scrollbar-thumb-hover: rgba(84, 79, 104, 0.4);
 		/* GitHub light syntax palette, consumed by the code editor. */
 		--cm-property: #0550ae;
 		--cm-string: #0a3069;
@@ -320,17 +331,42 @@
 	   selector here instead of a media query plus a duplicate of it. */
 	:global(:root[data-theme="dark"]) {
 		color-scheme: dark;
-		--text: #e6edf3;
-		--surface: #0d1117;
-		--surface-raised: #161b22;
-		/* One step off the page, the same lift the light theme gives it
-		   (#ffffff -> #f6f8fa). Shares a value with --surface-raised by
-		   coincidence of the palette, not by dependence on it. */
-		--surface-sunken: #161b22;
-		--shadow-popover: 0 6px 20px rgba(0, 0, 0, 0.3);
-		--shadow-dialog: 0 10px 40px rgba(0, 0, 0, 0.35);
-		--scrollbar-thumb: rgba(240, 246, 252, 0.16);
-		--scrollbar-thumb-hover: rgba(240, 246, 252, 0.3);
+		--text: #e9e7f0;
+		--text-muted: #9a96ab;
+		/* The background of the logo itself. */
+		--surface: #0f1117;
+		--surface-raised: #1a1d27;
+		/* One step off the page, the same lift the light theme gives it. */
+		--surface-sunken: #14161e;
+		--line: rgba(154, 150, 171, 0.14);
+		--line-strong: rgba(154, 150, 171, 0.26);
+		--fill-subtle: rgba(154, 150, 171, 0.05);
+		--hover: rgba(154, 150, 171, 0.08);
+		--pressed: rgba(154, 150, 171, 0.14);
+		--selected: rgba(154, 150, 171, 0.14);
+		/* Bright enough on the dark page to serve as its own text colour. */
+		--accent: #4be39a;
+		--accent-ink: #06170e;
+		--accent-text: #4be39a;
+		--ok: #4be39a;
+		--ok-fill: #187a4c;
+		--warn: #e6c95a;
+		--danger: #f47c84;
+		--danger-fill: #c2333d;
+		--overlay: rgba(0, 0, 0, 0.55);
+		--shadow-popover: 0 6px 20px rgba(0, 0, 0, 0.4);
+		--shadow-dialog: 0 12px 40px rgba(0, 0, 0, 0.5);
+		--method-get: #82a6f5;
+		--method-post: #f2a65a;
+		--method-put: #b99af5;
+		--method-patch: #e6c95a;
+		--method-delete: #f47c84;
+		--method-head: #a3abbd;
+		--method-options: #5ccfc6;
+		--method-sse: #e68ac9;
+		--method-other: #9a96ab;
+		--scrollbar-thumb: rgba(154, 150, 171, 0.2);
+		--scrollbar-thumb-hover: rgba(154, 150, 171, 0.35);
 		/* GitHub dark syntax palette. */
 		--cm-property: #79c0ff;
 		--cm-string: #a5d6ff;
@@ -378,7 +414,7 @@
 		gap: 0.35em;
 		font-size: var(--fs-sm);
 		font-weight: 600;
-		opacity: 0.75;
+		color: var(--text-muted);
 		white-space: nowrap;
 	}
 	.exit-incognito {
@@ -395,7 +431,7 @@
 	}
 	.hint {
 		font-size: var(--fs-sm);
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	.settings-btn {
 		display: flex;
@@ -407,10 +443,10 @@
 		font-size: var(--fs-lg);
 		line-height: 1;
 		cursor: pointer;
-		opacity: 0.7;
+		color: var(--text-muted);
 	}
 	.settings-btn:hover {
-		opacity: 1;
+		color: var(--text);
 	}
 	.topbar {
 		display: flex;
@@ -425,7 +461,7 @@
 		align-items: center;
 		justify-content: center;
 		height: 100vh;
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	.empty-state-outer {
 		flex: 1;
@@ -440,7 +476,7 @@
 		flex: 1;
 		min-width: 0;
 		height: 100%;
-		opacity: 0.5;
+		color: var(--text-muted);
 		flex-direction: column;
 	}
 </style>

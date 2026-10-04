@@ -93,7 +93,7 @@
 		font-size: var(--fs-sm);
 	}
 	label span {
-		opacity: 0.7;
+		color: var(--text-muted);
 	}
 	.actions {
 		display: flex;

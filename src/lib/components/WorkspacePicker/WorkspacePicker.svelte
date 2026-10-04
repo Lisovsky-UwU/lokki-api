@@ -230,10 +230,10 @@
 		background: none;
 		border-radius: 6px;
 		padding: 0.4em;
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	.ghost:hover:not(:disabled) {
-		opacity: 1;
+		color: var(--text);
 		background: var(--hover);
 	}
 	.recent {
@@ -248,7 +248,7 @@
 		font-size: var(--fs-xs);
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
-		opacity: 0.6;
+		color: var(--text-muted);
 		padding: 0 0.2em 0.2em;
 	}
 	.recent-row {
@@ -289,17 +289,17 @@
 		white-space: nowrap;
 		font-family: var(--font-mono);
 		font-size: var(--fs-xs);
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	.recent-busy {
 		font-size: var(--fs-sm);
-		opacity: 0.6;
+		color: var(--text-muted);
 		white-space: nowrap;
 	}
 	.hint {
 		margin: 0;
 		font-size: var(--fs-sm);
-		opacity: 0.6;
+		color: var(--text-muted);
 		margin-bottom: 1em;
 	}
 </style>

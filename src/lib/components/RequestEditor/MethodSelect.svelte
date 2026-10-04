@@ -7,7 +7,7 @@
 	let open = $state(false);
 	let root = $state<HTMLDivElement>();
 
-	// A native <select> can't render a solid colored control consistently,
+	// A native <select> can't colour its options one by one,
 	// so this is a small custom dropdown using the shared method palette.
 	$effect(() => {
 		if (!open) return;
@@ -34,7 +34,7 @@
 <div class="method-select" bind:this={root}>
 	<button
 		class="trigger"
-		style="background: {methodColor(value)}"
+		style="color: {methodColor(value)}"
 		aria-haspopup="listbox"
 		aria-expanded={open}
 		onclick={() => (open = !open)}
@@ -70,20 +70,17 @@
 		display: flex;
 		align-items: center;
 		gap: 0.4em;
-		border: none;
 		border-radius: 6px;
 		padding: 0.45em 0.7em;
 		min-width: 7em;
-		color: var(--on-fill);
-		font-weight: 700;
-		font-size: var(--fs-sm);
-		letter-spacing: 0.03em;
+		height: 100%;
+		font-family: var(--font-mono);
+		font-weight: 600;
 		cursor: pointer;
 	}
 	.caret {
 		margin-left: auto;
-		opacity: 0.85;
-		font-size: var(--fs-md);
+		color: var(--text-muted);
 	}
 	.options {
 		position: absolute;
@@ -109,9 +106,8 @@
 		border-radius: 5px;
 		cursor: pointer;
 		/* Same type treatment as the method badge in the collection tree. */
-		font-weight: 700;
-		font-size: var(--fs-sm);
-		letter-spacing: 0.03em;
+		font-family: var(--font-mono);
+		font-weight: 600;
 	}
 	.options button:hover,
 	.options button.current {
