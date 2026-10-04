@@ -32,6 +32,7 @@
 	import Icon from "../lib/components/common/Icon.svelte";
 	import ContextMenu from "../lib/components/common/ContextMenu.svelte";
 	import EnvironmentSwitcher from "../lib/components/EnvironmentSwitcher/EnvironmentSwitcher.svelte";
+	import RequestTitle from "../lib/components/RequestEditor/RequestTitle.svelte";
 
 	let restoring = $state(true);
 
@@ -123,19 +124,22 @@
 		<div class="main">
 			<header class="topbar">
 				<span class="incognito-badge" title={$t("incognito.badgeTitle")}>
-					<GhostIcon />
+					<GhostIcon size="16px" />
 					{$t("incognito.badge")}
 				</span>
-				{#if $workspacePath}
-					<EnvironmentSwitcher />
-				{:else}
-					<span class="hint">{$t("app.noWorkspaceHint")}</span>
-				{/if}
-				<div class="topbar-actions">
-					<button class="settings-btn" title={$t("app.settings")} aria-label={$t("app.settings")} onclick={openSettings}
-						><Icon name="settings" size="16px" /></button
-					>
-					<button class="exit-incognito" onclick={leaveIncognito}>{$t("incognito.exit")}</button>
+				<RequestTitle />
+				<div class="topbar-end">
+					{#if $workspacePath}
+						<EnvironmentSwitcher />
+					{:else}
+						<span class="hint">{$t("app.noWorkspaceHint")}</span>
+					{/if}
+					<div class="topbar-actions">
+						<button class="icon-btn" title={$t("app.settings")} aria-label={$t("app.settings")} onclick={openSettings}
+							><Icon name="settings" size="16px" /></button
+						>
+						<button class="exit-incognito" onclick={leaveIncognito}>{$t("incognito.exit")}</button>
+					</div>
 				</div>
 			</header>
 			<RequestWorkbench />
@@ -158,19 +162,22 @@
 		/>
 		<div class="main">
 			<header class="topbar">
-				<EnvironmentSwitcher />
-				<div class="topbar-actions">
-					<button
-						class="settings-btn"
-						title={$t("incognito.request")}
-						aria-label={$t("incognito.request")}
-						onclick={openIncognito}
-					>
-						<GhostIcon />
-					</button>
-					<button class="settings-btn" title={$t("app.settings")} aria-label={$t("app.settings")} onclick={openSettings}
-						><Icon name="settings" size="16px" /></button
-					>
+				<RequestTitle />
+				<div class="topbar-end">
+					<EnvironmentSwitcher />
+					<div class="topbar-actions">
+						<button
+							class="icon-btn"
+							title={$t("incognito.request")}
+							aria-label={$t("incognito.request")}
+							onclick={openIncognito}
+						>
+							<GhostIcon size="16px" />
+						</button>
+						<button class="icon-btn" title={$t("app.settings")} aria-label={$t("app.settings")} onclick={openSettings}
+							><Icon name="settings" size="16px" /></button
+						>
+					</div>
 				</div>
 			</header>
 			{#if !$activeRequest}
@@ -415,11 +422,21 @@
 		min-width: 0;
 		min-height: 0;
 	}
+	/* Everything about the request on the left, everything about the app
+	   on the right; the left side is the one that gives way. */
+	.topbar-end {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin-left: auto;
+		min-width: 0;
+	}
 	.topbar-actions {
 		display: flex;
 		align-items: center;
-		gap: 0.4em;
-		margin-left: auto;
+		gap: 2px;
+		padding-left: 8px;
+		border-left: 1px solid var(--line);
 	}
 	.incognito-badge {
 		display: flex;
@@ -435,7 +452,8 @@
 		border: 1px solid var(--line-strong);
 		color: inherit;
 		border-radius: 6px;
-		padding: 0.25em 0.7em;
+		height: 28px;
+		padding: 0 10px;
 		font-size: var(--fs-sm);
 		cursor: pointer;
 	}
@@ -446,27 +464,30 @@
 		font-size: var(--fs-sm);
 		color: var(--text-muted);
 	}
-	.settings-btn {
+	.icon-btn {
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		width: 28px;
+		height: 28px;
+		padding: 0;
 		background: none;
 		border: none;
-		padding: 0.2em 0.4em;
-		font-size: var(--fs-lg);
-		line-height: 1;
+		border-radius: 6px;
 		cursor: pointer;
 		color: var(--text-muted);
 	}
-	.settings-btn:hover {
+	.icon-btn:hover {
 		color: var(--text);
+		background: var(--hover);
 	}
 	.topbar {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: 1em;
-		padding: 0.5em 1em;
+		gap: 12px;
+		height: 46px;
+		flex-shrink: 0;
+		padding: 0 10px 0 16px;
 		border-bottom: 1px solid var(--line);
 	}
 	.restoring {

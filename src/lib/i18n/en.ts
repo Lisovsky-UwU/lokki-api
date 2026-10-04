@@ -223,10 +223,8 @@ export const en = {
 	"import.warnings": "Worth a look",
 
 	// --- environments ------------------------------------------------------
-	"env.label": "Environment:",
 	"env.global": "Global",
-	"env.collection": "Collection: {name}",
-	"env.none": "—",
+	"env.none": "none",
 	"env.workspaceEnvironments": "Workspace environments",
 	"env.collectionEnvironments": "Collection environments",
 	"env.loadFailed": "Could not load environments",

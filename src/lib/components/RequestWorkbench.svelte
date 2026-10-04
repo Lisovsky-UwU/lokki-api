@@ -76,14 +76,14 @@
 		flex: 1;
 		display: grid;
 		min-height: 0;
-		padding: 0.8em;
+		padding: 12px 16px;
 	}
 	/* Full width in both layouts: with one column that is simply the column,
 	   with three it is all of them. */
 	.header {
 		grid-column: 1 / -1;
 		min-width: 0;
-		padding-bottom: 0.6em;
+		padding-bottom: 12px;
 	}
 	.pane {
 		min-height: 0;
@@ -94,7 +94,7 @@
 	}
 	.response-pane {
 		border-top: 1px solid var(--line);
-		padding-top: 0.6em;
+		padding-top: 10px;
 	}
 	/* Side by side: the panes need a width floor of their own (a grid item
 	   defaults to min-content, which a long URL would push wide), and the
@@ -107,6 +107,6 @@
 		border-top: none;
 		padding-top: 0;
 		border-left: 1px solid var(--line);
-		padding-left: 0.6em;
+		padding-left: 12px;
 	}
 </style>
