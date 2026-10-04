@@ -93,7 +93,7 @@
 		display: flex;
 	}
 	.response-pane {
-		border-top: 1px solid rgba(127, 127, 127, 0.2);
+		border-top: 1px solid var(--line);
 		padding-top: 0.6em;
 	}
 	/* Side by side: the panes need a width floor of their own (a grid item
@@ -106,7 +106,7 @@
 	.panes.horizontal .response-pane {
 		border-top: none;
 		padding-top: 0;
-		border-left: 1px solid rgba(127, 127, 127, 0.2);
+		border-left: 1px solid var(--line);
 		padding-left: 0.6em;
 	}
 </style>

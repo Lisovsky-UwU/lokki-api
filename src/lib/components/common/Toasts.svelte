@@ -31,15 +31,15 @@
 		gap: 0.6em;
 		padding: 0.6em 0.8em;
 		border-radius: 8px;
-		color: white;
+		color: var(--on-fill);
 		font-size: 0.85em;
-		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+		box-shadow: var(--shadow-popover);
 	}
 	.toast.error {
-		background: #d1443c;
+		background: var(--danger-fill);
 	}
 	.toast.success {
-		background: #2e7d4f;
+		background: var(--ok-fill);
 	}
 	.toast span {
 		flex: 1;

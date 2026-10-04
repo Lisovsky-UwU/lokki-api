@@ -186,18 +186,18 @@
 		opacity: 0.4;
 	}
 	.request-title .dirty {
-		color: #a37c00;
+		color: var(--warn);
 		font-size: 0.8em;
 	}
 	.request-title .warn {
 		font-weight: 400;
 		font-size: 0.8em;
-		color: #d1443c;
+		color: var(--danger);
 	}
 	.send {
-		background: #396cd8;
-		color: white;
-		border: 1px solid #396cd8;
+		background: var(--accent);
+		color: var(--accent-ink);
+		border: 1px solid var(--accent);
 		border-radius: 6px;
 		padding: 0.4em 1.2em;
 		cursor: pointer;
@@ -209,8 +209,9 @@
 		cursor: default;
 	}
 	.send.disconnect {
-		background: #d1443c;
-		border-color: #d1443c;
+		background: var(--danger-fill);
+		border-color: var(--danger-fill);
+		color: var(--on-fill);
 	}
 	.save {
 		border-radius: 6px;

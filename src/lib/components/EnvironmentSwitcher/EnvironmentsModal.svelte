@@ -304,14 +304,14 @@
 	.backdrop {
 		position: fixed;
 		inset: 0;
-		background: rgba(0, 0, 0, 0.4);
+		background: var(--overlay);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		z-index: 10;
 	}
 	.modal {
-		background: var(--modal-bg, #fff);
+		background: var(--surface-raised);
 		color: inherit;
 		border-radius: 10px;
 		padding: 1.2em;
@@ -319,7 +319,7 @@
 		max-height: 82vh;
 		display: flex;
 		flex-direction: column;
-		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+		box-shadow: var(--shadow-dialog);
 	}
 	h2 {
 		margin: 0 0 0.8em;
@@ -337,7 +337,7 @@
 		flex-direction: column;
 		gap: 0.2em;
 		overflow-y: auto;
-		border-right: 1px solid rgba(127, 127, 127, 0.25);
+		border-right: 1px solid var(--line);
 		padding-right: 0.6em;
 	}
 	.env {
@@ -359,25 +359,25 @@
 		white-space: nowrap;
 	}
 	.env:hover {
-		background: rgba(127, 127, 127, 0.15);
+		background: var(--hover);
 	}
 	.env.selected {
-		background: rgba(57, 108, 216, 0.2);
+		background: var(--selected);
 	}
 	.active-mark {
 		margin-left: auto;
-		color: #2e9e5b;
+		color: var(--ok);
 		font-size: 0.8em;
 	}
 	.dot {
 		margin-left: auto;
-		color: #a37c00;
+		color: var(--warn);
 		font-size: 0.7em;
 	}
 	.add-env {
 		margin-top: 0.3em;
 		background: none;
-		border: 1px dashed rgba(127, 127, 127, 0.5);
+		border: 1px dashed var(--line-strong);
 		cursor: pointer;
 		font-size: 0.85em;
 		color: inherit;
@@ -409,14 +409,14 @@
 	}
 	.delete-env {
 		background: none;
-		border: 1px solid rgba(209, 68, 60, 0.5);
-		color: #d1443c;
+		border: 1px solid color-mix(in srgb, var(--danger) 50%, transparent);
+		color: var(--danger);
 		cursor: pointer;
 		font-size: 0.8em;
 		white-space: nowrap;
 	}
 	.delete-env:hover {
-		background: rgba(209, 68, 60, 0.1);
+		background: color-mix(in srgb, var(--danger) 10%, transparent);
 	}
 	.variables {
 		display: flex;
@@ -429,7 +429,7 @@
 		gap: 0.4em;
 	}
 	.var-row input.invalid {
-		border-color: #d1443c;
+		border-color: var(--danger);
 	}
 	.var-row input.mono {
 		flex: 1;
@@ -455,7 +455,7 @@
 		align-self: flex-start;
 		margin-top: 0.4em;
 		background: none;
-		border: 1px dashed rgba(127, 127, 127, 0.5);
+		border: 1px dashed var(--line-strong);
 		cursor: pointer;
 		font-size: 0.85em;
 		color: inherit;
@@ -474,15 +474,15 @@
 	.unsaved {
 		margin-right: auto;
 		font-size: 0.8em;
-		color: #a37c00;
+		color: var(--warn);
 	}
 	.actions button {
 		cursor: pointer;
 	}
 	.primary {
-		background: #396cd8;
-		color: white;
-		border-color: #396cd8;
+		background: var(--accent);
+		color: var(--accent-ink);
+		border-color: var(--accent);
 	}
 	.primary:disabled {
 		opacity: 0.5;

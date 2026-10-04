@@ -121,14 +121,14 @@
 	.backdrop {
 		position: fixed;
 		inset: 0;
-		background: rgba(0, 0, 0, 0.4);
+		background: var(--overlay);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		z-index: 20;
 	}
 	.modal {
-		background: var(--modal-bg, #fff);
+		background: var(--surface-raised);
 		color: inherit;
 		border-radius: 10px;
 		padding: 1.2em;
@@ -136,7 +136,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.7em;
-		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+		box-shadow: var(--shadow-dialog);
 	}
 	h2 {
 		margin: 0;
@@ -211,9 +211,9 @@
 		cursor: pointer;
 	}
 	.primary {
-		background: #396cd8;
-		color: white;
-		border-color: #396cd8;
+		background: var(--accent);
+		color: var(--accent-ink);
+		border-color: var(--accent);
 	}
 	.primary:disabled {
 		opacity: 0.5;

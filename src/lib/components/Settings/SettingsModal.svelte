@@ -365,14 +365,14 @@
 	.backdrop {
 		position: fixed;
 		inset: 0;
-		background: rgba(0, 0, 0, 0.4);
+		background: var(--overlay);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		z-index: 10;
 	}
 	.modal {
-		background: var(--modal-bg, #fff);
+		background: var(--surface-raised);
 		color: inherit;
 		border-radius: 10px;
 		padding: 1.2em;
@@ -382,7 +382,7 @@
 		height: min(38em, 84vh);
 		display: flex;
 		flex-direction: column;
-		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+		box-shadow: var(--shadow-dialog);
 	}
 	h2 {
 		margin: 0 0 0.8em;
@@ -407,7 +407,7 @@
 		flex-direction: column;
 		gap: 0.2em;
 		overflow-y: auto;
-		border-right: 1px solid rgba(127, 127, 127, 0.25);
+		border-right: 1px solid var(--line);
 		padding-right: 0.6em;
 	}
 	.tabs button {
@@ -421,10 +421,10 @@
 		font-size: 0.9em;
 	}
 	.tabs button:hover {
-		background: rgba(127, 127, 127, 0.15);
+		background: var(--hover);
 	}
 	.tabs button.selected {
-		background: rgba(57, 108, 216, 0.2);
+		background: var(--selected);
 	}
 	.pane {
 		overflow-y: auto;
@@ -462,8 +462,8 @@
 		cursor: pointer;
 	}
 	.section-head button.copied {
-		border-color: #2e9e5b;
-		color: #2e9e5b;
+		border-color: var(--ok);
+		color: var(--ok);
 	}
 	/* Plain label/value list: a two-column grid keeps the values aligned
 	   without turning it into a table. */
@@ -522,8 +522,8 @@
 	}
 	.warning {
 		margin: 0;
-		color: #a37c00;
-		background: rgba(163, 124, 0, 0.1);
+		color: var(--warn);
+		background: color-mix(in srgb, var(--warn) 10%, transparent);
 		border-radius: 6px;
 		padding: 0.4em 0.6em;
 		font-size: 0.85em;

@@ -168,6 +168,6 @@
 	}
 	.icon:hover {
 		opacity: 1;
-		background: rgba(127, 127, 127, 0.18);
+		background: var(--pressed);
 	}
 </style>

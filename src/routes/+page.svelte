@@ -190,20 +190,60 @@
 		height: 100%;
 		overflow: hidden;
 	}
-	/* The light palette is the base; the dark one overrides it below. */
+	/* The light palette is the base; the dark one overrides it below.
+	   Components take every colour from these names and never carry a
+	   literal of their own, so a theme is this block and nothing else. */
 	:global(:root) {
 		font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
 		color-scheme: light;
-		color: #24292f;
-		background-color: #ffffff;
+		--text: #24292f;
+		--surface: #ffffff;
+		/* Dialogs, menus and inputs: what sits on top of the page. */
+		--surface-raised: #ffffff;
+		/* The tree sits a shade off the page so the panel reads as its own
+		   surface rather than as part of the editor next to it. Both themes
+		   do this; see the dark block below. */
+		--surface-sunken: #f6f8fa;
+		/* Neutrals are translucent so they read the same on any surface. */
+		--line: rgba(127, 127, 127, 0.25);
+		--line-strong: rgba(127, 127, 127, 0.35);
+		--fill-subtle: rgba(127, 127, 127, 0.08);
+		--hover: rgba(127, 127, 127, 0.15);
+		--pressed: rgba(127, 127, 127, 0.2);
+		/* The open request, the current menu item, the picked option. */
+		--selected: rgba(57, 108, 216, 0.2);
+		/* `--accent` is a fill and `--accent-ink` the text on it;
+		   `--accent-text` is the accent drawn as a line or as text on the
+		   page, which needs more contrast than a fill does. */
+		--accent: #396cd8;
+		--accent-ink: #ffffff;
+		--accent-text: #396cd8;
+		--ok: #2e9e5b;
+		--ok-fill: #2e7d4f;
+		--warn: #a37c00;
+		--danger: #d1443c;
+		--danger-fill: #d1443c;
+		/* Text on the semantic fills above. */
+		--on-fill: #ffffff;
+		--overlay: rgba(0, 0, 0, 0.4);
+		--shadow-popover: 0 6px 20px rgba(0, 0, 0, 0.25);
+		--shadow-dialog: 0 10px 40px rgba(0, 0, 0, 0.3);
+		/* Read through `methodColor` in ui/methods.ts. */
+		--method-get: #6188db;
+		--method-post: #269b2c;
+		--method-put: #c26b0f;
+		--method-patch: #e2d138;
+		--method-delete: #d1443c;
+		--method-head: #6f42c1;
+		--method-options: #0d9488;
+		--method-sse: #b4489c;
+		--method-other: #6e7781;
+		color: var(--text);
+		background-color: var(--surface);
 		/* Translucent so the bar takes on whatever panel is behind it
 		   (sidebar, editor, dialog) instead of carrying its own colour. */
 		--scrollbar-thumb: rgba(27, 31, 36, 0.2);
 		--scrollbar-thumb-hover: rgba(27, 31, 36, 0.35);
-		/* The tree sits a shade off the page so the panel reads as its own
-		   surface rather than as part of the editor next to it. Both themes
-		   do this; see the dark block below. */
-		--sidebar-bg: #f6f8fa;
 		/* GitHub light syntax palette, consumed by the code editor. */
 		--cm-property: #0550ae;
 		--cm-string: #0a3069;
@@ -224,9 +264,9 @@
 	:global(input, select, textarea, button) {
 		font-family: inherit;
 		border-radius: 6px;
-		border: 1px solid rgba(127, 127, 127, 0.35);
+		border: 1px solid var(--line-strong);
 		padding: 0.4em 0.6em;
-		background: white;
+		background: var(--surface-raised);
 		color: inherit;
 	}
 	:global(button) {
@@ -261,13 +301,15 @@
 	   selector here instead of a media query plus a duplicate of it. */
 	:global(:root[data-theme="dark"]) {
 		color-scheme: dark;
-		color: #e6edf3;
-		background-color: #0d1117;
-		--modal-bg: #161b22;
+		--text: #e6edf3;
+		--surface: #0d1117;
+		--surface-raised: #161b22;
 		/* One step off the page, the same lift the light theme gives it
-		   (#ffffff -> #f6f8fa). Shares a value with --modal-bg by
+		   (#ffffff -> #f6f8fa). Shares a value with --surface-raised by
 		   coincidence of the palette, not by dependence on it. */
-		--sidebar-bg: #161b22;
+		--surface-sunken: #161b22;
+		--shadow-popover: 0 6px 20px rgba(0, 0, 0, 0.3);
+		--shadow-dialog: 0 10px 40px rgba(0, 0, 0, 0.35);
 		--scrollbar-thumb: rgba(240, 246, 252, 0.16);
 		--scrollbar-thumb-hover: rgba(240, 246, 252, 0.3);
 		/* GitHub dark syntax palette. */
@@ -287,16 +329,6 @@
 		--cm-selection: rgba(56, 139, 253, 0.4);
 		--cm-active-line: rgba(110, 118, 129, 0.1);
 	}
-	/* `:where()` keeps this at the specificity of a bare type selector, the
-	   same as the light rule above it - it must win over that one by source
-	   order and lose to everything else. Plenty of controls opt out of the
-	   chrome entirely (`background: none; border: none` on icon buttons and
-	   tab strips); a selector heavy enough to outrank their class would put
-	   a filled box and a visible border back on every one of them. */
-	:global(:where(:root[data-theme="dark"]) :is(input, select, textarea, button)) {
-		background: #161b22;
-		border-color: rgba(240, 246, 252, 0.15);
-	}
 
 	.app {
 		display: grid;
@@ -304,8 +336,8 @@
 		height: 100vh;
 	}
 	.sidebar {
-		background: var(--sidebar-bg);
-		border-right: 1px solid rgba(127, 127, 127, 0.25);
+		background: var(--surface-sunken);
+		border-right: 1px solid var(--line);
 		overflow-y: auto;
 		min-width: 0;
 	}
@@ -332,7 +364,7 @@
 	}
 	.exit-incognito {
 		background: none;
-		border: 1px solid rgba(127, 127, 127, 0.45);
+		border: 1px solid var(--line-strong);
 		color: inherit;
 		border-radius: 6px;
 		padding: 0.25em 0.7em;
@@ -340,7 +372,7 @@
 		cursor: pointer;
 	}
 	.exit-incognito:hover {
-		background: rgba(127, 127, 127, 0.15);
+		background: var(--hover);
 	}
 	.hint {
 		font-size: 0.85em;
@@ -367,7 +399,7 @@
 		justify-content: space-between;
 		gap: 1em;
 		padding: 0.5em 1em;
-		border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+		border-bottom: 1px solid var(--line);
 	}
 	.restoring {
 		display: flex;

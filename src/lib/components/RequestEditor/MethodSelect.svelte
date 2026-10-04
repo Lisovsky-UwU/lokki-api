@@ -74,7 +74,7 @@
 		border-radius: 6px;
 		padding: 0.45em 0.7em;
 		min-width: 7em;
-		color: #fff;
+		color: var(--on-fill);
 		font-weight: 700;
 		font-size: 0.8em;
 		letter-spacing: 0.03em;
@@ -95,9 +95,9 @@
 		list-style: none;
 		min-width: 100%;
 		border-radius: 8px;
-		background: var(--modal-bg, #fff);
-		border: 1px solid rgba(127, 127, 127, 0.3);
-		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+		background: var(--surface-raised);
+		border: 1px solid var(--line-strong);
+		box-shadow: var(--shadow-popover);
 	}
 	.options button {
 		display: block;
@@ -115,6 +115,6 @@
 	}
 	.options button:hover,
 	.options button.current {
-		background: rgba(127, 127, 127, 0.18);
+		background: var(--pressed);
 	}
 </style>

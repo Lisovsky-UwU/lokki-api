@@ -38,16 +38,16 @@
 		width: 0.5em;
 		height: 0.5em;
 		border-radius: 50%;
-		background: #2e9e5b;
+		background: var(--ok);
 	}
 	.dot.failed {
-		background: #d1443c;
+		background: var(--danger);
 	}
 	.spinner {
 		width: 0.7em;
 		height: 0.7em;
-		border: 2px solid rgba(127, 127, 127, 0.35);
-		border-top-color: #396cd8;
+		border: 2px solid var(--line-strong);
+		border-top-color: var(--accent-text);
 		border-radius: 50%;
 		animation: spin 0.7s linear infinite;
 	}
