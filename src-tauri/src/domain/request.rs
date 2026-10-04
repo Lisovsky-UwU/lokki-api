@@ -5,10 +5,9 @@ fn default_true() -> bool {
     true
 }
 
-/// Protocol this request executes over. Only `Http` has a matching spec
-/// implemented in MVP; the others exist so `RequestFile` can grow sibling
-/// `Option` fields (e.g. `ws: Option<WsRequestSpec>`) later without a
-/// breaking schema migration.
+/// Protocol this request executes over. `Http` and `Sse` are implemented;
+/// the others exist so `RequestFile` can grow sibling `Option` fields (e.g.
+/// `ws: Option<WsRequestSpec>`) later without a breaking schema migration.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Protocol {
@@ -27,11 +26,15 @@ pub struct RequestMeta {
     pub protocol: Protocol,
 }
 
-/// One request file on disk. `http` is the only populated variant in MVP;
-/// future protocols add their own `Option<...Spec>` sibling field here.
+/// One request file on disk. Protocols that need more than an HTTP request
+/// can describe add their own `Option<...Spec>` sibling field here.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RequestFile {
     pub meta: RequestMeta,
+    /// The HTTP request to send. An SSE request keeps its spec here as well:
+    /// what opens a stream *is* an HTTP request (method, URL, headers, auth,
+    /// body), and only the way the response is read differs. That is also
+    /// what makes switching a request between the two lossless.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub http: Option<HttpRequestSpec>,
 }
@@ -152,12 +155,18 @@ pub struct HttpRequestSpec {
 
 impl RequestFile {
     pub fn new_http(name: impl Into<String>, seq: u32, method: HttpMethod) -> Self {
+        Self::new(name, seq, Protocol::Http, method)
+    }
+
+    /// A blank request over one of the protocols that are described by an
+    /// HTTP request (`Http`, `Sse`).
+    pub fn new(name: impl Into<String>, seq: u32, protocol: Protocol, method: HttpMethod) -> Self {
         RequestFile {
             meta: RequestMeta {
                 sync: SyncMeta::new(),
                 name: name.into(),
                 seq,
-                protocol: Protocol::Http,
+                protocol,
             },
             http: Some(HttpRequestSpec {
                 method,

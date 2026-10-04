@@ -16,6 +16,7 @@ pub fn run() {
         // One HTTP client for the whole app: reqwest pools connections and
         // builds its TLS root store once, instead of per request.
         .manage(exec::HttpExecutor::new())
+        .manage(exec::SseExecutor::new())
         .manage(commands::send_commands::InFlightSends::default())
         // The stored preference is applied before any command can run, so a
         // failure during start-up (restoring the last workspace, say) is
@@ -62,6 +63,7 @@ pub fn run() {
             commands::environment_commands::set_active_environment,
             commands::environment_commands::get_active_environment,
             commands::send_commands::send_request,
+            commands::send_commands::open_sse_stream,
             commands::send_commands::cancel_send,
             commands::send_commands::save_response_body,
             commands::settings_commands::get_request_settings,

@@ -8,12 +8,15 @@
 	let { activity, group = false }: { activity: SubtreeActivity; group?: boolean } = $props();
 
 	let record = $derived(activity.unseen);
-	let failed = $derived(record != null && (record.error != null || (record.outcome?.status ?? 0) >= 400));
+	// A stream that ended by itself has no `outcome`, only the head it opened
+	// with.
+	let head = $derived(record?.outcome ?? record?.stream ?? null);
+	let failed = $derived(record != null && (record.error != null || (head?.status ?? 0) >= 400));
 	let doneTitle = $derived.by(() => {
 		if (!record) return "";
 		if (group) return $t(failed ? "activity.groupUnseenFailed" : "activity.groupUnseen");
-		if (record.outcome)
-			return $t("activity.done", { status: record.outcome.status, statusText: record.outcome.status_text });
+		if (head?.status != null && record.error == null)
+			return $t("activity.done", { status: head.status, statusText: head.status_text });
 		return $t("activity.failed");
 	});
 </script>

@@ -8,23 +8,20 @@ use base64::Engine;
 use std::sync::Mutex;
 use std::time::Instant;
 
-pub struct HttpExecutor {
-    /// The client is cached, not rebuilt per request: building one sets up
-    /// the whole rustls root store and throws away connection pooling. It is
-    /// keyed by the settings that shape it, so changing a timeout or turning
-    /// TLS checking off takes effect on the next request without a restart.
-    cached: Mutex<Option<(RequestSettings, reqwest::Client)>>,
-}
+/// One `reqwest::Client`, kept for as long as the settings that shaped it
+/// stay the same. Building a client sets up the whole rustls root store and
+/// throws away connection pooling, so it is never done per request; keying
+/// it by the settings is what lets a changed timeout or TLS switch take
+/// effect on the next request without a restart.
+pub(crate) struct ClientCache(Mutex<Option<(RequestSettings, reqwest::Client)>>);
 
-impl HttpExecutor {
-    pub fn new() -> Self {
-        HttpExecutor {
-            cached: Mutex::new(None),
-        }
+impl ClientCache {
+    pub(crate) fn new() -> Self {
+        ClientCache(Mutex::new(None))
     }
 
-    fn client_for(&self, settings: &RequestSettings) -> Result<reqwest::Client, ExecutorError> {
-        let mut cached = self.cached.lock().expect("http client cache poisoned");
+    pub(crate) fn client_for(&self, settings: &RequestSettings) -> Result<reqwest::Client, ExecutorError> {
+        let mut cached = self.0.lock().expect("http client cache poisoned");
         if let Some((for_settings, client)) = cached.as_ref() {
             if for_settings == settings {
                 return Ok(client.clone());
@@ -33,6 +30,23 @@ impl HttpExecutor {
         let client = build_client(settings)?;
         *cached = Some((settings.clone(), client.clone()));
         Ok(client)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn cached_settings(&self) -> Option<RequestSettings> {
+        self.0.lock().unwrap().as_ref().map(|(settings, _)| settings.clone())
+    }
+}
+
+pub struct HttpExecutor {
+    clients: ClientCache,
+}
+
+impl HttpExecutor {
+    pub fn new() -> Self {
+        HttpExecutor {
+            clients: ClientCache::new(),
+        }
     }
 }
 
@@ -70,7 +84,7 @@ fn build_client(settings: &RequestSettings) -> Result<reqwest::Client, ExecutorE
         .map_err(|e| ExecutorError::Failed(messages::http_client_setup_failed(&e.to_string())))
 }
 
-fn method_to_reqwest(method: HttpMethod) -> reqwest::Method {
+pub(crate) fn method_to_reqwest(method: HttpMethod) -> reqwest::Method {
     match method {
         HttpMethod::Get => reqwest::Method::GET,
         HttpMethod::Post => reqwest::Method::POST,
@@ -94,7 +108,7 @@ fn error_chain(error: &dyn std::error::Error) -> String {
     parts.join(": ")
 }
 
-fn host_of(url: &str) -> String {
+pub(crate) fn host_of(url: &str) -> String {
     reqwest::Url::parse(url)
         .ok()
         .and_then(|parsed| parsed.host_str().map(str::to_string))
@@ -148,6 +162,19 @@ pub fn describe_error(error: &reqwest::Error, url: &str) -> String {
     messages::request_failed(&host, &error_chain(error))
 }
 
+/// Response headers in the order they arrived, repeats kept - `Set-Cookie`
+/// and `Link` legitimately appear more than once.
+pub(crate) fn header_pairs(headers: &reqwest::header::HeaderMap) -> Vec<KeyValue> {
+    headers
+        .iter()
+        .map(|(k, v)| KeyValue {
+            key: k.to_string(),
+            value: v.to_str().unwrap_or("").to_string(),
+            enabled: true,
+        })
+        .collect()
+}
+
 #[async_trait]
 impl ProtocolExecutor for HttpExecutor {
     async fn execute(
@@ -156,7 +183,7 @@ impl ProtocolExecutor for HttpExecutor {
         ctx: &ExecutionContext,
         trace: &mut TraceRecorder,
     ) -> Result<ExecutionOutcome, ExecutorError> {
-        let client = self.client_for(&ctx.settings)?;
+        let client = self.clients.client_for(&ctx.settings)?;
         let mut builder = client.request(method_to_reqwest(request.method), &request.url);
         if let Some(total) = optional_duration(ctx.settings.total_timeout_ms) {
             builder = builder.timeout(total);
@@ -200,15 +227,7 @@ impl ProtocolExecutor for HttpExecutor {
             &format!("{:?}", response.version()),
         ));
 
-        let headers = response
-            .headers()
-            .iter()
-            .map(|(k, v)| KeyValue {
-                key: k.to_string(),
-                value: v.to_str().unwrap_or("").to_string(),
-                enabled: true,
-            })
-            .collect();
+        let headers = header_pairs(response.headers());
 
         let download_at = Instant::now();
         let body = response.bytes().await.map_err(|e| {
@@ -235,10 +254,6 @@ mod tests {
     use crate::domain::Language;
     use crate::i18n::with_language;
 
-    fn cached_settings(executor: &HttpExecutor) -> Option<RequestSettings> {
-        executor.cached.lock().unwrap().as_ref().map(|(settings, _)| settings.clone())
-    }
-
     #[test]
     fn the_client_is_cached_per_settings_and_rebuilt_when_they_change() {
         let executor = HttpExecutor::new();
@@ -253,15 +268,15 @@ mod tests {
             user_agent: "LokkiAPI test".to_string(),
         };
 
-        executor.client_for(&relaxed).unwrap();
-        assert_eq!(cached_settings(&executor).as_ref(), Some(&relaxed));
+        executor.clients.client_for(&relaxed).unwrap();
+        assert_eq!(executor.clients.cached_settings().as_ref(), Some(&relaxed));
 
-        executor.client_for(&relaxed).unwrap();
-        assert_eq!(cached_settings(&executor).as_ref(), Some(&relaxed));
+        executor.clients.client_for(&relaxed).unwrap();
+        assert_eq!(executor.clients.cached_settings().as_ref(), Some(&relaxed));
 
         let defaults = RequestSettings::default();
-        executor.client_for(&defaults).unwrap();
-        assert_eq!(cached_settings(&executor).as_ref(), Some(&defaults));
+        executor.clients.client_for(&defaults).unwrap();
+        assert_eq!(executor.clients.cached_settings().as_ref(), Some(&defaults));
     }
 
     /// Both languages, because the classification and the wording are

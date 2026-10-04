@@ -1,7 +1,7 @@
 // Builds a small persistent fixture workspace at the given path (or a
 // default scratch path) so its on-disk TOML files can be eyeballed for
 // readability/git-diff-friendliness. Run: cargo run --example fixture -- <dir>
-use lokki_api_lib::domain::{EnvironmentScope, HttpMethod};
+use lokki_api_lib::domain::{EnvironmentScope, HttpMethod, Protocol};
 use lokki_api_lib::store::{fs_collection, fs_environment, fs_request, fs_workspace};
 use std::path::PathBuf;
 
@@ -20,7 +20,7 @@ fn main() {
         .unwrap();
 
     let pets_dir = fs_request::create_folder(collection_path, "Pets").unwrap();
-    let created = fs_request::create_request(&pets_dir, "List Pets", HttpMethod::Get).unwrap();
+    let created = fs_request::create_request(&pets_dir, "List Pets", HttpMethod::Get, Protocol::Http).unwrap();
     let req_path = pets_dir.join("List Pets.lokki.toml");
     let mut req = fs_request::load_request(&req_path).unwrap();
     let http = req.http.as_mut().unwrap();

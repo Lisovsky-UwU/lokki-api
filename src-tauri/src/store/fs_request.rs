@@ -1,7 +1,7 @@
 use super::fs_collection::{is_request_file, read_folder_meta, FOLDER_FILE, REQUEST_EXT};
 use super::format::{read_toml, write_toml};
 use super::naming::unique_path;
-use crate::domain::{FolderFile, HttpMethod, RequestFile};
+use crate::domain::{FolderFile, HttpMethod, Protocol, RequestFile};
 use crate::error::{AppError, AppResult};
 use crate::i18n::messages;
 use std::fs;
@@ -66,9 +66,9 @@ fn next_seq(parent_path: &Path) -> AppResult<u32> {
     Ok(max_seq + 1)
 }
 
-pub fn create_request(parent_path: &Path, name: &str, method: HttpMethod) -> AppResult<RequestFile> {
+pub fn create_request(parent_path: &Path, name: &str, method: HttpMethod, protocol: Protocol) -> AppResult<RequestFile> {
     let seq = next_seq(parent_path)?;
-    let request = RequestFile::new_http(name, seq, method);
+    let request = RequestFile::new(name, seq, protocol, method);
     write_toml(&unique_path(parent_path, name, REQUEST_EXT), &request)?;
     Ok(request)
 }
@@ -254,7 +254,7 @@ mod tests {
     #[test]
     fn create_save_and_load_round_trips_and_bumps_version() {
         let dir = tempfile::tempdir().unwrap();
-        let created = create_request(dir.path(), "List Pets", HttpMethod::Get).unwrap();
+        let created = create_request(dir.path(), "List Pets", HttpMethod::Get, Protocol::Http).unwrap();
         assert_eq!(created.meta.seq, 1);
         assert_eq!(created.meta.sync.version, 1);
 
@@ -271,18 +271,33 @@ mod tests {
     }
 
     #[test]
+    fn an_sse_request_is_written_with_its_http_spec() {
+        let dir = tempfile::tempdir().unwrap();
+        create_request(dir.path(), "Ticker", HttpMethod::Get, Protocol::Sse).unwrap();
+
+        let path = dir.path().join(format!("Ticker{}", REQUEST_EXT));
+        let text = std::fs::read_to_string(&path).unwrap();
+        assert!(text.contains("protocol = \"sse\""), "{text}");
+        assert!(text.contains("[http]"), "{text}");
+
+        let loaded = load_request(&path).unwrap();
+        assert_eq!(loaded.meta.protocol, Protocol::Sse);
+        assert_eq!(loaded.http.unwrap().method, HttpMethod::Get);
+    }
+
+    #[test]
     fn create_request_increments_seq_per_sibling() {
         let dir = tempfile::tempdir().unwrap();
-        create_request(dir.path(), "First", HttpMethod::Get).unwrap();
-        let second = create_request(dir.path(), "Second", HttpMethod::Post).unwrap();
+        create_request(dir.path(), "First", HttpMethod::Get, Protocol::Http).unwrap();
+        let second = create_request(dir.path(), "Second", HttpMethod::Post, Protocol::Http).unwrap();
         assert_eq!(second.meta.seq, 2);
     }
 
     #[test]
     fn creating_a_request_with_a_taken_name_does_not_overwrite_it() {
         let dir = tempfile::tempdir().unwrap();
-        let first = create_request(dir.path(), "List Pets", HttpMethod::Get).unwrap();
-        let second = create_request(dir.path(), "List Pets", HttpMethod::Post).unwrap();
+        let first = create_request(dir.path(), "List Pets", HttpMethod::Get, Protocol::Http).unwrap();
+        let second = create_request(dir.path(), "List Pets", HttpMethod::Post, Protocol::Http).unwrap();
 
         assert!(dir.path().join(format!("List Pets{}", REQUEST_EXT)).is_file());
         assert!(dir.path().join(format!("List Pets (2){}", REQUEST_EXT)).is_file());
@@ -297,7 +312,7 @@ mod tests {
     fn delete_folder_removes_folder_and_contents() {
         let dir = tempfile::tempdir().unwrap();
         let folder = create_folder(dir.path(), "Pets").unwrap();
-        create_request(&folder, "List Pets", HttpMethod::Get).unwrap();
+        create_request(&folder, "List Pets", HttpMethod::Get, Protocol::Http).unwrap();
         assert!(folder.is_dir());
 
         delete_folder(&folder).unwrap();
@@ -307,7 +322,7 @@ mod tests {
     #[test]
     fn move_node_relocates_a_request_into_a_folder() {
         let dir = tempfile::tempdir().unwrap();
-        create_request(dir.path(), "List Pets", HttpMethod::Get).unwrap();
+        create_request(dir.path(), "List Pets", HttpMethod::Get, Protocol::Http).unwrap();
         let folder = create_folder(dir.path(), "Pets").unwrap();
         let source = dir.path().join(format!("List Pets{}", REQUEST_EXT));
 
@@ -330,7 +345,7 @@ mod tests {
     #[test]
     fn reorder_children_skips_paths_that_no_longer_exist() {
         let dir = tempfile::tempdir().unwrap();
-        create_request(dir.path(), "Kept", HttpMethod::Get).unwrap();
+        create_request(dir.path(), "Kept", HttpMethod::Get, Protocol::Http).unwrap();
         let kept = dir.path().join(format!("Kept{}", REQUEST_EXT));
         let vanished = dir.path().join(format!("Moved Away{}", REQUEST_EXT));
 
@@ -342,8 +357,8 @@ mod tests {
     #[test]
     fn reorder_children_assigns_positions_across_folders_and_requests() {
         let dir = tempfile::tempdir().unwrap();
-        create_request(dir.path(), "First", HttpMethod::Get).unwrap();
-        create_request(dir.path(), "Second", HttpMethod::Get).unwrap();
+        create_request(dir.path(), "First", HttpMethod::Get, Protocol::Http).unwrap();
+        create_request(dir.path(), "Second", HttpMethod::Get, Protocol::Http).unwrap();
         let folder = create_folder(dir.path(), "Pets").unwrap();
         let first = dir.path().join(format!("First{}", REQUEST_EXT));
         let second = dir.path().join(format!("Second{}", REQUEST_EXT));
@@ -359,7 +374,7 @@ mod tests {
     #[test]
     fn rename_request_updates_name_and_file() {
         let dir = tempfile::tempdir().unwrap();
-        create_request(dir.path(), "Old Name", HttpMethod::Get).unwrap();
+        create_request(dir.path(), "Old Name", HttpMethod::Get, Protocol::Http).unwrap();
         let old_path = dir.path().join(format!("Old Name{}", REQUEST_EXT));
 
         let (new_path, renamed) = rename_request(&old_path, "New Name").unwrap();
@@ -374,7 +389,7 @@ mod tests {
     fn rename_folder_updates_directory_and_metadata() {
         let dir = tempfile::tempdir().unwrap();
         let folder = create_folder(dir.path(), "Old").unwrap();
-        create_request(&folder, "Kept", HttpMethod::Get).unwrap();
+        create_request(&folder, "Kept", HttpMethod::Get, Protocol::Http).unwrap();
 
         let renamed = rename_folder(&folder, "New").unwrap();
 
@@ -388,7 +403,7 @@ mod tests {
     #[test]
     fn adopt_request_keeps_the_spec_but_gives_it_a_new_identity_and_place() {
         let dir = tempfile::tempdir().unwrap();
-        create_request(dir.path(), "Existing", HttpMethod::Get).unwrap();
+        create_request(dir.path(), "Existing", HttpMethod::Get, Protocol::Http).unwrap();
 
         let mut in_memory = RequestFile::new_http("Инкогнито", 0, HttpMethod::Post);
         in_memory.http.as_mut().unwrap().url = "https://example.com/pets".to_string();
@@ -410,7 +425,7 @@ mod tests {
     #[test]
     fn clone_request_leaves_the_original_alone_and_makes_a_separate_entity() {
         let dir = tempfile::tempdir().unwrap();
-        let created = create_request(dir.path(), "Список питомцев", HttpMethod::Get).unwrap();
+        let created = create_request(dir.path(), "Список питомцев", HttpMethod::Get, Protocol::Http).unwrap();
         let original_path = dir.path().join("Список питомцев.lokki.toml");
         let mut original = load_request(&original_path).unwrap();
         original.http.as_mut().unwrap().url = "https://example.com/pets".to_string();
@@ -434,7 +449,7 @@ mod tests {
     #[test]
     fn adopt_request_does_not_overwrite_a_taken_name() {
         let dir = tempfile::tempdir().unwrap();
-        create_request(dir.path(), "Питомцы", HttpMethod::Get).unwrap();
+        create_request(dir.path(), "Питомцы", HttpMethod::Get, Protocol::Http).unwrap();
 
         let (path, _) = adopt_request(dir.path(), "Питомцы", RequestFile::new_http("x", 0, HttpMethod::Get)).unwrap();
 
@@ -456,7 +471,7 @@ mod tests {
     #[test]
     fn delete_request_removes_file() {
         let dir = tempfile::tempdir().unwrap();
-        create_request(dir.path(), "Temp", HttpMethod::Get).unwrap();
+        create_request(dir.path(), "Temp", HttpMethod::Get, Protocol::Http).unwrap();
         let path = dir.path().join(format!("Temp{}", REQUEST_EXT));
         assert!(path.is_file());
         delete_request(&path).unwrap();

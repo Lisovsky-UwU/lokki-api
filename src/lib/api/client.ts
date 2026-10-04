@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { translate } from "../i18n";
@@ -14,10 +14,13 @@ import type {
 	Id,
 	ImportResult,
 	Language,
+	Protocol,
 	RecentWorkspace,
 	RequestAtPath,
 	RequestFile,
 	RequestSettings,
+	SseEnd,
+	SseMessage,
 	StartupBehavior,
 	WorkspaceFile,
 } from "../bindings/types";
@@ -105,8 +108,8 @@ export const api = {
 	loadRequest: (requestPath: string) => invoke<RequestFile>("load_request", { requestPath }),
 	saveRequest: (requestPath: string, request: RequestFile) =>
 		invoke<RequestFile>("save_request", { requestPath, request }),
-	createRequest: (parentPath: string, name: string, method: HttpMethod) =>
-		invoke<RequestFile>("create_request", { parentPath, name, method }),
+	createRequest: (parentPath: string, name: string, method: HttpMethod, protocol: Protocol = "http") =>
+		invoke<RequestFile>("create_request", { parentPath, name, method, protocol }),
 	cloneRequest: (requestPath: string, newName: string) =>
 		invoke<RequestAtPath>("clone_request", { requestPath, newName }),
 	deleteRequest: (requestPath: string) => invoke<void>("delete_request", { requestPath }),
@@ -165,6 +168,31 @@ export const api = {
 		collectionPath: string | null,
 		sendId: string,
 	) => invoke<ExecutionOutcome>("send_request", { request, workspacePath, collectionPath, sendId }),
+	/// Opens an SSE stream and hands every message but the last to `onMessage`
+	/// as it arrives. Resolves with the closing `end` message - taken from the
+	/// channel, not from the command's result, so it can't arrive before the
+	/// events it closes - and rejects only when the stream never started.
+	/// Stopping it is `cancelSend(sendId)`, as for a request.
+	openSseStream: (
+		request: RequestFile,
+		workspacePath: string | null,
+		collectionPath: string | null,
+		sendId: string,
+		onMessage: (message: Exclude<SseMessage, SseEnd>) => void,
+	) =>
+		new Promise<SseEnd>((resolve, reject) => {
+			const channel = new Channel<SseMessage>((message) => {
+				if (message.kind === "end") resolve(message);
+				else onMessage(message);
+			});
+			invoke<void>("open_sse_stream", {
+				request,
+				workspacePath,
+				collectionPath,
+				sendId,
+				onMessage: channel,
+			}).catch(reject);
+		}),
 	// Resolves to false when the send had already finished - a click and a
 	// response can always cross paths, and that isn't an error.
 	cancelSend: (sendId: string) => invoke<boolean>("cancel_send", { sendId }),

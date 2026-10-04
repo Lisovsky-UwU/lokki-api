@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { CollectionSummary, CollectionTreeNode, HttpMethod } from "../../bindings/types";
+	import type { CollectionSummary, CollectionTreeNode, HttpMethod, Protocol } from "../../bindings/types";
 	import TreeNode from "./TreeNode.svelte";
 	import NodeMenu from "../common/NodeMenu.svelte";
 	import ActivityIndicator from "../common/ActivityIndicator.svelte";
@@ -21,7 +21,7 @@
 	import { reportError } from "../../ui/notices";
 	import { api } from "../../api/client";
 	import { t } from "../../i18n";
-	import { methodColor } from "../../ui/methods";
+	import { methodColor, requestBadge } from "../../ui/methods";
 
 	// `collection` travels down the tree so opening a request always points
 	// the app at the collection that actually owns it; `parentPath` and
@@ -45,6 +45,7 @@
 	let dropZone = $state<"before" | "after" | "inside" | null>(null);
 
 	let currentPath = $derived($activeRequest?.path);
+	let badge = $derived(node.kind === "Request" ? requestBadge(node) : "");
 	let isDragged = $derived($dragging?.path === node.path);
 
 	// A folder stands in for its subtree only while collapsed - expanded, the
@@ -81,10 +82,11 @@
 		}
 	}
 
-	async function addRequest() {
-		const name = await promptForText($t("prompt.newRequest"), $t("prompt.requestName"), $t("prompt.newRequest"));
+	async function addRequest(protocol: Protocol = "http") {
+		const title = $t(protocol === "sse" ? "prompt.newSseRequest" : "prompt.newRequest");
+		const name = await promptForText(title, $t("prompt.requestName"), title);
 		if (!name) return;
-		await api.createRequest(node.path, name, "GET" as HttpMethod);
+		await api.createRequest(node.path, name, "GET" as HttpMethod, protocol);
 		setExpanded(node.path, true);
 		requestTreeRefresh();
 	}
@@ -248,7 +250,8 @@
 	// it - so the delete item is never the neighbour of something harmless.
 	let folderMenu: Menu = $derived([
 		[
-			{ label: $t("menu.addRequest"), icon: "request-add", action: addRequest },
+			{ label: $t("menu.addRequest"), icon: "request-add", action: () => addRequest() },
+			{ label: $t("menu.addSseRequest"), icon: "stream", action: () => addRequest("sse") },
 			{ label: $t("menu.addFolder"), icon: "folder-add", action: addFolder },
 		],
 		[{ label: $t("menu.renameFolder"), icon: "rename", action: renameFolder }],
@@ -314,7 +317,7 @@
 		ondrop={onDrop}
 	>
 		<button class="request-label" onclick={() => openRequest(node.path)}>
-			<span class="method" style="color: {methodColor(node.method ?? node.protocol)}">{node.method ?? node.protocol}</span>
+			<span class="method" style="color: {methodColor(badge)}">{badge}</span>
 			<span class="node-name">{node.name}</span>
 			<ActivityIndicator {activity} />
 		</button>

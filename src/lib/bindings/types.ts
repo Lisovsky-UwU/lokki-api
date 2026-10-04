@@ -56,6 +56,8 @@ export interface HttpRequestSpec {
 	body: BodySpec;
 }
 
+/// An SSE request keeps its spec in `http` too: what opens a stream is an
+/// ordinary HTTP request, only the response is read differently.
 export interface RequestFile {
 	meta: RequestMeta;
 	http?: HttpRequestSpec;
@@ -205,6 +207,59 @@ export interface ExecutionOutcome {
 	trace: ExecutionTrace;
 	unresolved_variables: string[];
 }
+
+/// One event of a Server-Sent Events stream. `at_ms` is how far into the
+/// request it arrived; `event` is "message" when the server named no type.
+export interface SseEvent {
+	kind: "event";
+	at_ms: number;
+	id: string | null;
+	event: string;
+	data: string;
+	retry_ms: number | null;
+}
+
+/// A `:` line - ignored by a real client, shown here because a heartbeat
+/// that stops arriving is often the thing being debugged.
+export interface SseComment {
+	kind: "comment";
+	at_ms: number;
+	text: string;
+}
+
+export type StreamEnd =
+	| { type: "closed" }
+	| { type: "cancelled" }
+	/// The connection broke after the stream started; the events before it
+	/// still stand.
+	| { type: "failed"; message: string }
+	/// The server answered with something other than an event stream, which
+	/// was read whole and is shown as an ordinary response.
+	| { type: "not_a_stream"; body_base64: string };
+
+export interface SseOutcome {
+	status: number;
+	status_text: string;
+	headers: KeyValue[];
+	events: number;
+	end: StreamEnd;
+}
+
+export interface SseEnd {
+	kind: "end";
+	outcome: SseOutcome;
+	trace: ExecutionTrace;
+	unresolved_variables: string[];
+}
+
+/// Everything `open_sse_stream` sends down its channel, in order. `end` is
+/// always last - it travels on the channel rather than as the command's
+/// result so it can't overtake the final events.
+export type SseMessage =
+	| { kind: "open"; status: number; status_text: string; headers: KeyValue[] }
+	| SseEvent
+	| SseComment
+	| SseEnd;
 
 /// Languages the code editor can highlight. Kept next to the domain types
 /// because both the body format and the response viewer map onto it.

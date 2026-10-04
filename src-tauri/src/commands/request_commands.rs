@@ -1,4 +1,4 @@
-use crate::domain::{HttpMethod, RequestFile};
+use crate::domain::{HttpMethod, Protocol, RequestFile};
 use crate::error::AppResult;
 use crate::store::fs_request;
 use serde::Serialize;
@@ -24,8 +24,8 @@ pub fn save_request(request_path: String, request: RequestFile) -> AppResult<Req
 }
 
 #[tauri::command]
-pub fn create_request(parent_path: String, name: String, method: HttpMethod) -> AppResult<RequestFile> {
-    fs_request::create_request(Path::new(&parent_path), &name, method)
+pub fn create_request(parent_path: String, name: String, method: HttpMethod, protocol: Protocol) -> AppResult<RequestFile> {
+    fs_request::create_request(Path::new(&parent_path), &name, method, protocol)
 }
 
 #[tauri::command]

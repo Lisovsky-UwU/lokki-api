@@ -1,6 +1,6 @@
 import { get, writable } from "svelte/store";
 import { newHttpRequestSpec } from "../bindings/types";
-import type { HttpRequestSpec, RequestFile } from "../bindings/types";
+import type { HttpRequestSpec, Protocol, RequestFile } from "../bindings/types";
 
 export interface ActiveRequestState {
 	path: string;
@@ -22,6 +22,19 @@ export function mutateHttp(patch: Partial<HttpRequestSpec>) {
 	activeRequest.set({
 		...current,
 		request: { ...current.request, http: { ...http, ...patch } },
+		dirty: true,
+	});
+}
+
+/// Switches the open request between the protocols that share an HTTP spec
+/// (HTTP and SSE). Nothing is lost either way: only how the response is read
+/// changes.
+export function setProtocol(protocol: Protocol) {
+	const current = get(activeRequest);
+	if (!current || current.request.meta.protocol === protocol) return;
+	activeRequest.set({
+		...current,
+		request: { ...current.request, meta: { ...current.request.meta, protocol } },
 		dirty: true,
 	});
 }

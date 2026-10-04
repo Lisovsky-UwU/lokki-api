@@ -9,6 +9,8 @@
 export const ICONS = {
 	/// Creating things.
 	"request-add": ["M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z", "M14 2v6h6", "M9 15h6", "M12 12v6"],
+	/// A feed: an SSE request is a subscription more than a request.
+	stream: ["M4 11a9 9 0 0 1 9 9", "M4 4a16 16 0 0 1 16 16", "M5 19h.01"],
 	"folder-add": [
 		"M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.6a2 2 0 0 1-1.7-.9l-.8-1.2a2 2 0 0 0-1.7-.9H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z",
 		"M9 13h6",
