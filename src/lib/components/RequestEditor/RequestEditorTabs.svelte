@@ -106,7 +106,6 @@
 		border: none;
 		padding: 0.4em 0.8em;
 		cursor: pointer;
-		color: inherit;
 		color: var(--text-muted);
 		border-bottom: 2px solid transparent;
 	}

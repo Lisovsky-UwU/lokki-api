@@ -80,7 +80,6 @@
 		background: none;
 		border: none;
 		cursor: pointer;
-		color: inherit;
 		color: var(--text-muted);
 		padding: 0.25em 0.35em;
 		border-radius: 4px;

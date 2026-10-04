@@ -48,7 +48,6 @@
 		font-size: var(--fs-xs);
 		font-weight: 700;
 		letter-spacing: 0.03em;
-		color: inherit;
 		color: var(--text-muted);
 		cursor: pointer;
 	}

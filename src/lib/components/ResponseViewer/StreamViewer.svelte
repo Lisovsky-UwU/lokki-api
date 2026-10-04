@@ -2,6 +2,7 @@
 	// A Server-Sent Events stream, while it is open and after it has ended:
 	// what state it is in, then the events as they arrived.
 	import { tick } from "svelte";
+	import Icon from "../common/Icon.svelte";
 	import { SvelteSet } from "svelte/reactivity";
 	import { locale, t } from "../../i18n";
 	import { STREAM_ENTRY_LIMIT, type ResponseRecord, type StreamRecord } from "../../stores/response";
@@ -180,7 +181,7 @@
 							class="toggle"
 							aria-expanded={open}
 							aria-label={$t(open ? "stream.collapse" : "stream.expand")}
-							onclick={() => toggle(entry)}>{open ? "▾" : "▸"}</button
+							onclick={() => toggle(entry)}><span class="chevron" class:collapsed={!open}><Icon name="chevron" size="12px" /></span></button
 						>
 						<span class="at">{offset(entry.at_ms)}</span>
 						<span class="type" class:named={entry.event !== "message"}>{entry.event}</span>
@@ -334,7 +335,6 @@
 		border-radius: 0;
 		padding: 0.35em 0.8em;
 		cursor: pointer;
-		color: inherit;
 		color: var(--text-muted);
 		border-bottom: 2px solid transparent;
 	}
@@ -372,8 +372,9 @@
 		background: none;
 		border: none;
 		padding: 0;
+		display: flex;
+		align-items: center;
 		width: 1em;
-		color: inherit;
 		color: var(--text-muted);
 		cursor: pointer;
 	}
@@ -434,5 +435,12 @@
 		margin: 0;
 		padding: 0.5em 0.6em;
 		color: var(--text-muted);
+	}
+	.chevron {
+		display: inline-flex;
+		transition: transform 0.15s;
+	}
+	.chevron.collapsed {
+		transform: rotate(-90deg);
 	}
 </style>

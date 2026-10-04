@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { api } from "../../api/client";
+	import Icon from "../common/Icon.svelte";
 	import { t } from "../../i18n";
 	import { workspace, workspacePath } from "../../stores/workspace";
 	import { activeCollection } from "../../stores/collectionTree";
@@ -102,7 +103,7 @@
 					title: $workspace?.name ?? "",
 				})}
 		>
-			✎
+			<Icon name="rename" size="14px" />
 		</button>
 	</div>
 
@@ -131,7 +132,7 @@
 						title: $activeCollection.name,
 					})}
 			>
-				✎
+				<Icon name="rename" size="14px" />
 			</button>
 		</div>
 	{/if}
@@ -161,7 +162,6 @@
 		background: none;
 		border: none;
 		cursor: pointer;
-		color: inherit;
 		color: var(--text-muted);
 		padding: 0.1em 0.35em;
 		border-radius: 4px;

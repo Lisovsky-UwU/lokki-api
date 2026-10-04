@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { t } from "../../i18n";
+	import Icon from "./Icon.svelte";
 	import { dismissNotice, notices } from "../../ui/notices";
 </script>
 
@@ -8,7 +9,7 @@
 		{#each $notices as notice (notice.id)}
 			<div class="toast {notice.kind}">
 				<span>{notice.message}{notice.count > 1 ? ` (×${notice.count})` : ""}</span>
-				<button title={$t("common.hide")} onclick={() => dismissNotice(notice.id)}>×</button>
+				<button title={$t("common.hide")} onclick={() => dismissNotice(notice.id)}><Icon name="remove" size="14px" /></button>
 			</div>
 		{/each}
 	</div>

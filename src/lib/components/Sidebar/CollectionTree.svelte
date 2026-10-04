@@ -402,7 +402,7 @@
 			<NodeMenu menu={workspaceMenu} label={$t("sidebar.workspaceMenu")} align="left">
 				{#snippet trigger()}
 					<span class="workspace-name">{$workspace?.name}</span>
-					<span class="menu-hint">▾</span>
+					<span class="menu-hint"><Icon name="chevron" size="12px" /></span>
 				{/snippet}
 			</NodeMenu>
 		</div>
@@ -411,7 +411,7 @@
 		<NodeMenu menu={collectionsMenu} label={$t("sidebar.collectionsMenu")} align="left">
 			{#snippet trigger()}
 				<span class="heading">{$t("sidebar.collections")}</span>
-				<span class="menu-hint">▾</span>
+				<span class="menu-hint"><Icon name="chevron" size="12px" /></span>
 			{/snippet}
 		</NodeMenu>
 	</div>
@@ -443,7 +443,7 @@
 				}}
 			>
 				<button class="collection-label" onclick={() => toggleCollection(collection)}>
-					<span class="chevron" class:collapsed={!collectionExpanded(collection.path)}>▾</span>
+					<span class="chevron" class:collapsed={!collectionExpanded(collection.path)}><Icon name="chevron" size="14px" /></span>
 					<span class="collection-name">{collection.name}</span>
 					{#if !collectionExpanded(collection.path)}
 						<ActivityIndicator activity={subtreeActivity($responsesByRequest, collection.path)} group />
@@ -612,7 +612,8 @@
 		border-radius: 4px;
 	}
 	.chevron {
-		display: inline-block;
+		display: inline-flex;
+		color: var(--text-muted);
 		transition: transform 0.15s;
 	}
 	.chevron.collapsed {
@@ -663,6 +664,7 @@
 	/* One marker for "this opens a menu": the workspace name and the
 	   collections heading carry the same one. */
 	.menu-hint {
+		display: inline-flex;
 		color: var(--text-muted);
 		font-size: var(--fs-sm);
 	}
