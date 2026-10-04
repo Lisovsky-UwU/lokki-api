@@ -1,15 +1,16 @@
 <script lang="ts">
-	// A Server-Sent Events stream, while it is open and after it has ended:
-	// what state it is in, then the events as they arrived.
+	// An open connection - a Server-Sent Events stream or a WebSocket - while
+	// it is open and after it has ended: what state it is in, then what came
+	// through it, in order. The two differ only in what an entry is.
 	import { tick } from "svelte";
 	import Icon from "../common/Icon.svelte";
 	import { SvelteSet } from "svelte/reactivity";
 	import { locale, t } from "../../i18n";
-	import { STREAM_ENTRY_LIMIT, type ResponseRecord, type StreamRecord } from "../../stores/response";
-	import type { SseComment, SseEvent } from "../../bindings/types";
+	import { STREAM_ENTRY_LIMIT, type ResponseRecord, type StreamEntry, type StreamRecord } from "../../stores/response";
+	import type { WsFrame } from "../../bindings/types";
 	import { cancelActiveSend } from "../../ui/sending";
 	import { copyText } from "../../ui/clipboard";
-	import { formatDuration, formatElapsed } from "../../ui/format";
+	import { formatDuration, formatElapsed, formatSize, hexPreview } from "../../ui/format";
 	import HeadersTable from "./HeadersTable.svelte";
 
 	let {
@@ -28,7 +29,9 @@
 		record?: ResponseRecord | null;
 	} = $props();
 
-	type Entry = SseEvent | SseComment;
+	type Entry = StreamEntry;
+
+	let socket = $derived(stream.protocol === "websocket");
 
 	let tab = $state<"events" | "headers">("events");
 	let filter = $state("");
@@ -52,13 +55,17 @@
 	let visible = $derived.by(() => {
 		const needle = filter.trim().toLowerCase();
 		if (!needle) return stream.entries;
-		return stream.entries.filter((entry) =>
-			entry.kind === "event"
-				? entry.event.toLowerCase().includes(needle) ||
+		return stream.entries.filter((entry) => {
+			if (entry.kind === "event")
+				return (
+					entry.event.toLowerCase().includes(needle) ||
 					entry.data.toLowerCase().includes(needle) ||
 					(entry.id ?? "").toLowerCase().includes(needle)
-				: entry.text.toLowerCase().includes(needle),
-		);
+				);
+			if (entry.kind === "comment") return entry.text.toLowerCase().includes(needle);
+			// Base64 is not worth searching, so binary frames match by kind.
+			return entry.opcode.includes(needle) || (entry.opcode === "text" && entry.data.toLowerCase().includes(needle));
+		});
 	});
 
 	$effect(() => {
@@ -77,7 +84,7 @@
 		if (live) {
 			if (cancelling) return { label: $t("stream.disconnecting"), tone: "pending" };
 			if (stream.status == null) return { label: $t("stream.connecting"), tone: "pending" };
-			return { label: $t("stream.open"), tone: "open" };
+			return { label: $t(socket ? "socket.open" : "stream.open"), tone: "open" };
 		}
 		switch (stream.end?.type) {
 			case "cancelled":
@@ -87,6 +94,14 @@
 			default:
 				return { label: $t("stream.closed"), tone: "ended" };
 		}
+	});
+
+	/// What the server's close frame said, for a socket it closed.
+	let closeNote = $derived.by(() => {
+		const end = stream.end;
+		if (end?.type !== "closed" || !("code" in end)) return "";
+		const code = end.code != null ? $t("socket.closeCode", { code: end.code }) : $t("socket.noCloseCode");
+		return end.reason ? `${code} · ${end.reason}` : code;
 	});
 
 	function statusClass(status: number): string {
@@ -107,6 +122,15 @@
 		} catch {
 			return data;
 		}
+	}
+
+	/// A frame's payload as it is shown: the text as it came, binary as hex.
+	/// Pings and pongs usually carry nothing, and then show nothing. A
+	/// collapsed row shows three lines at most, so it only builds those.
+	function framePayload(frame: WsFrame, open: boolean): string {
+		if (frame.opcode === "text") return open ? readable(frame.data) : frame.data;
+		const { text, truncated } = hexPreview(frame.data, open ? 1024 : 48);
+		return truncated ? `${text}\n…` : text;
 	}
 
 	function toggle(entry: Entry) {
@@ -130,7 +154,12 @@
 		{:else if record?.elapsedMs != null}
 			<span class="meta" title={$t("stream.duration")}>{formatDuration($t, record.elapsedMs)}</span>
 		{/if}
-		<span class="meta">{$t("stream.eventCount", { count: eventCount + stream.dropped })}</span>
+		{#if socket}
+			<span class="meta">{$t("socket.counts", { sent: stream.sent, received: stream.received })}</span>
+		{:else}
+			<span class="meta">{$t("stream.eventCount", { count: eventCount + stream.dropped })}</span>
+		{/if}
+		{#if closeNote}<span class="meta" title={$t("socket.closeCodeHint")}>{closeNote}</span>{/if}
 		{#if record}
 			<span class="meta time" title={$t("response.sentAt")}>{new Date(record.at).toLocaleTimeString($locale)}</span>
 		{/if}
@@ -151,7 +180,9 @@
 	{/if}
 
 	<div class="tabs">
-		<button class:active={tab === "events"} onclick={() => (tab = "events")}>{$t("stream.tab.events")}</button>
+		<button class:active={tab === "events"} onclick={() => (tab = "events")}
+			>{$t(socket ? "socket.tab.messages" : "stream.tab.events")}</button
+		>
 		<button class:active={tab === "headers"} onclick={() => (tab = "headers")}
 			>{$t("response.tab.headers", { count: stream.headers.length })}</button
 		>
@@ -160,8 +191,8 @@
 				class="filter"
 				type="search"
 				bind:value={filter}
-				placeholder={$t("stream.filter")}
-				aria-label={$t("stream.filter")}
+				placeholder={$t(socket ? "socket.filter" : "stream.filter")}
+				aria-label={$t(socket ? "socket.filter" : "stream.filter")}
 			/>
 		{/if}
 	</div>
@@ -191,6 +222,45 @@
 						{/if}
 						<pre class="data">{open ? readable(entry.data) : entry.data}</pre>
 					</div>
+				{:else if entry.kind === "frame"}
+					{@const open = expanded.has(entry)}
+					{@const payload = framePayload(entry, open)}
+					{@const control = entry.opcode === "ping" || entry.opcode === "pong"}
+					<div class="entry frame {entry.direction}" class:open class:control>
+						{#if payload}
+							<button
+								class="toggle"
+								aria-expanded={open}
+								aria-label={$t(open ? "socket.collapse" : "socket.expand")}
+								onclick={() => toggle(entry)}><span class="chevron" class:collapsed={!open}><Icon name="chevron" size="12px" /></span></button
+							>
+						{:else}
+							<span class="toggle-space"></span>
+						{/if}
+						<span class="at">{offset(entry.at_ms)}</span>
+						<span class="type direction" title={$t(entry.direction === "sent" ? "socket.sent" : "socket.received")}
+							>{entry.direction === "sent" ? "↑" : "↓"}{#if entry.opcode !== "text"}&nbsp;{entry.opcode}{/if}</span
+						>
+						<span class="id">
+							{formatSize($t, entry.size)}
+							{#if entry.unresolved_variables?.length}
+								<span
+									class="unresolved"
+									title={$t("response.unresolved", {
+										names: entry.unresolved_variables.map((v) => `{{${v}}}`).join(", "),
+									})}>!</span
+								>
+							{/if}
+						</span>
+						{#if open}
+							<button class="copy" onclick={() => copyText(entry.data)}
+								>{$t(entry.opcode === "text" ? "common.copy" : "socket.copyBase64")}</button
+							>
+						{/if}
+						{#if payload}
+							<pre class="data" class:hex={entry.opcode !== "text"} title={entry.opcode === "text" ? undefined : $t("socket.binaryHint")}>{payload}</pre>
+						{/if}
+					</div>
 				{:else}
 					<div class="entry comment" title={$t("stream.commentHint")}>
 						<span class="toggle-space"></span>
@@ -200,7 +270,9 @@
 				{/if}
 			{:else}
 				<p class="empty">
-					{#if filter.trim()}{$t("stream.noMatches")}{:else if live}{$t("stream.waiting")}{:else}{$t("stream.noEvents")}{/if}
+					{#if socket}
+						{#if filter.trim()}{$t("socket.noMatches")}{:else if live}{$t("socket.waiting")}{:else}{$t("socket.noMessages")}{/if}
+					{:else if filter.trim()}{$t("stream.noMatches")}{:else if live}{$t("stream.waiting")}{:else}{$t("stream.noEvents")}{/if}
 				</p>
 			{/each}
 		</div>
@@ -428,6 +500,28 @@
 	}
 	.entry.open .data {
 		display: block;
+	}
+	.direction {
+		font-family: var(--font-mono);
+		white-space: nowrap;
+	}
+	.frame.sent .direction {
+		color: var(--accent-text);
+	}
+	.frame.received .direction {
+		color: var(--method-get);
+	}
+	.frame.control {
+		color: var(--text-muted);
+	}
+	.unresolved {
+		margin-left: 0.3em;
+		font-weight: 700;
+		color: var(--warn);
+		cursor: help;
+	}
+	.data.hex {
+		color: var(--text-muted);
 	}
 	.entry.comment {
 		color: var(--text-muted);

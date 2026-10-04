@@ -1,22 +1,39 @@
 <script lang="ts">
-	// Everything about the request that is not its address: the four tabs and
-	// whichever one is open. The method, the URL and the send/save buttons
+	// Everything about the request that is not its address: the tabs and
+	// whichever one is open. A WebSocket request swaps the body - a handshake
+	// has none - for the message it sends once connected. The method, the URL and the send/save buttons
 	// live in `RequestHeader`, which the workbench draws across the full
 	// width above both panes.
-	import { activeRequest, mutateHttp } from "../../stores/activeRequest";
+	import { untrack } from "svelte";
+	import { activeRequest, mutateHttp, mutateWebSocket } from "../../stores/activeRequest";
 	import { availableVariables } from "../../stores/environments";
 	import { t } from "../../i18n";
 	import { copyText } from "../../ui/clipboard";
-	import { newHttpRequestSpec } from "../../bindings/types";
+	import { newHttpRequestSpec, newWebSocketSpec } from "../../bindings/types";
 	import KeyValueTable from "./KeyValueTable.svelte";
 	import AuthEditor from "./AuthEditor.svelte";
 	import BodyEditor from "./BodyEditor.svelte";
+	import MessageComposer from "./MessageComposer.svelte";
 
-	type Tab = "params" | "headers" | "body" | "auth";
+	type Tab = "message" | "params" | "headers" | "body" | "auth";
 	let tab = $state<Tab>("params");
 	let copied = $state(false);
 
 	let http = $derived($activeRequest?.request.http ?? newHttpRequestSpec());
+	let isSocket = $derived($activeRequest?.request.meta.protocol === "websocket");
+	let websocket = $derived($activeRequest?.request.websocket ?? newWebSocketSpec());
+
+	// Opening a socket request lands on its message, the thing worked on most;
+	// leaving one lands wherever the message tab would otherwise point at
+	// nothing. Only a change of kind moves the tab - the derived value doesn't
+	// change between two requests of the same kind, so neither does the tab.
+	$effect(() => {
+		const socket = isSocket;
+		untrack(() => {
+			if (socket) tab = "message";
+			else if (tab === "message") tab = "params";
+		});
+	});
 
 	/// The URL as it will actually be sent: variables substituted and enabled
 	/// query parameters appended, mirroring what the core does at send time.
@@ -46,10 +63,15 @@
 {#if $activeRequest}
 	<div class="editor">
 		<div class="tabs">
+			{#if isSocket}
+				<button class:active={tab === "message"} onclick={() => (tab = "message")}>{$t("request.tab.message")}</button>
+			{/if}
 			<button class:active={tab === "params"} onclick={() => (tab = "params")}
 				>{$t("request.tab.params")}{#if paramCount}&nbsp;({paramCount}){/if}</button
 			>
-			<button class:active={tab === "body"} onclick={() => (tab = "body")}>{$t("request.tab.body")}</button>
+			{#if !isSocket}
+				<button class:active={tab === "body"} onclick={() => (tab = "body")}>{$t("request.tab.body")}</button>
+			{/if}
 			<button class:active={tab === "headers"} onclick={() => (tab = "headers")}
 				>{$t("request.tab.headers")}{#if headerCount}&nbsp;({headerCount}){/if}</button
 			>
@@ -57,7 +79,9 @@
 		</div>
 
 		<div class="tab-content">
-			{#if tab === "params"}
+			{#if tab === "message"}
+				<MessageComposer spec={websocket} onChange={mutateWebSocket} />
+			{:else if tab === "params"}
 				<div class="params-tab">
 					<div class="url-preview">
 						<div class="url-preview-header">

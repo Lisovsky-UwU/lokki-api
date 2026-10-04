@@ -56,11 +56,21 @@ export interface HttpRequestSpec {
 	body: BodySpec;
 }
 
+/// The message a WebSocket request sends. The format only picks the editor
+/// highlighting: a message carries no type, and always goes out as text.
+export interface WebSocketSpec {
+	format: TextFormat;
+	message: string;
+}
+
 /// An SSE request keeps its spec in `http` too: what opens a stream is an
-/// ordinary HTTP request, only the response is read differently.
+/// ordinary HTTP request, only the response is read differently. So does a
+/// WebSocket request, for its handshake; `websocket` holds what it sends
+/// once open, and stays when the request is switched to another protocol.
 export interface RequestFile {
 	meta: RequestMeta;
 	http?: HttpRequestSpec;
+	websocket?: WebSocketSpec;
 }
 
 export interface WorkspaceFile extends SyncMeta {
@@ -263,6 +273,52 @@ export type SseMessage =
 	| SseComment
 	| SseEnd;
 
+/// One WebSocket message, either way, or a ping/pong. `data` is the text of
+/// a text message and base64 for anything else - binary is never decoded
+/// as text on its way here. `size` is in bytes.
+export interface WsFrame {
+	kind: "frame";
+	at_ms: number;
+	direction: "sent" | "received";
+	opcode: "text" | "binary" | "ping" | "pong";
+	data: string;
+	size: number;
+	/// For a sent message: names in it that stayed `{{literal}}`.
+	unresolved_variables?: string[];
+}
+
+export type SocketEnd =
+	/// `code` is null when the server's close frame carried none.
+	| { type: "closed"; code: number | null; reason: string }
+	| { type: "cancelled" }
+	| { type: "failed"; message: string }
+	/// The server refused to switch protocols; its answer is shown as an
+	/// ordinary response.
+	| { type: "rejected"; body_base64: string };
+
+export interface WsOutcome {
+	status: number;
+	status_text: string;
+	headers: KeyValue[];
+	/// Data messages only, pings and pongs not counted.
+	sent: number;
+	received: number;
+	end: SocketEnd;
+}
+
+export interface WsEnd {
+	kind: "end";
+	outcome: WsOutcome;
+	trace: ExecutionTrace;
+	unresolved_variables: string[];
+}
+
+/// Everything `open_websocket` sends down its channel, `end` always last.
+export type WsMessage =
+	| { kind: "open"; status: number; status_text: string; headers: KeyValue[] }
+	| WsFrame
+	| WsEnd;
+
 /// Languages the code editor can highlight. Kept next to the domain types
 /// because both the body format and the response viewer map onto it.
 export type EditorLanguage = "json" | "xml" | "yaml" | "edn" | "html" | "css" | "javascript" | "text";
@@ -306,6 +362,10 @@ export function newRequestFile(name: string): RequestFile {
 		},
 		http: newHttpRequestSpec(),
 	};
+}
+
+export function newWebSocketSpec(): WebSocketSpec {
+	return { format: "json", message: "" };
 }
 
 export function newHttpRequestSpec(method: HttpMethod = "GET"): HttpRequestSpec {

@@ -10,7 +10,8 @@
 	import { activeResponses } from "../../stores/response";
 	import { api } from "../../api/client";
 	import { t } from "../../i18n";
-	import { cancelActiveSend, sendActiveRequest } from "../../ui/sending";
+	import { activeSocketIsOpen, cancelActiveSend, sendActiveRequest, sendSocketMessage } from "../../ui/sending";
+	import { methodColor } from "../../ui/methods";
 	import { MOD_KEY } from "../../ui/keys";
 	import { newHttpRequestSpec } from "../../bindings/types";
 	import type { HttpMethod } from "../../bindings/types";
@@ -29,7 +30,10 @@
 	let canSend = $derived($incognito || $activeCollection != null);
 
 	let http = $derived($activeRequest?.request.http ?? newHttpRequestSpec());
-	let isStream = $derived($activeRequest?.request.meta.protocol === "sse");
+	let protocol = $derived($activeRequest?.request.meta.protocol);
+	// Both hold a connection open, so both get Connect / Disconnect.
+	let isStream = $derived(protocol === "sse" || protocol === "websocket");
+	let isSocket = $derived(protocol === "websocket");
 
 	async function save() {
 		if (!$activeRequest) return;
@@ -55,7 +59,10 @@
 		if (!(e.ctrlKey || e.metaKey)) return;
 		if (e.key === "Enter") {
 			e.preventDefault();
-			send();
+			// With a socket open there is nothing left to connect, and the
+			// thing to send is the message.
+			if (activeSocketIsOpen()) sendSocketMessage();
+			else send();
 			return;
 		}
 		// `e.key` carries the character the layout produces - on a Russian
@@ -82,12 +89,18 @@
 		<!-- One field, as far as the eye is concerned: the method is the first
 		     thing in it rather than a control standing beside it. -->
 		<div class="url-field">
-			<MethodSelect value={http.method} onChange={(method: HttpMethod) => mutateHttp({ method })} />
+			{#if isSocket}
+				<!-- A handshake is always a GET, so there is no method to pick;
+				     the badge keeps the field's shape and says what this is. -->
+				<span class="socket-badge" style="color: {methodColor('WS')}" title={$t("protocol.wsHint")}>WS</span>
+			{:else}
+				<MethodSelect value={http.method} onChange={(method: HttpMethod) => mutateHttp({ method })} />
+			{/if}
 			<VariableInput
 				value={http.url}
 				mono
 				ariaLabel={$t("request.urlAria")}
-				placeholder={$t("request.urlPlaceholder")}
+				placeholder={$t(isSocket ? "socket.urlPlaceholder" : "request.urlPlaceholder")}
 				onChange={(url) => mutateHttp({ url })}
 			/>
 		</div>
@@ -143,6 +156,16 @@
 		padding: 0 10px 0 12px;
 		border-right: 1px solid var(--line);
 		border-radius: 7px 0 0 7px;
+	}
+	.socket-badge {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		min-width: 6.5em;
+		padding: 0 10px 0 12px;
+		border-right: 1px solid var(--line);
+		font-family: var(--font-mono);
+		font-weight: 700;
 	}
 	.url-field :global(input) {
 		height: 100%;

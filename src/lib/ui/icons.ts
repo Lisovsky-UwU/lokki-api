@@ -11,6 +11,8 @@ export const ICONS = {
 	"request-add": ["M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z", "M14 2v6h6", "M9 15h6", "M12 12v6"],
 	/// A feed: an SSE request is a subscription more than a request.
 	stream: ["M4 11a9 9 0 0 1 9 9", "M4 4a16 16 0 0 1 16 16", "M5 19h.01"],
+	/// Two ways at once: a WebSocket is a conversation, not a request.
+	socket: ["M4 8h14", "M14 4l4 4-4 4", "M20 16H6", "M10 12l-4 4 4 4"],
 	"folder-add": [
 		"M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.6a2 2 0 0 1-1.7-.9l-.8-1.2a2 2 0 0 0-1.7-.9H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z",
 		"M9 13h6",

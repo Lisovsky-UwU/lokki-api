@@ -5,6 +5,7 @@
 	import { workspacePath, collections, workspace } from "../../stores/workspace";
 	import type { CollectionSummary, CollectionTreeNode, HttpMethod, Protocol } from "../../bindings/types";
 	import TreeNode from "./TreeNode.svelte";
+	import { NEW_REQUEST_TITLE } from "../../ui/methods";
 	import NodeMenu from "../common/NodeMenu.svelte";
 	import Icon from "../common/Icon.svelte";
 	import ActivityIndicator from "../common/ActivityIndicator.svelte";
@@ -212,7 +213,7 @@
 	}
 
 	async function addRequest(collection: CollectionSummary, protocol: Protocol = "http") {
-		const title = $t(protocol === "sse" ? "prompt.newSseRequest" : "prompt.newRequest");
+		const title = $t(NEW_REQUEST_TITLE[protocol]);
 		const name = await promptForText(title, $t("prompt.requestName"), title);
 		if (!name) return;
 		await api.createRequest(collection.path, name, "GET" as HttpMethod, protocol);
@@ -290,6 +291,7 @@
 			[
 				{ label: $t("menu.addRequest"), icon: "request-add", action: () => addRequest(collection) },
 				{ label: $t("menu.addSseRequest"), icon: "stream", action: () => addRequest(collection, "sse") },
+				{ label: $t("menu.addWsRequest"), icon: "socket", action: () => addRequest(collection, "websocket") },
 				{ label: $t("menu.addFolder"), icon: "folder-add", action: () => addFolder(collection) },
 			],
 			[

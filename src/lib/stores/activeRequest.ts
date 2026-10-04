@@ -1,6 +1,6 @@
 import { get, writable } from "svelte/store";
-import { newHttpRequestSpec } from "../bindings/types";
-import type { HttpRequestSpec, Protocol, RequestFile } from "../bindings/types";
+import { newHttpRequestSpec, newWebSocketSpec } from "../bindings/types";
+import type { HttpRequestSpec, Protocol, RequestFile, WebSocketSpec } from "../bindings/types";
 
 export interface ActiveRequestState {
 	path: string;
@@ -26,15 +26,30 @@ export function mutateHttp(patch: Partial<HttpRequestSpec>) {
 	});
 }
 
-/// Switches the open request between the protocols that share an HTTP spec
-/// (HTTP and SSE). Nothing is lost either way: only how the response is read
-/// changes.
+/// Edits the open WebSocket request's message and marks it unsaved.
+export function mutateWebSocket(patch: Partial<WebSocketSpec>) {
+	const current = get(activeRequest);
+	if (!current) return;
+	const websocket = current.request.websocket ?? newWebSocketSpec();
+	activeRequest.set({
+		...current,
+		request: { ...current.request, websocket: { ...websocket, ...patch } },
+		dirty: true,
+	});
+}
+
+/// Switches the open request between HTTP, SSE and WebSocket. All three
+/// start from the same HTTP spec, so nothing is lost either way: a
+/// WebSocket's message is kept when switching away from it, and found again
+/// on the way back.
 export function setProtocol(protocol: Protocol) {
 	const current = get(activeRequest);
 	if (!current || current.request.meta.protocol === protocol) return;
+	const websocket =
+		protocol === "websocket" ? (current.request.websocket ?? newWebSocketSpec()) : current.request.websocket;
 	activeRequest.set({
 		...current,
-		request: { ...current.request, meta: { ...current.request.meta, protocol } },
+		request: { ...current.request, meta: { ...current.request.meta, protocol }, websocket },
 		dirty: true,
 	});
 }

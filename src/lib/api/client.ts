@@ -23,6 +23,8 @@ import type {
 	SseMessage,
 	StartupBehavior,
 	WorkspaceFile,
+	WsEnd,
+	WsMessage,
 } from "../bindings/types";
 
 export interface OpenWorkspaceResult {
@@ -193,6 +195,40 @@ export const api = {
 				onMessage: channel,
 			}).catch(reject);
 		}),
+	/// Opens a WebSocket, the same way `openSseStream` opens a stream: every
+	/// message but the last goes to `onMessage`, the closing `end` resolves
+	/// the promise, and it rejects only when the socket never opened.
+	/// Messages go out through `sendWebSocketMessage` and `cancelSend`
+	/// disconnects, both by `sendId`.
+	openWebSocket: (
+		request: RequestFile,
+		workspacePath: string | null,
+		collectionPath: string | null,
+		sendId: string,
+		onMessage: (message: Exclude<WsMessage, WsEnd>) => void,
+	) =>
+		new Promise<WsEnd>((resolve, reject) => {
+			const channel = new Channel<WsMessage>((message) => {
+				if (message.kind === "end") resolve(message);
+				else onMessage(message);
+			});
+			invoke<void>("open_websocket", {
+				request,
+				workspacePath,
+				collectionPath,
+				sendId,
+				onMessage: channel,
+			}).catch(reject);
+		}),
+	/// Queues a text message on an open socket. Its variables are resolved
+	/// by the core, against the same environments as the handshake; the
+	/// message appears in the log once it has actually gone out.
+	sendWebSocketMessage: (
+		sendId: string,
+		message: string,
+		workspacePath: string | null,
+		collectionPath: string | null,
+	) => invoke<void>("send_websocket_message", { sendId, message, workspacePath, collectionPath }),
 	// Resolves to false when the send had already finished - a click and a
 	// response can always cross paths, and that isn't an error.
 	cancelSend: (sendId: string) => invoke<boolean>("cancel_send", { sendId }),
