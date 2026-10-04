@@ -76,12 +76,14 @@
 	}
 </script>
 
+<!-- Each scope is one compact control: the scope's name, the environment
+     picked for it, and the way into editing that scope's environments. -->
 <div class="switcher">
-	<label for="global-env">{$t("env.label")}</label>
-	<div class="group">
+	<div class="picker">
 		<label for="global-env">{$t("env.global")}</label>
 		<select
 			id="global-env"
+			class:none={!$activeGlobalEnvironmentId}
 			value={$activeGlobalEnvironmentId ?? ""}
 			onchange={(e) => selectGlobal((e.target as HTMLSelectElement).value)}
 		>
@@ -91,7 +93,7 @@
 			{/each}
 		</select>
 		<button
-			class="icon"
+			class="edit"
 			title={$t("env.workspaceEnvironments")}
 			aria-label={$t("env.workspaceEnvironments")}
 			disabled={!$workspacePath}
@@ -108,10 +110,11 @@
 	</div>
 
 	{#if $activeCollection}
-		<div class="group">
-			<label for="collection-env">{$t("env.collection", { name: $activeCollection.name })}</label>
+		<div class="picker">
+			<label for="collection-env" title={$activeCollection.name}>{$activeCollection.name}</label>
 			<select
 				id="collection-env"
+				class:none={!$activeCollectionEnvironmentId}
 				value={$activeCollectionEnvironmentId ?? ""}
 				onchange={(e) => selectCollection((e.target as HTMLSelectElement).value)}
 			>
@@ -121,7 +124,7 @@
 				{/each}
 			</select>
 			<button
-				class="icon"
+				class="edit"
 				title={$t("env.collectionEnvironments")}
 				aria-label={$t("env.collectionEnvironments")}
 				onclick={() =>
@@ -141,33 +144,65 @@
 <style>
 	.switcher {
 		display: flex;
-		gap: 1em;
+		gap: 6px;
 		align-items: center;
-		font-size: var(--fs-sm);
+		min-width: 0;
 	}
-	.group {
+	.picker {
 		display: flex;
 		align-items: center;
-		gap: 0.3em;
-	}
-	.group label {
-		color: var(--text-muted);
+		height: 28px;
+		min-width: 0;
+		padding-left: 10px;
+		border: 1px solid var(--line);
+		border-radius: 7px;
+		background: var(--surface-raised);
 		font-size: var(--fs-sm);
-		max-width: 16em;
+	}
+	.picker:focus-within {
+		border-color: var(--line-strong);
+	}
+	label {
+		color: var(--text-muted);
+		max-width: 12em;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
-	.icon {
-		background: none;
+	select {
+		height: 100%;
+		max-width: 12em;
 		border: none;
+		background: none;
+		padding: 0 4px 0 6px;
+		font-weight: 600;
 		cursor: pointer;
-		color: var(--text-muted);
-		padding: 0.1em 0.35em;
-		border-radius: 4px;
 	}
-	.icon:hover {
+	select.none {
+		font-weight: 400;
+		color: var(--text-muted);
+	}
+	select:focus-visible {
+		outline-offset: -2px;
+	}
+	.edit {
+		display: flex;
+		align-items: center;
+		height: 100%;
+		padding: 0 7px;
+		border: none;
+		border-left: 1px solid var(--line);
+		border-radius: 0 6px 6px 0;
+		background: none;
+		color: var(--text-muted);
+		cursor: pointer;
+	}
+	.edit:hover:not(:disabled) {
 		color: var(--text);
-		background: var(--pressed);
+		background: var(--hover);
+	}
+	.edit:disabled {
+		opacity: 0.4;
+		cursor: default;
 	}
 </style>

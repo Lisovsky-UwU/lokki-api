@@ -1,10 +1,10 @@
 <script lang="ts">
-	// What the request is and how to fire it: the breadcrumb, the method, the
-	// URL and the two buttons. Kept apart from the tabs below because the
-	// workbench lays it across the full width - in the side-by-side layout
-	// the editor pane is only half the window, which is not much of a URL
-	// field.
-	import { activeRequest, mutateHttp, setProtocol } from "../../stores/activeRequest";
+	// How to fire the request: the method, the URL and the two buttons. Kept
+	// apart from the tabs below because the workbench lays it across the full
+	// width - in the side-by-side layout the editor pane is only half the
+	// window, which is not much of a URL field. Where the request lives is
+	// `RequestTitle`, up in the top bar.
+	import { activeRequest, mutateHttp } from "../../stores/activeRequest";
 	import { activeCollection, requestTreeRefresh } from "../../stores/collectionTree";
 	import { incognito } from "../../stores/incognito";
 	import { activeResponses } from "../../stores/response";
@@ -15,7 +15,6 @@
 	import type { HttpMethod } from "../../bindings/types";
 	import VariableInput from "../common/VariableInput.svelte";
 	import MethodSelect from "./MethodSelect.svelte";
-	import ProtocolSwitch from "./ProtocolSwitch.svelte";
 	import SaveIncognitoModal from "./SaveIncognitoModal.svelte";
 
 	let saving = $state(false);
@@ -30,6 +29,9 @@
 
 	let http = $derived($activeRequest?.request.http ?? newHttpRequestSpec());
 	let isStream = $derived($activeRequest?.request.meta.protocol === "sse");
+
+	// The handler takes either; the hint names the one this keyboard has.
+	const modKey = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl";
 
 	async function save() {
 		if (!$activeRequest) return;
@@ -69,24 +71,6 @@
 		}
 	}
 
-	/// Breadcrumb of the open request: collection, the folders it sits in,
-	/// then the request itself - derived from where the file lives on disk.
-	/// Paths are Windows-style here, so both separators are handled.
-	let breadcrumb = $derived.by(() => {
-		const request = $activeRequest;
-		const collection = $activeCollection;
-		if (!request) return [] as string[];
-		if ($incognito) return [$t("incognito.badge"), request.request.meta.name];
-		if (!collection) return [request.request.meta.name];
-		const relative = request.path.startsWith(collection.path)
-			? request.path.slice(collection.path.length).replace(/^[\\/]+/, "")
-			: "";
-		const folders = relative
-			.split(/[\\/]+/)
-			.slice(0, -1)
-			.filter(Boolean);
-		return [collection.name, ...folders, request.request.meta.name];
-	});
 </script>
 
 <svelte:window onkeydown={onShortcut} />
@@ -97,24 +81,9 @@
 
 {#if $activeRequest}
 	<div class="request-header">
-		<div class="request-title">
-			<span class="path">
-				{#each breadcrumb as part, i (i)}
-					{#if i > 0}<span class="sep">/</span>{/if}
-					<span class:name={i === breadcrumb.length - 1}>{part}</span>
-				{/each}
-			</span>
-			{#if $activeRequest.dirty}<span class="dirty" title={$t("request.dirty")}></span>{/if}
-			{#if !canSend}
-				<span class="warn">{$t("request.noCollection")}</span>
-			{/if}
-			<ProtocolSwitch
-				value={$activeRequest.request.meta.protocol}
-				disabled={$activeResponses.loading}
-				onChange={setProtocol}
-			/>
-		</div>
-		<div class="url-bar">
+		<!-- One field, as far as the eye is concerned: the method is the first
+		     thing in it rather than a control standing beside it. -->
+		<div class="url-field">
 			<MethodSelect value={http.method} onChange={(method: HttpMethod) => mutateHttp({ method })} />
 			<VariableInput
 				value={http.url}
@@ -123,6 +92,7 @@
 				placeholder={$t("request.urlPlaceholder")}
 				onChange={(url) => mutateHttp({ url })}
 			/>
+		</div>
 			{#if isStream && $activeResponses.loading}
 				<!-- An open stream has no natural end, so the button that opened
 				     it is the one that closes it. -->
@@ -130,95 +100,96 @@
 					{$activeResponses.cancelling ? $t("stream.disconnecting") : $t("stream.disconnect")}
 				</button>
 			{:else if isStream}
-				<button class="send" title="Ctrl+Enter" onclick={send} disabled={!canSend}>{$t("stream.connect")}</button>
+				<button class="send" title="{modKey}+Enter" onclick={send} disabled={!canSend}>
+					{$t("stream.connect")}<kbd>{modKey} ↵</kbd>
+				</button>
 			{:else}
-				<button class="send" title="Ctrl+Enter" onclick={send} disabled={$activeResponses.loading || !canSend}>
-					{$activeResponses.loading ? $t("request.sending") : $t("request.send")}
+				<button class="send" title="{modKey}+Enter" onclick={send} disabled={$activeResponses.loading || !canSend}>
+					{$activeResponses.loading ? $t("request.sending") : $t("request.send")}<kbd>{modKey} ↵</kbd>
 				</button>
 			{/if}
 			<button
 				class="save"
-				title="Ctrl+S"
+				title="{modKey}+S"
 				onclick={save}
 				disabled={saving || (!$incognito && !$activeRequest.dirty)}
 			>
 				{#if saving}{$t("common.saving")}{:else if $incognito}{$t("request.saveAs")}{:else}{$t("request.save")}{/if}
 			</button>
-		</div>
 	</div>
 {/if}
 
 <style>
-	/* The gap below the header is the component's own rather than a grid gap
-	   in the workbench: with no request open this renders nothing at all, and
-	   a grid gap would leave a blank stripe where the header would have
-	   been. */
 	.request-header {
 		display: flex;
-		flex-direction: column;
-		gap: 0.6em;
-		padding-bottom: 0.6em;
+		gap: 8px;
+		height: 36px;
 	}
-	.url-bar {
-		display: flex;
-		gap: 0.4em;
-	}
-	.request-title {
-		display: flex;
-		align-items: center;
-		gap: 0.5em;
-		font-weight: 600;
-	}
-	.request-title .path {
-		display: flex;
-		align-items: center;
-		gap: 0.35em;
-		flex-wrap: wrap;
-		font-weight: 400;
-		color: var(--text-muted);
+	.url-field {
+		flex: 1;
 		min-width: 0;
+		display: flex;
+		align-items: stretch;
+		border: 1px solid var(--line-strong);
+		border-radius: 8px;
+		background: var(--surface-raised);
 	}
-	.request-title .path .name {
-		font-weight: 600;
-		color: var(--text);
+	/* The ring goes round the whole field, whichever half has focus. */
+	.url-field:focus-within {
+		border-color: var(--accent-text);
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 	}
-	.request-title .sep {
-		color: var(--text-muted);
+	.url-field :global(.method-select .trigger) {
+		height: 100%;
+		border: none;
+		border-right: 1px solid var(--line);
+		border-radius: 7px 0 0 7px;
+		background: none;
 	}
-	.request-title .dirty {
-		width: 7px;
-		height: 7px;
-		border-radius: 50%;
-		flex-shrink: 0;
-		background: var(--warn);
+	.url-field :global(input) {
+		height: 100%;
+		border: none;
+		background: none;
+		font-size: var(--fs-lg);
 	}
-	.request-title .warn {
-		font-weight: 400;
-		font-size: var(--fs-sm);
-		color: var(--danger);
+	.url-field :global(:focus-visible) {
+		outline: none;
 	}
 	.send {
+		display: flex;
+		align-items: center;
+		gap: 10px;
 		background: var(--accent);
 		color: var(--accent-ink);
 		border: 1px solid var(--accent);
-		border-radius: 6px;
-		padding: 0.4em 1.2em;
+		border-radius: 8px;
+		padding: 0 12px 0 16px;
 		cursor: pointer;
 		font-weight: 600;
+		font-size: var(--fs-lg);
 		white-space: nowrap;
+	}
+	.send kbd {
+		font-family: var(--font-mono);
+		font-size: var(--fs-xs);
+		font-weight: 500;
+		padding: 1px 5px;
+		border-radius: 4px;
+		background: color-mix(in srgb, currentColor 12%, transparent);
 	}
 	.send:disabled {
 		opacity: 0.5;
 		cursor: default;
 	}
 	.send.disconnect {
+		padding: 0 16px;
 		background: var(--danger-fill);
 		border-color: var(--danger-fill);
 		color: var(--on-fill);
 	}
 	.save {
-		border-radius: 6px;
-		padding: 0.4em 1em;
+		border-radius: 8px;
+		padding: 0 14px;
 		cursor: pointer;
 		white-space: nowrap;
 	}

@@ -223,10 +223,8 @@ export const ru: Record<keyof typeof en, string> = {
 	"import.warnings": "Стоит проверить",
 
 	// --- environments ------------------------------------------------------
-	"env.label": "Окружение:",
 	"env.global": "Глобальное",
-	"env.collection": "Коллекция: {name}",
-	"env.none": "—",
+	"env.none": "нет",
 	"env.workspaceEnvironments": "Окружения пространства",
 	"env.collectionEnvironments": "Окружения коллекции",
 	"env.loadFailed": "Не удалось загрузить окружения",
