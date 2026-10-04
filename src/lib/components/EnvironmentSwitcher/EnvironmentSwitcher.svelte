@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api } from "../../api/client";
 	import Icon from "../common/Icon.svelte";
+	import Select, { type SelectOption } from "../common/Select.svelte";
 	import { t } from "../../i18n";
 	import { workspace, workspacePath } from "../../stores/workspace";
 	import { activeCollection } from "../../stores/collectionTree";
@@ -74,6 +75,11 @@
 		await api.setActiveEnvironment(collection.path, id || null);
 		activeCollectionEnvironmentId.set(id || null);
 	}
+
+	/// "None" first, then the scope's environments by name as stored.
+	function choices(entries: EnvironmentEntry[]): SelectOption[] {
+		return [{ value: "", label: $t("env.none") }, ...entries.map((env) => ({ value: env.meta.id, label: env.meta.name }))];
+	}
 </script>
 
 <!-- Each scope is one compact control: the scope's name, the environment
@@ -81,18 +87,15 @@
 <div class="switcher">
 	<div class="picker">
 		<label for="global-env">{$t("env.global")}</label>
-		<select
+		<Select
 			id="global-env"
+			variant="bare"
 			title={$t("env.global")}
-			class:none={!$activeGlobalEnvironmentId}
+			muted={!$activeGlobalEnvironmentId}
 			value={$activeGlobalEnvironmentId ?? ""}
-			onchange={(e) => selectGlobal((e.target as HTMLSelectElement).value)}
-		>
-			<option value="">{$t("env.none")}</option>
-			{#each $globalEnvironments as env (env.meta.id)}
-				<option value={env.meta.id}>{env.meta.name}</option>
-			{/each}
-		</select>
+			options={choices($globalEnvironments)}
+			onChange={selectGlobal}
+		/>
 		<button
 			class="edit"
 			title={$t("env.workspaceEnvironments")}
@@ -113,18 +116,15 @@
 	{#if $activeCollection}
 		<div class="picker">
 			<label for="collection-env" title={$activeCollection.name}>{$activeCollection.name}</label>
-			<select
+			<Select
 				id="collection-env"
+				variant="bare"
 				title={$activeCollection.name}
-				class:none={!$activeCollectionEnvironmentId}
+				muted={!$activeCollectionEnvironmentId}
 				value={$activeCollectionEnvironmentId ?? ""}
-				onchange={(e) => selectCollection((e.target as HTMLSelectElement).value)}
-			>
-				<option value="">{$t("env.none")}</option>
-				{#each $collectionEnvironments as env (env.meta.id)}
-					<option value={env.meta.id}>{env.meta.name}</option>
-				{/each}
-			</select>
+				options={choices($collectionEnvironments)}
+				onChange={selectCollection}
+			/>
 			<button
 				class="edit"
 				title={$t("env.collectionEnvironments")}
@@ -181,22 +181,15 @@
 			padding-left: 4px;
 		}
 	}
-	select {
-		height: 100%;
+	.picker :global(.trigger) {
 		max-width: 12em;
-		border: none;
-		/* The picker's own fill rather than none, so the open list has a
-		   theme colour to inherit. */
-		background: var(--surface-raised);
-		padding: 0 4px 0 6px;
+		padding: 0 6px 0 6px;
 		font-weight: 600;
-		cursor: pointer;
 	}
-	select.none {
+	.picker :global(.trigger.muted) {
 		font-weight: 400;
-		color: var(--text-muted);
 	}
-	select:focus-visible {
+	.picker :global(.trigger:focus-visible) {
 		outline-offset: -2px;
 	}
 	.edit {

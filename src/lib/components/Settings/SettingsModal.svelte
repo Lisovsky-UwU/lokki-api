@@ -8,6 +8,7 @@
 	import { setThemePreference, systemTheme, themePreference, type ThemePreference } from "../../stores/theme";
 	import { layout, updateLayout, type PaneOrientation } from "../../stores/layout";
 	import { reportError } from "../../ui/notices";
+	import Select from "../common/Select.svelte";
 
 	let { onClose }: { onClose: () => void } = $props();
 
@@ -182,54 +183,43 @@
 					<div class="settings-form">
 						<label class="row">
 							<span>{$t("settings.language")}</span>
-							<select
+							<Select
 								value={$languagePreference ?? ""}
-								onchange={(e) => selectLanguage((e.target as HTMLSelectElement).value)}
-							>
-								<option value="">{$t("settings.languageAuto", { name: systemLanguageName })}</option>
-								{#each Object.entries(LOCALE_NAMES) as [code, name] (code)}
-									<option value={code}>{name}</option>
-								{/each}
-							</select>
+								options={[
+									{ value: "", label: $t("settings.languageAuto", { name: systemLanguageName }) },
+									...Object.entries(LOCALE_NAMES).map(([code, name]) => ({ value: code, label: name })),
+								]}
+								onChange={selectLanguage}
+							/>
 						</label>
 
 						{#if startup}
 							<label class="row">
 								<span>{$t("settings.startup")}</span>
-								<select
+								<Select
 									value={startup}
-									onchange={(e) => selectStartup((e.target as HTMLSelectElement).value as StartupBehavior)}
-								>
-									{#each startupOptions as option (option.value)}
-										<option value={option.value}>{option.label}</option>
-									{/each}
-								</select>
+									options={startupOptions}
+									onChange={(value) => selectStartup(value as StartupBehavior)}
+								/>
 							</label>
 						{/if}
 
 						<label class="row">
 							<span>{$t("settings.paneLayout")}</span>
-							<select
+							<Select
 								value={$layout.orientation}
-								onchange={(e) =>
-									updateLayout({ orientation: (e.target as HTMLSelectElement).value as PaneOrientation })}
-							>
-								{#each paneLayouts as option (option.value)}
-									<option value={option.value}>{option.label}</option>
-								{/each}
-							</select>
+								options={paneLayouts}
+								onChange={(value) => updateLayout({ orientation: value as PaneOrientation })}
+							/>
 						</label>
 
 						<label class="row">
 							<span>{$t("settings.theme")}</span>
-							<select
+							<Select
 								value={$themePreference}
-								onchange={(e) => setThemePreference((e.target as HTMLSelectElement).value as ThemePreference)}
-							>
-								{#each themeOptions as option (option.value)}
-									<option value={option.value}>{option.label}</option>
-								{/each}
-							</select>
+								options={themeOptions}
+								onChange={(value) => setThemePreference(value as ThemePreference)}
+							/>
 						</label>
 					</div>
 				{:else if tab === "requests"}
@@ -508,6 +498,10 @@
 	}
 	.settings-form .row.check > span {
 		flex: none;
+	}
+	/* One width for every picker, so they line up down the column. */
+	.settings-form .row :global(.trigger) {
+		width: 17em;
 	}
 	.settings-form .row input[type="number"] {
 		width: 7em;

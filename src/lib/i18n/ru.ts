@@ -86,6 +86,7 @@ export const ru: Record<keyof typeof en, string> = {
 	"kv.remove": "Удалить",
 
 	// --- auth --------------------------------------------------------------
+	"auth.typeAria": "Тип авторизации",
 	"auth.none": "Без авторизации",
 	"auth.bearer": "Bearer-токен",
 	"auth.basic": "Basic-авторизация",
@@ -114,6 +115,7 @@ export const ru: Record<keyof typeof en, string> = {
 	// --- request editor ----------------------------------------------------
 	"request.urlAria": "Адрес запроса",
 	"request.urlPlaceholder": "https://api.example.com/pets или {{baseUrl}}/pets",
+	"request.methodAria": "HTTP-метод",
 	"request.send": "Отправить",
 	"request.sending": "Отправка…",
 	"request.save": "Сохранить",
@@ -133,6 +135,7 @@ export const ru: Record<keyof typeof en, string> = {
 	"request.openFailed": "Не удалось открыть запрос",
 
 	// --- body editor -------------------------------------------------------
+	"body.typeAria": "Тип тела запроса",
 	"body.none": "Без тела",
 	"body.form": "Форма (urlencoded)",
 	"body.file": "Файл с компьютера",

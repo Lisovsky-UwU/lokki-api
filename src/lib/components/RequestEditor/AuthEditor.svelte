@@ -2,6 +2,7 @@
 	import type { AuthSpec } from "../../bindings/types";
 	import { t } from "../../i18n";
 	import VariableInput from "../common/VariableInput.svelte";
+	import Select from "../common/Select.svelte";
 
 	let { auth, onChange }: { auth: AuthSpec; onChange: (auth: AuthSpec) => void } = $props();
 
@@ -13,11 +14,17 @@
 </script>
 
 <div class="auth-editor">
-	<select value={auth.type} onchange={(e) => setType((e.target as HTMLSelectElement).value as AuthSpec["type"])}>
-		<option value="none">{$t("auth.none")}</option>
-		<option value="bearer">{$t("auth.bearer")}</option>
-		<option value="basic">{$t("auth.basic")}</option>
-	</select>
+	<Select
+		class="auth-type"
+		value={auth.type}
+		ariaLabel={$t("auth.typeAria")}
+		options={[
+			{ value: "none", label: $t("auth.none") },
+			{ value: "bearer", label: $t("auth.bearer") },
+			{ value: "basic", label: $t("auth.basic") },
+		]}
+		onChange={(type) => setType(type as AuthSpec["type"])}
+	/>
 
 	{#if auth.type === "bearer"}
 		<dl class="auth-params">
@@ -61,7 +68,7 @@
 		flex-direction: column;
 		gap: 0.6em;
 	}
-	.auth-editor select {
+	.auth-editor :global(.auth-type) {
 		align-self: flex-start;
 		min-width: 12em;
 	}
