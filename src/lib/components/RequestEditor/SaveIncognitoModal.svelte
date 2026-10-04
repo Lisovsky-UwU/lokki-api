@@ -215,7 +215,7 @@
 	}
 	.field > span {
 		width: 7em;
-		opacity: 0.6;
+		color: var(--text-muted);
 		font-size: var(--fs-md);
 	}
 	.field input,
@@ -239,7 +239,7 @@
 	.hint {
 		margin: 0;
 		font-size: var(--fs-sm);
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	.actions {
 		display: flex;

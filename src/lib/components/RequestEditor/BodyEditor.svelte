@@ -125,6 +125,6 @@
 	.hint {
 		margin: 0;
 		font-size: var(--fs-sm);
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 </style>

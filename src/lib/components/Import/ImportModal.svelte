@@ -177,7 +177,7 @@
 		white-space: nowrap;
 		direction: rtl;
 		text-align: left;
-		opacity: 0.7;
+		color: var(--text-muted);
 	}
 	.url {
 		width: 100%;
@@ -189,7 +189,7 @@
 	.hint {
 		margin: 0;
 		font-size: var(--fs-sm);
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	.warnings {
 		margin: 0;

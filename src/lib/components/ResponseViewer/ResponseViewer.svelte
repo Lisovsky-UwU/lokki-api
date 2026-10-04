@@ -242,7 +242,7 @@
 		justify-content: center;
 	}
 	.hint {
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	.error {
 		color: var(--danger);
@@ -287,7 +287,7 @@
 		cursor: default;
 	}
 	.status-cancelled {
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	.loading-row {
 		display: flex;
@@ -308,14 +308,14 @@
 		color: var(--danger);
 	}
 	.meta {
-		opacity: 0.6;
+		color: var(--text-muted);
 		font-size: var(--fs-md);
 	}
 	.elapsed {
 		font-family: var(--font-mono);
 		/* Fixed-width digits so the counter doesn't jiggle as it ticks. */
 		font-variant-numeric: tabular-nums;
-		opacity: 0.75;
+		color: var(--text-muted);
 	}
 	.spinner {
 		width: 0.85em;
@@ -353,11 +353,11 @@
 		padding: 0.35em 0.8em;
 		cursor: pointer;
 		color: inherit;
-		opacity: 0.6;
+		color: var(--text-muted);
 		border-bottom: 2px solid transparent;
 	}
 	.tabs button.active {
-		opacity: 1;
+		color: var(--text);
 		border-bottom-color: var(--accent-text);
 	}
 	.body {

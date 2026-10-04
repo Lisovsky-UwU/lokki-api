@@ -175,15 +175,15 @@
 		gap: 0.35em;
 		flex-wrap: wrap;
 		font-weight: 400;
-		opacity: 0.7;
+		color: var(--text-muted);
 		min-width: 0;
 	}
 	.request-title .path .name {
 		font-weight: 600;
-		opacity: 1;
+		color: var(--text);
 	}
 	.request-title .sep {
-		opacity: 0.4;
+		color: var(--text-muted);
 	}
 	.request-title .dirty {
 		color: var(--warn);

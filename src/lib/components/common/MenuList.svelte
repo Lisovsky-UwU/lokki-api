@@ -44,10 +44,10 @@
 	/* The icon reads as decoration next to its label, not as a second focus
 	   point - until the row is pointed at. */
 	button :global(.icon) {
-		opacity: 0.7;
+		color: var(--text-muted);
 	}
 	button:hover :global(.icon) {
-		opacity: 1;
+		color: inherit;
 	}
 	button.danger {
 		color: var(--danger);

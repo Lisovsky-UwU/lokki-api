@@ -233,7 +233,7 @@
 		color: var(--danger);
 	}
 	.state.ended {
-		opacity: 0.7;
+		color: var(--text-muted);
 	}
 	.status {
 		font-weight: 600;
@@ -249,7 +249,7 @@
 		color: var(--danger);
 	}
 	.meta {
-		opacity: 0.6;
+		color: var(--text-muted);
 		font-size: var(--fs-md);
 	}
 	.elapsed {
@@ -335,11 +335,11 @@
 		padding: 0.35em 0.8em;
 		cursor: pointer;
 		color: inherit;
-		opacity: 0.6;
+		color: var(--text-muted);
 		border-bottom: 2px solid transparent;
 	}
 	.tabs button.active {
-		opacity: 1;
+		color: var(--text);
 		border-bottom-color: var(--accent-text);
 	}
 	.filter {
@@ -374,7 +374,7 @@
 		padding: 0;
 		width: 1em;
 		color: inherit;
-		opacity: 0.6;
+		color: var(--text-muted);
 		cursor: pointer;
 	}
 	.toggle-space {
@@ -383,21 +383,21 @@
 	.at {
 		font-family: var(--font-mono);
 		font-variant-numeric: tabular-nums;
-		opacity: 0.55;
+		color: var(--text-muted);
 		white-space: nowrap;
 	}
 	.type {
 		font-weight: 700;
 		font-size: var(--fs-md);
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	.type.named {
-		opacity: 1;
+		color: var(--text);
 		color: var(--accent-text);
 	}
 	.id {
 		font-family: var(--font-mono);
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	.copy {
 		grid-column: 6;
@@ -422,7 +422,7 @@
 		display: block;
 	}
 	.entry.comment {
-		opacity: 0.55;
+		color: var(--text-muted);
 		font-style: italic;
 	}
 	.entry.comment .data {
@@ -433,6 +433,6 @@
 	.empty {
 		margin: 0;
 		padding: 0.5em 0.6em;
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 </style>

@@ -401,7 +401,7 @@
 	}
 	.name-field span {
 		font-size: var(--fs-sm);
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	.name-field input {
 		flex: 1;
@@ -442,13 +442,13 @@
 		gap: 0.2em;
 		font-size: var(--fs-xs);
 		white-space: nowrap;
-		opacity: 0.7;
+		color: var(--text-muted);
 	}
 	.remove {
 		background: none;
 		border: none;
 		cursor: pointer;
-		opacity: 0.5;
+		color: var(--text-muted);
 		font-size: var(--fs-lg);
 	}
 	.add {
@@ -461,7 +461,7 @@
 		color: inherit;
 	}
 	.hint {
-		opacity: 0.6;
+		color: var(--text-muted);
 		font-size: var(--fs-md);
 	}
 	.actions {

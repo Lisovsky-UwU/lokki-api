@@ -107,11 +107,11 @@
 		padding: 0.4em 0.8em;
 		cursor: pointer;
 		color: inherit;
-		opacity: 0.6;
+		color: var(--text-muted);
 		border-bottom: 2px solid transparent;
 	}
 	.tabs button.active {
-		opacity: 1;
+		color: var(--text);
 		border-bottom-color: var(--accent-text);
 	}
 	.tab-content {
@@ -138,7 +138,7 @@
 		justify-content: space-between;
 		gap: 0.6em;
 		font-size: var(--fs-sm);
-		opacity: 0.7;
+		color: var(--text-muted);
 	}
 	.url-preview-header button {
 		padding: 0.2em 0.7em;
@@ -162,6 +162,6 @@
 		flex: 1;
 		min-width: 0;
 		height: 100%;
-		opacity: 0.5;
+		color: var(--text-muted);
 	}
 </style>

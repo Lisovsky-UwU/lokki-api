@@ -179,10 +179,10 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	.scope {
-		opacity: 0.45;
+		color: var(--text-muted);
 		font-size: var(--fs-sm);
 		white-space: nowrap;
 	}

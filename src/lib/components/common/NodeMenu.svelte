@@ -81,14 +81,14 @@
 		border: none;
 		cursor: pointer;
 		color: inherit;
-		opacity: 0.55;
+		color: var(--text-muted);
 		padding: 0.25em 0.35em;
 		border-radius: 4px;
 		font-size: var(--fs-md);
 		line-height: 1;
 	}
 	.trigger:hover {
-		opacity: 1;
+		color: var(--text);
 		background: var(--pressed);
 	}
 	/* A custom trigger brings its own layout; only the button chrome is
@@ -98,7 +98,7 @@
 		align-items: center;
 		gap: 0.4em;
 		width: 100%;
-		opacity: 1;
+		color: inherit;
 		font-size: inherit;
 		padding: 0;
 	}

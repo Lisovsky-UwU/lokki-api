@@ -49,14 +49,14 @@
 		font-weight: 700;
 		letter-spacing: 0.03em;
 		color: inherit;
-		opacity: 0.55;
+		color: var(--text-muted);
 		cursor: pointer;
 	}
 	.protocol-switch button + button {
 		border-left: 1px solid var(--line-strong);
 	}
 	.protocol-switch button.current {
-		opacity: 1;
+		color: var(--text);
 		background: var(--selected);
 	}
 	.protocol-switch button:disabled {

@@ -393,7 +393,7 @@
 		font-size: var(--fs-xs);
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
-		opacity: 0.7;
+		color: var(--text-muted);
 	}
 	.layout {
 		display: grid;
@@ -448,7 +448,7 @@
 	.description {
 		margin: 0.2em 0 0;
 		font-size: var(--fs-sm);
-		opacity: 0.7;
+		color: var(--text-muted);
 	}
 	.section-head {
 		display: flex;
@@ -475,7 +475,7 @@
 		font-size: var(--fs-sm);
 	}
 	dt {
-		opacity: 0.6;
+		color: var(--text-muted);
 	}
 	dd {
 		margin: 0;
@@ -484,10 +484,10 @@
 	}
 	dd.unknown {
 		font-family: inherit;
-		opacity: 0.5;
+		color: var(--text-muted);
 	}
 	.hint {
-		opacity: 0.6;
+		color: var(--text-muted);
 		font-size: var(--fs-sm);
 	}
 	.settings-form {
