@@ -200,6 +200,108 @@ pub fn stream_incomplete_event() -> String {
     )
 }
 
+// --- WebSocket -----------------------------------------------------------
+
+pub fn ws_unsupported_scheme(scheme: &str) -> String {
+    tr!(
+        "A WebSocket address starts with ws:// or wss:// (http:// and https:// are taken too), not {scheme}://.",
+        "Адрес WebSocket начинается с ws:// или wss:// (подойдут и http:// с https://), а не с {scheme}://.",
+    )
+}
+
+pub fn invalid_header_name(name: &str) -> String {
+    tr!(
+        "“{name}” is not a valid header name. Check the Headers tab.",
+        "«{name}» не годится как имя заголовка. Проверьте вкладку «Заголовки».",
+    )
+}
+
+pub fn invalid_header_value(name: &str) -> String {
+    tr!(
+        "The value of header “{name}” contains characters a header can't carry. Check the Headers tab.",
+        "Значение заголовка «{name}» содержит символы, недопустимые в заголовке. Проверьте вкладку «Заголовки».",
+    )
+}
+
+/// A header the handshake writes itself. Ignored rather than refused: the
+/// request still works, it just can't take that value.
+pub fn ws_header_ignored(name: &str) -> String {
+    tr!(
+        "The {name} header is part of the WebSocket handshake and is set automatically; the value from the request was ignored",
+        "Заголовок {name} — часть рукопожатия WebSocket и выставляется автоматически; значение из запроса проигнорировано",
+    )
+}
+
+/// The server answered the upgrade with an ordinary response. Its body is
+/// shown as one, since it usually says why.
+pub fn ws_rejected(status: u16) -> String {
+    tr!(
+        "The server answered {status} instead of switching to WebSocket (101); the body is shown as an ordinary response.",
+        "Сервер ответил {status} вместо перехода на WebSocket (101); тело показано как обычный ответ.",
+    )
+}
+
+pub fn ws_opened(subprotocol: Option<&str>) -> String {
+    match subprotocol {
+        Some(subprotocol) => tr!(
+            "WebSocket connection opened, subprotocol: {subprotocol}",
+            "Соединение WebSocket открыто, подпротокол: {subprotocol}",
+        ),
+        None => tr!("WebSocket connection opened", "Соединение WebSocket открыто"),
+    }
+}
+
+pub fn ws_closed_by_server(code: &str, reason: &str, sent: u64, received: u64) -> String {
+    if reason.is_empty() {
+        tr!(
+            "The server closed the connection, code {code}; sent: {sent}, received: {received}",
+            "Сервер закрыл соединение, код {code}; отправлено: {sent}, получено: {received}",
+        )
+    } else {
+        tr!(
+            "The server closed the connection, code {code} ({reason}); sent: {sent}, received: {received}",
+            "Сервер закрыл соединение, код {code} ({reason}); отправлено: {sent}, получено: {received}",
+        )
+    }
+}
+
+pub fn ws_closed_by_client(sent: u64, received: u64) -> String {
+    tr!(
+        "Disconnected; sent: {sent}, received: {received}",
+        "Соединение закрыто; отправлено: {sent}, получено: {received}",
+    )
+}
+
+pub fn ws_message_too_large(detail: &str) -> String {
+    tr!(
+        "The message is larger than a WebSocket message may be here ({detail}).",
+        "Сообщение больше, чем допускается для WebSocket ({detail}).",
+    )
+}
+
+pub fn ws_protocol_error(host: &str, detail: &str) -> String {
+    tr!(
+        "{host} broke the WebSocket protocol: {detail}",
+        "{host} нарушил протокол WebSocket: {detail}",
+    )
+}
+
+pub fn ws_failed(host: &str, detail: &str) -> String {
+    tr!(
+        "The WebSocket connection to {host} failed. {detail}",
+        "Соединение WebSocket с {host} не удалось. {detail}",
+    )
+}
+
+/// A message sent after the socket closed - the click and the close can
+/// cross paths.
+pub fn ws_not_connected() -> String {
+    tr!(
+        "The connection is closed. Connect again to send a message.",
+        "Соединение закрыто. Подключитесь снова, чтобы отправить сообщение.",
+    )
+}
+
 // --- workspace and collections -------------------------------------------
 
 pub fn not_a_collection(path: &str) -> String {

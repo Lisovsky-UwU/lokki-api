@@ -1,10 +1,12 @@
 pub mod http;
 pub mod sse;
 pub mod trace;
+pub mod ws;
 
 pub use http::HttpExecutor;
 pub use sse::{SseExecutor, SseMessage, SseOutcome, StreamEnd};
 pub use trace::{ExecutionTrace, Phase, TraceEvent, TraceLevel, TraceRecorder};
+pub use ws::{OutgoingMessage, SocketEnd, WsExecutor, WsMessage, WsOutcome};
 
 use crate::domain::{AuthSpec, BodySpec, HttpMethod, HttpRequestSpec, KeyValue, RequestSettings, TextFormat};
 use crate::i18n::messages;
@@ -53,9 +55,10 @@ pub enum ExecutorError {
 }
 
 /// The request/response shape: one request in, one outcome out. Protocols
-/// that stream (SSE today, WebSocket later) don't fit a single outcome and
-/// live beside this trait as executors of their own - see `sse::SseExecutor`
-/// - with their own Tauri commands rather than an overloaded `send_request`.
+/// that stream (SSE, WebSocket) don't fit a single outcome and live beside
+/// this trait as executors of their own - see `sse::SseExecutor` and
+/// `ws::WsExecutor` - with their own Tauri commands rather than an
+/// overloaded `send_request`.
 ///
 /// `trace` is where the implementation reports where the time went and what
 /// happened. Filling it is best-effort and transport-specific: whatever a

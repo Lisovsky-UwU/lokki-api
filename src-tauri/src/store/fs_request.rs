@@ -286,6 +286,26 @@ mod tests {
     }
 
     #[test]
+    fn a_websocket_request_keeps_its_message_beside_the_handshake() {
+        let dir = tempfile::tempdir().unwrap();
+        create_request(dir.path(), "Chat", HttpMethod::Get, Protocol::WebSocket).unwrap();
+        let path = dir.path().join(format!("Chat{}", REQUEST_EXT));
+
+        let mut request = load_request(&path).unwrap();
+        assert_eq!(request.meta.protocol, Protocol::WebSocket);
+        request.websocket.as_mut().unwrap().message = "{\"type\": \"{{event}}\"}".to_string();
+        // Switched to HTTP and saved: the message stays, so switching back
+        // finds it where it was.
+        request.meta.protocol = Protocol::Http;
+        save_request(&path, request).unwrap();
+
+        let text = std::fs::read_to_string(&path).unwrap();
+        assert!(text.contains("[http]") && text.contains("[websocket]"), "{text}");
+        let reloaded = load_request(&path).unwrap();
+        assert_eq!(reloaded.websocket.unwrap().message, "{\"type\": \"{{event}}\"}");
+    }
+
+    #[test]
     fn create_request_increments_seq_per_sibling() {
         let dir = tempfile::tempdir().unwrap();
         create_request(dir.path(), "First", HttpMethod::Get, Protocol::Http).unwrap();
