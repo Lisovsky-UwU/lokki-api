@@ -47,6 +47,8 @@ export const en = {
 	"app.settings": "Settings",
 	"app.sidebarWidth": "Collection tree width",
 	"app.emptyState": "Pick a request on the left or create a new one",
+	"app.shortcutSend": "send the request",
+	"app.shortcutSave": "save it",
 	"app.restoreFailed": "Could not open the last workspace",
 	"app.noWorkspaceHint": "No workspace is open — variables are unavailable",
 	"app.requestPaneHeight": "Request pane height",

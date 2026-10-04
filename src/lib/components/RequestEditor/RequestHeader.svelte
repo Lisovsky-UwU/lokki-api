@@ -11,6 +11,7 @@
 	import { api } from "../../api/client";
 	import { t } from "../../i18n";
 	import { cancelActiveSend, sendActiveRequest } from "../../ui/sending";
+	import { MOD_KEY } from "../../ui/keys";
 	import { newHttpRequestSpec } from "../../bindings/types";
 	import type { HttpMethod } from "../../bindings/types";
 	import VariableInput from "../common/VariableInput.svelte";
@@ -29,9 +30,6 @@
 
 	let http = $derived($activeRequest?.request.http ?? newHttpRequestSpec());
 	let isStream = $derived($activeRequest?.request.meta.protocol === "sse");
-
-	// The handler takes either; the hint names the one this keyboard has.
-	const modKey = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl";
 
 	async function save() {
 		if (!$activeRequest) return;
@@ -100,17 +98,17 @@
 					{$activeResponses.cancelling ? $t("stream.disconnecting") : $t("stream.disconnect")}
 				</button>
 			{:else if isStream}
-				<button class="send" title="{modKey}+Enter" onclick={send} disabled={!canSend}>
-					{$t("stream.connect")}<kbd>{modKey} ↵</kbd>
+				<button class="send" title="{MOD_KEY}+Enter" onclick={send} disabled={!canSend}>
+					{$t("stream.connect")}<kbd>{MOD_KEY} ↵</kbd>
 				</button>
 			{:else}
-				<button class="send" title="{modKey}+Enter" onclick={send} disabled={$activeResponses.loading || !canSend}>
-					{$activeResponses.loading ? $t("request.sending") : $t("request.send")}<kbd>{modKey} ↵</kbd>
+				<button class="send" title="{MOD_KEY}+Enter" onclick={send} disabled={$activeResponses.loading || !canSend}>
+					{$activeResponses.loading ? $t("request.sending") : $t("request.send")}<kbd>{MOD_KEY} ↵</kbd>
 				</button>
 			{/if}
 			<button
 				class="save"
-				title="{modKey}+S"
+				title="{MOD_KEY}+S"
 				onclick={save}
 				disabled={saving || (!$incognito && !$activeRequest.dirty)}
 			>

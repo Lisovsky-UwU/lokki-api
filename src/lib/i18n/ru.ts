@@ -46,6 +46,8 @@ export const ru: Record<keyof typeof en, string> = {
 	"app.settings": "Настройки",
 	"app.sidebarWidth": "Ширина дерева коллекций",
 	"app.emptyState": "Выберите запрос слева или создайте новый",
+	"app.shortcutSend": "отправить запрос",
+	"app.shortcutSave": "сохранить его",
 	"app.restoreFailed": "Не удалось открыть последнее пространство",
 	"app.noWorkspaceHint": "Пространство не открыто — переменные недоступны",
 	"app.requestPaneHeight": "Высота панели запроса",
