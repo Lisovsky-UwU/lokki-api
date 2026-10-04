@@ -15,6 +15,14 @@ export function methodColor(method: string | null | undefined): string {
 	return KNOWN.has(key) ? `var(--method-${key.toLowerCase()})` : "var(--method-other)";
 }
 
+/// The tree's column is four characters wide; the three methods that don't
+/// fit go by the abbreviations other API clients have made familiar.
+const SHORT: Record<string, string> = { PATCH: "PTCH", DELETE: "DEL", OPTIONS: "OPT" };
+
+export function shortBadge(badge: string): string {
+	return SHORT[badge] ?? badge;
+}
+
 /// What the tree shows in front of a request's name: its method, or for a
 /// protocol other than plain HTTP, the protocol.
 export function requestBadge(node: Extract<CollectionTreeNode, { kind: "Request" }>): string {

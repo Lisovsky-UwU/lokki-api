@@ -389,31 +389,26 @@
 </script>
 
 <div class="sidebar">
-	<div class="sidebar-header">
-		<span class="heading">{$t("sidebar.workspace")}</span>
-	</div>
+	<!-- The workspace's name is the sidebar's title: everything below it
+	     belongs to that workspace, so it needs no label of its own. -->
 	{#if $workspace === null}
 		<div class="empty">{$t("sidebar.noWorkspace")}</div>
 	{:else}
-		<div class="workspace-name-outer">
-			<button class="icon-btn" title={$t("menu.switchWorkspace")} aria-label={$t("menu.switchWorkspace")} onclick={closeWorkspace}>
-				<Icon name="switch" size="1.1em" />
-			</button>
+		<div class="workspace-header">
 			<NodeMenu menu={workspaceMenu} label={$t("sidebar.workspaceMenu")} align="left">
 				{#snippet trigger()}
 					<span class="workspace-name">{$workspace?.name}</span>
-					<span class="menu-hint"><Icon name="chevron" size="12px" /></span>
+					<span class="menu-hint"><Icon name="chevron" size="14px" /></span>
 				{/snippet}
 			</NodeMenu>
+			<button class="icon-btn" title={$t("menu.switchWorkspace")} aria-label={$t("menu.switchWorkspace")} onclick={closeWorkspace}>
+				<Icon name="switch" size="16px" />
+			</button>
 		</div>
 	{/if}
-	<div class="sidebar-header sidebar-header-collections">
-		<NodeMenu menu={collectionsMenu} label={$t("sidebar.collectionsMenu")} align="left">
-			{#snippet trigger()}
-				<span class="heading">{$t("sidebar.collections")}</span>
-				<span class="menu-hint"><Icon name="chevron" size="12px" /></span>
-			{/snippet}
-		</NodeMenu>
+	<div class="section-header">
+		<span class="heading">{$t("sidebar.collections")}</span>
+		<NodeMenu menu={collectionsMenu} label={$t("sidebar.collectionsMenu")} />
 	</div>
 
 	{#each $collections as collection (collection.path)}
@@ -493,106 +488,122 @@
 		flex-direction: column;
 		height: 100%;
 		overflow-y: auto;
-		padding: 0.5rem;
+		padding: 0 6px 8px;
 		font-size: var(--fs-md);
 	}
-	.sidebar-header {
+	.workspace-header {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		padding: 0.3em 0.4em;
+		gap: 4px;
+		/* Edge to edge across the panel, so its rule lines up with the top
+		   bar's on the other side of the splitter. */
+		margin: 0 -6px;
+		padding: 0 6px;
+		height: 46px;
+		flex-shrink: 0;
+		border-bottom: 1px solid var(--line);
 	}
-	/* The small caps sit on the label, not on the row. The collections
-	   heading is a menu button and the menu is rendered inside that row, so
-	   anything typographic here would land on every item - and `opacity`
-	   worst of all, since it makes the whole subtree translucent and no
-	   child can undo it. */
-	.heading {
-		font-weight: 600;
-		text-transform: uppercase;
-		font-size: var(--fs-xs);
-		letter-spacing: 0.04em;
-		color: var(--text-muted);
-	}
-	.sidebar-header-collections {
-		margin-bottom: 0.8em;
-		/* The heading is the menu button now, so it carries the padding
-		   itself - on the container the hover highlight would sit inset from
-		   the row. */
-		padding: 0;
-	}
-	.sidebar-header-collections :global(.node-menu) {
+	/* The menu component owns the button; these rules dress its trigger. */
+	.workspace-header :global(.node-menu) {
 		flex: 1;
 		min-width: 0;
 	}
-	.sidebar-header-collections :global(.trigger.custom) {
-		padding: 0.3em 0.4em;
-		border-radius: 4px;
+	.workspace-header :global(.trigger.custom) {
+		gap: 4px;
+		padding: 5px 8px;
+		border-radius: 6px;
 	}
-	.sidebar-header-collections :global(.trigger.custom:hover) {
+	.workspace-header :global(.trigger.custom:hover) {
 		background: var(--hover);
 	}
-	/* The row is at normal size now, so the marker follows the small-caps
-	   label beside it rather than the row it sits in. */
-	.sidebar-header-collections .menu-hint {
-		font-size: var(--fs-xs);
+	.workspace-name {
+		font-weight: 700;
+		font-size: var(--fs-lg);
+		white-space: nowrap;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		text-align: left;
+	}
+	/* One marker for "this opens a menu". */
+	.menu-hint {
+		display: inline-flex;
+		color: var(--text-muted);
 	}
 	.icon-btn {
 		display: flex;
 		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		flex-shrink: 0;
 		background: none;
 		border: none;
 		cursor: pointer;
-		font-size: var(--fs-md);
-		line-height: 1;
-		padding: 0.2em 0.35em;
-		border-radius: 4px;
-		color: inherit;
+		padding: 0;
+		border-radius: 6px;
+		color: var(--text-muted);
 	}
 	.icon-btn:hover {
+		color: var(--text);
 		background: var(--hover);
 	}
-	/* A collection is drawn as a container, a folder as a plain row inside
-	   one. Weight alone stopped carrying that once a workspace had enough
-	   collections for the two to interleave on screen.
-
-	   Outlined rather than filled: a fill would have to be lighter than the
-	   sidebar in the light theme and darker in the dark one to read as
-	   "raised", which is two more palette entries to keep in step. A hairline
-	   says "container" the same way in both. */
+	.section-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 10px 2px 4px 8px;
+	}
+	.heading {
+		font-weight: 600;
+		font-size: var(--fs-sm);
+		color: var(--text-muted);
+	}
+	/* A collection is told apart from a folder by its header rather than by
+	   a box around it: the header is heavier, and it stays pinned to the top
+	   of the panel while its tree scrolls under it, so a long tree never
+	   loses track of whose folders these are. Boxes stopped working once a
+	   workspace had enough collections to stack a column of them. */
 	.collection {
-		border: 1px solid var(--line);
-		border-radius: 6px;
-		padding: 0.15em;
-		margin-bottom: 0.4em;
-	}
-	/* The insertion line is drawn inside the card rather than as a thicker
-	   border: a border that grows from 1px to 2px shifts everything below it
-	   by a pixel while the drag is in flight. */
-	.collection.drop-before {
-		box-shadow: inset 0 2px 0 var(--accent-text);
-	}
-	.collection.drop-after {
-		box-shadow: inset 0 -2px 0 var(--accent-text);
+		margin-bottom: 2px;
 	}
 	.collection.dragged {
 		opacity: 0.4;
 	}
 	.collection-header {
+		position: sticky;
+		top: 0;
+		z-index: 1;
 		display: flex;
 		align-items: center;
+		border-radius: 6px;
+		/* Opaque, or the rows scrolling under it would show through. */
+		background: var(--surface-sunken);
+	}
+	/* The insertion line sits on the header, where the eye already is. */
+	.collection.drop-before .collection-header {
+		box-shadow: inset 0 2px 0 var(--accent-text);
+	}
+	.collection.drop-after {
+		box-shadow: 0 2px 0 var(--accent-text);
+	}
+	/* The collection whose environment is in effect - it follows the open
+	   request, so this also says where that request lives. Layered over the
+	   opaque fill rather than replacing it. */
+	.collection-header.active {
+		background-image: linear-gradient(var(--selected), var(--selected));
 	}
 	.collection-label {
 		display: flex;
 		align-items: center;
-		gap: 0.4em;
+		gap: 6px;
 		flex: 1;
 		min-width: 0;
 		text-align: left;
 		background: none;
 		border: none;
-		padding: 0.3em 0.4em;
-		border-radius: 4px;
+		padding: 6px 6px;
+		border-radius: 6px;
 		cursor: pointer;
 		font-weight: 600;
 		color: inherit;
@@ -605,11 +616,10 @@
 	.collection-label:hover {
 		background: var(--hover);
 	}
-	/* The collection whose environment is in effect - it follows the open
-	   request, so this also says where that request lives. */
-	.collection-header.active {
-		background: var(--selected);
-		border-radius: 4px;
+	/* The row's menu shows up with the pointer or the keyboard, and stays
+	   while it is open; otherwise a column of dots runs down the panel. */
+	.collection-header:not(:hover):not(:focus-within) :global(.trigger[aria-expanded="false"]) {
+		opacity: 0;
 	}
 	.chevron {
 		display: inline-flex;
@@ -619,10 +629,12 @@
 	.chevron.collapsed {
 		transform: rotate(-90deg);
 	}
+	/* The guide line marks how deep a row sits, the same way at every
+	   level (see `.children` in TreeNode). */
 	.tree {
-		padding-left: 0.6em;
-		padding-bottom: 0.3em;
-		border-radius: 4px;
+		margin-left: 13px;
+		padding: 2px 0 6px 4px;
+		border-left: 1px solid var(--line);
 	}
 	.tree.drop-root {
 		background: color-mix(in srgb, var(--accent) 12%, transparent);
@@ -630,42 +642,13 @@
 	}
 	.empty {
 		color: var(--text-muted);
-		padding: 0.4em 0.6em;
+		padding: 4px 8px;
 		margin: 0;
 		font-size: var(--fs-sm);
 	}
-	.workspace-name-outer {
-		display: flex;
-		align-items: center;
-		padding: 0.5em 0.2em;
-		gap: 0.2em;
-	}
-	/* The menu component owns the button; these rules dress its trigger. */
-	.workspace-name-outer :global(.node-menu) {
-		flex: 1;
-		min-width: 0;
-	}
-	.workspace-name-outer :global(.trigger.custom) {
-		padding: 0.6em 0.8em;
-		border-radius: 6px;
-	}
-	.workspace-name-outer :global(.trigger.custom:hover) {
-		background: var(--hover);
-	}
-	.workspace-name {
-		font-weight: 600;
-		white-space: nowrap;
-		flex: 1;
-		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		text-align: left;
-	}
-	/* One marker for "this opens a menu": the workspace name and the
-	   collections heading carry the same one. */
-	.menu-hint {
-		display: inline-flex;
-		color: var(--text-muted);
-		font-size: var(--fs-sm);
+	@media (prefers-reduced-motion: reduce) {
+		.chevron {
+			transition: none;
+		}
 	}
 </style>

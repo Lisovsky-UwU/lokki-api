@@ -143,7 +143,6 @@ export const en = {
 	"body.format.plainPlaceholder": "arbitrary text",
 
 	// --- sidebar -----------------------------------------------------------
-	"sidebar.workspace": "Workspace",
 	"sidebar.workspaceMenu": "Workspace menu",
 	"sidebar.noWorkspace": "No workspace is open. Create one or open an existing one",
 	"sidebar.collections": "Collections",
