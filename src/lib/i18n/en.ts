@@ -86,6 +86,7 @@ export const en = {
 	"kv.remove": "Remove",
 
 	// --- auth --------------------------------------------------------------
+	"auth.typeAria": "Authorization type",
 	"auth.none": "No auth",
 	"auth.bearer": "Bearer token",
 	"auth.basic": "Basic auth",
@@ -114,6 +115,7 @@ export const en = {
 	// --- request editor ----------------------------------------------------
 	"request.urlAria": "Request URL",
 	"request.urlPlaceholder": "https://api.example.com/pets or {{baseUrl}}/pets",
+	"request.methodAria": "HTTP method",
 	"request.send": "Send",
 	"request.sending": "Sending…",
 	"request.save": "Save",
@@ -133,6 +135,7 @@ export const en = {
 	"request.openFailed": "Could not open the request",
 
 	// --- body editor -------------------------------------------------------
+	"body.typeAria": "Body type",
 	"body.none": "No body",
 	"body.form": "Form (urlencoded)",
 	"body.file": "File from disk",

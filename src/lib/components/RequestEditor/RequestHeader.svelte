@@ -137,12 +137,12 @@
 		border-color: var(--accent-text);
 		box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 	}
-	.url-field :global(.method-select .trigger) {
-		height: 100%;
-		border: none;
+	.url-field :global(.method-select) {
+		flex-shrink: 0;
+		min-width: 6.5em;
+		padding: 0 10px 0 12px;
 		border-right: 1px solid var(--line);
 		border-radius: 7px 0 0 7px;
-		background: none;
 	}
 	.url-field :global(input) {
 		height: 100%;
